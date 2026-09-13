@@ -50,6 +50,9 @@ export default defineConfig({
     },
   },
   test: {
+    // The end-to-end tests belong to Playwright, which drives a real browser
+    // against the real binary. Vitest would try to run them and fail.
+    exclude: ["e2e/**", "node_modules/**", "dist/**"],
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test/setup.ts"],

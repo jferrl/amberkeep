@@ -85,6 +85,11 @@ jobs:
           node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
+      # The end-to-end tests drive the real binary, so this job needs Go as well.
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
       - name: Install
         run: npm ci
       - name: Typecheck
@@ -105,6 +110,20 @@ jobs:
           awk -v t="$total" 'BEGIN { if (t + 0 < 85) { print "coverage " t "% is below the 85% gate"; exit 1 } }'
       - name: Build
         run: npm run build
+      - name: Install a browser
+        # Only the headless shell: the tests drive a page, they do not record video
+        # or need a full browser install.
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Build the binary the browser talks to
+        # The end-to-end tests run against the real program over a real archive,
+        # which is the point of them: everything else runs in jsdom, and jsdom has
+        # no layout, so it cannot tell whether a long conversation actually scrolls.
+        working-directory: .
+        run: go build -o amberkeep ./cmd/amberkeep
+        env:
+          CGO_ENABLED: 0
+      - name: End to end
+        run: npm run e2e
       - name: React Doctor
         # react-doctor has no minimum-score flag. Its own gate is --blocking, which
         # fires on the severity of what it finds, and that is what is used here.

@@ -3,6 +3,15 @@ node_modules/
 
 coverage/
 
+# TypeScript's incremental build state. Machine-local and regenerated on demand.
+*.tsbuildinfo
+
+# Playwright's own output: installed browsers, traces from a failed run, reports.
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Vite's convention for machine-local overrides, including .env.local, which is
 # where a developer's own paths end up.
 *.local

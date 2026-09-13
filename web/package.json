@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
-    "doctor": "react-doctor --no-score --no-supply-chain --blocking error -y"
+    "doctor": "react-doctor --no-score --no-supply-chain --blocking error -y",
+    "e2e": "playwright test",
+    "e2e:build": "go build -o ../amberkeep ../cmd/amberkeep && playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",
@@ -25,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

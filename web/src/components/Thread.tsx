@@ -54,14 +54,39 @@ export function Thread({ chat, language }: { chat: Chat; language: Language }) {
     virtualiser.scrollToIndex(rows.length - 1, { align: "end" });
   }, [rows.length, virtualiser]);
 
-  // Reaching the top asks for the messages before these. The scroll position is not
-  // adjusted by hand: the virtualiser keeps the anchored row where it was, which is
-  // the whole reason for measuring rows rather than assuming a height.
-  const onScroll = useCallback(() => {
+  /**
+   * Where the reader was, measured from the bottom.
+   *
+   * Older messages arrive above the ones on screen, so the distance from the top
+   * changes and the distance from the bottom does not. Anchoring on the wrong one of
+   * those throws the reader to the top of the conversation every time a page loads,
+   * and then nothing more loads at all, because the trigger is a scroll event and
+   * there is no longer anywhere to scroll. A browser found that; jsdom cannot.
+   */
+  const anchor = useRef<number | null>(null);
+
+  const loadOlder = useCallback(() => {
     const element = viewport.current;
     if (element === null || !hasNextPage || isFetchingNextPage) return;
-    if (element.scrollTop < 200) void fetchNextPage();
+    anchor.current = element.scrollHeight - element.scrollTop;
+    void fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  // Put the reader back where they were, before the browser has painted, so the
+  // conversation does not visibly jump.
+  useLayoutEffect(() => {
+    const element = viewport.current;
+    if (element === null || anchor.current === null) return;
+    element.scrollTop = element.scrollHeight - anchor.current;
+    anchor.current = null;
+  }, [rows.length]);
+
+  // Reaching the top asks for the messages before these.
+  const onScroll = useCallback(() => {
+    const element = viewport.current;
+    if (element === null) return;
+    if (element.scrollTop < 200) loadOlder();
+  }, [loadOlder]);
 
   useEffect(() => {
     const element = viewport.current;
@@ -89,7 +114,7 @@ export function Thread({ chat, language }: { chat: Chat; language: Language }) {
             <Button
               size="sm"
               disabled={isFetchingNextPage}
-              onClick={() => void fetchNextPage()}
+              onClick={loadOlder}
             >
               {isFetchingNextPage ? t("loading") : t("earlierMessages")}
             </Button>

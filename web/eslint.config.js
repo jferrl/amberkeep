@@ -99,7 +99,9 @@ const zeroNetworkGlobals = [
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/node_modules/**", "**/coverage/**"],
+    ignores: [
+      "test-results/",
+      "playwright-report/","**/dist/**", "**/node_modules/**", "**/coverage/**"],
   },
   {
     files: ["**/*.{ts,tsx}"],

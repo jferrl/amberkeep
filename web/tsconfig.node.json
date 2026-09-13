@@ -11,5 +11,8 @@
     "verbatimModuleSyntax": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts"]
+  // The end-to-end tests run under Node rather than in a browser, and so does
+  // everything that configures the build. Being listed here is also what lets the
+  // type-aware linter see them at all.
+  "include": ["vite.config.ts", "playwright.config.ts", "e2e/**/*.ts"]
 }
