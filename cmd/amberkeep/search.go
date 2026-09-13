@@ -154,6 +154,8 @@ func openIndex(ctx context.Context, db, at string, settings indexSettings) (*sea
 	}
 	defer reader.Close()
 
+	mentionPreparation(reader, db)
+
 	names, err := loadNames(ctx, reader.Directory(), settings.book, settings.whatsApp, settings.country)
 	if err != nil {
 		return nil, err

@@ -32,8 +32,8 @@ Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a
 | Step | Time |
 |---|---|
 | decrypt 236 MB to 466 MB | 5 s |
-| export every conversation as web pages | 5 min |
-| build the search index | 5 min |
+| export every conversation as web pages | 54 s |
+| build the search index | 5 min, before indexing |
 | a search across the whole archive | under 10 ms |
 | open a 92,180-message conversation in the viewer | 0.12 s |
 
@@ -49,11 +49,20 @@ And on a real iPhone store of 554 conversations and 161,026 messages:
 
 ```sh
 amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
+amberkeep prepare --db msgstore.db          # only if you decrypted it elsewhere
 amberkeep inspect --db msgstore.db --full
 amberkeep serve   --db msgstore.db --contacts contacts.vcf --country 34
 amberkeep export  --db msgstore.db --contacts contacts.vcf --country 34 --out archive/
 amberkeep search  --db msgstore.db "whatever you remember"
 ```
+
+A WhatsApp backup arrives with none of its indexes: the decrypted database has not
+one, on any of the twenty tables a reader touches, so every query for a
+conversation scans the whole table. `decrypt` puts them back on the file it just
+wrote, which takes about a second and adds six per cent to its size. That took
+exporting a real archive from five minutes to fifty-four seconds. Run `prepare` if
+you decrypted the database some other way; it adds only indexes, which hold no
+information that is not already in the file.
 
 `serve` opens the archive in a browser. It listens on the loopback address only, and
 every request carries a secret made fresh at each launch, so nothing else on the

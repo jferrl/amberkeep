@@ -54,6 +54,8 @@ func runExport(ctx context.Context, args []string) error {
 	}
 	defer reader.Close()
 
+	mentionPreparation(reader, *db)
+
 	names, err := loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
 	if err != nil {
 		return err

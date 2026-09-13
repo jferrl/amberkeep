@@ -68,6 +68,12 @@ func runDecrypt(ctx context.Context, args []string) error {
 	}
 
 	fmt.Printf("decrypted to %s (%s)\n", abbreviate(target), humanSize(int64(len(plaintext))))
+
+	// A backup arrives with none of its indexes, so reading it is several times
+	// slower than it needs to be. This file did not exist a moment ago and this
+	// command wrote it, so putting them back needs nobody's permission.
+	prepareOutput(ctx, target)
+
 	fmt.Printf("\nnext: amberkeep inspect --db %s\n", abbreviate(target))
 	return nil
 }

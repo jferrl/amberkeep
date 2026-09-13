@@ -40,11 +40,15 @@ func (l layout) String() string {
 type schema struct {
 	layout  layout
 	columns map[string]map[string]struct{}
+	indexes map[string]struct{}
 }
 
 // introspect reads the shape of the database.
 func introspect(ctx context.Context, db *sql.DB) (schema, error) {
-	s := schema{columns: make(map[string]map[string]struct{})}
+	s := schema{
+		columns: make(map[string]map[string]struct{}),
+		indexes: make(map[string]struct{}),
+	}
 
 	// Virtual tables are skipped. A real database carries several full-text search
 	// indexes, and those depend on SQLite modules a pure-Go build does not include,
@@ -75,6 +79,10 @@ func introspect(ctx context.Context, db *sql.DB) (schema, error) {
 		return schema{}, fmt.Errorf("listing tables: %w", err)
 	}
 
+	if err := s.readIndexes(ctx, db); err != nil {
+		return schema{}, err
+	}
+
 	for _, table := range tables {
 		cols, err := columnsOf(ctx, db, table)
 		if err != nil {
@@ -94,6 +102,34 @@ func introspect(ctx context.Context, db *sql.DB) (schema, error) {
 		s.layout = layoutLegacy
 	}
 	return s, nil
+}
+
+// readIndexes records which indexes exist, so a reader can tell whether the
+// database has been prepared for quick reading.
+func (s schema) readIndexes(ctx context.Context, db *sql.DB) error {
+	rows, err := db.QueryContext(ctx, `SELECT name FROM sqlite_master WHERE type = 'index'`)
+	if err != nil {
+		return fmt.Errorf("listing indexes: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return fmt.Errorf("reading an index name: %w", err)
+		}
+		s.indexes[name] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("listing indexes: %w", err)
+	}
+	return nil
+}
+
+// hasIndex reports whether the database carries an index by that name.
+func (s schema) hasIndex(name string) bool {
+	_, ok := s.indexes[name]
+	return ok
 }
 
 // columnsOf reads one table's column names.
