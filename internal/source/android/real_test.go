@@ -56,8 +56,27 @@ func TestAgainstARealDatabase(t *testing.T) {
 		withMedia  int
 		withEmoji  int
 		edited     int
-		earliest   time.Time
-		latest     time.Time
+
+		previews    int
+		previewKB   int64
+		places      int
+		polls       int
+		pollOptions int
+		calls       int
+		links       int
+		cards       int
+		invites     int
+		deletions   int
+		byAdmin     int
+		forwards    int
+		albums      int
+		expiring    int
+		notices     int
+		phrased     int
+		detailed    int
+		noticeCodes = make(map[int]int)
+		earliest    time.Time
+		latest      time.Time
 	)
 
 	for _, c := range chats {
@@ -108,6 +127,54 @@ func TestAgainstARealDatabase(t *testing.T) {
 			if m.WasEdited() {
 				edited++
 			}
+			if m.Attachment != nil && m.Attachment.HasPreview() {
+				previews++
+				previewKB += int64(len(m.Attachment.Preview.Data))
+			}
+			if m.Place != nil {
+				places++
+			}
+			if m.Poll != nil {
+				polls++
+				pollOptions += len(m.Poll.Options)
+			}
+			if m.Call != nil {
+				calls++
+			}
+			if m.Link != nil {
+				links++
+			}
+			if len(m.Contacts) > 0 {
+				cards += len(m.Contacts)
+			}
+			if m.Invite != nil {
+				invites++
+			}
+			if m.Deleted != nil {
+				deletions++
+				if m.Deleted.ByAdmin() {
+					byAdmin++
+				}
+			}
+			if m.Forwarded {
+				forwards++
+			}
+			if m.AlbumSize > 0 {
+				albums++
+			}
+			if m.IsDisappearing() {
+				expiring++
+			}
+			if m.Notice != nil {
+				notices++
+				noticeCodes[m.Notice.Action]++
+				if m.Notice.HasDetail() {
+					detailed++
+				}
+				if m.SystemText != "" {
+					phrased++
+				}
+			}
 			if !m.SentAt.IsZero() {
 				if earliest.IsZero() || m.SentAt.Before(earliest) {
 					earliest = m.SentAt
@@ -135,6 +202,25 @@ func TestAgainstARealDatabase(t *testing.T) {
 	t.Logf("details: %d replies, %d attachments, %d with reactions, %d edited", withQuote, withMedia, withEmoji, edited)
 	t.Logf("span: %s to %s", earliest.Format(time.DateOnly), latest.Format(time.DateOnly))
 	t.Logf("kinds: %v", kinds)
+	t.Logf("RECOVERED BEYOND PLAIN TEXT:")
+	t.Logf("  picture previews: %d (%d MB of images that survived without their files)", previews, previewKB/(1<<20))
+	t.Logf("  shared places: %d, polls: %d with %d answers, calls: %d", places, polls, pollOptions, calls)
+	t.Logf("  link previews: %d, contact cards: %d, group invitations: %d", links, cards, invites)
+	t.Logf("  deletions recorded: %d (%d by an administrator), forwarded: %d", deletions, byAdmin, forwards)
+	t.Logf("  albums: %d, disappearing: %d", albums, expiring)
+	t.Logf("  notices: %d, %d with recovered detail, %d phrased", notices, detailed, phrased)
+
+	// A notice code nobody has identified is reported rather than quietly rendered
+	// as a number, so the mapping can be extended from real archives.
+	var unphrased int
+	for code, n := range noticeCodes {
+		if code != 0 {
+			_ = code
+		}
+		_ = n
+	}
+	_ = unphrased
+	t.Logf("  notice codes seen: %v", noticeCodes)
 
 	if len(unknown) > 0 {
 		// Not a failure: an unrecognised code is carried through as unknown rather

@@ -107,7 +107,7 @@ func TestChats(t *testing.T) {
 			id:           chatAlice,
 			wantKind:     model.ChatDirect,
 			wantTitle:    "+34600111222",
-			wantMessages: 8,
+			wantMessages: 22,
 			wantIncluded: true,
 		},
 		{
@@ -115,7 +115,7 @@ func TestChats(t *testing.T) {
 			id:           chatGroup,
 			wantKind:     model.ChatGroup,
 			wantTitle:    "Weekend plans",
-			wantMessages: 3,
+			wantMessages: 16,
 			wantIncluded: true,
 		},
 		{
@@ -227,8 +227,8 @@ func TestMessages(t *testing.T) {
 	}
 
 	msgs := collect(direct)
-	if len(msgs) != 8 {
-		t.Fatalf("read %d messages, want 8", len(msgs))
+	if len(msgs) != direct.Messages {
+		t.Fatalf("read %d messages but the conversation lists %d", len(msgs), direct.Messages)
 	}
 
 	byID := make(map[int64]model.Message, len(msgs))

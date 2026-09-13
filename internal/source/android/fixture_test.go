@@ -112,6 +112,111 @@ CREATE TABLE message_mentions (
 	jid_row_id INTEGER,
 	display_name TEXT
 );
+CREATE TABLE message_thumbnail (message_row_id INTEGER PRIMARY KEY, thumbnail BLOB);
+CREATE TABLE message_location (
+	message_row_id INTEGER PRIMARY KEY,
+	chat_row_id INTEGER,
+	latitude REAL,
+	longitude REAL,
+	place_name TEXT,
+	place_address TEXT,
+	url TEXT,
+	live_location_share_duration INTEGER
+);
+CREATE TABLE message_poll (
+	message_row_id INTEGER PRIMARY KEY,
+	selectable_options_count INTEGER,
+	end_time INTEGER
+);
+CREATE TABLE message_poll_option (
+	_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	message_row_id INTEGER,
+	option_name TEXT,
+	vote_total INTEGER
+);
+CREATE TABLE call_log (
+	_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	jid_row_id INTEGER,
+	from_me INTEGER,
+	timestamp INTEGER,
+	video_call INTEGER,
+	duration INTEGER,
+	call_result INTEGER,
+	group_jid_row_id INTEGER
+);
+CREATE TABLE message_call_log (message_row_id INTEGER PRIMARY KEY, call_log_row_id INTEGER);
+CREATE TABLE missed_call_logs (
+	_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	message_row_id INTEGER,
+	video_call INTEGER,
+	group_jid_row_id INTEGER
+);
+CREATE TABLE message_text (
+	message_row_id INTEGER PRIMARY KEY,
+	description TEXT,
+	page_title TEXT,
+	url TEXT
+);
+CREATE TABLE message_vcard (_id INTEGER PRIMARY KEY AUTOINCREMENT, message_row_id INTEGER, vcard TEXT);
+CREATE TABLE message_vcard_jid (
+	_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	vcard_jid_row_id INTEGER,
+	vcard_row_id INTEGER,
+	message_row_id INTEGER
+);
+CREATE TABLE message_revoked (
+	message_row_id INTEGER PRIMARY KEY,
+	revoked_key_id TEXT,
+	admin_jid_row_id INTEGER,
+	revoke_timestamp INTEGER
+);
+CREATE TABLE message_forwarded (message_row_id INTEGER PRIMARY KEY, forward_score INTEGER, forward_origin INTEGER);
+CREATE TABLE message_album (message_row_id INTEGER PRIMARY KEY, image_count INTEGER, video_count INTEGER);
+CREATE TABLE message_ephemeral (message_row_id INTEGER PRIMARY KEY, duration INTEGER, expire_timestamp INTEGER);
+CREATE TABLE message_group_invite (
+	message_row_id INTEGER PRIMARY KEY,
+	group_jid_row_id INTEGER,
+	group_name TEXT,
+	expiration INTEGER
+);
+CREATE TABLE message_quoted_media (
+	message_row_id INTEGER PRIMARY KEY,
+	mime_type TEXT,
+	media_name TEXT,
+	media_caption TEXT,
+	media_duration INTEGER,
+	thumbnail BLOB
+);
+CREATE TABLE message_system (message_row_id INTEGER PRIMARY KEY, action_type INTEGER);
+CREATE TABLE message_system_group (message_row_id INTEGER PRIMARY KEY, is_me_joined INTEGER);
+CREATE TABLE message_system_chat_participant (
+	_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	message_row_id INTEGER,
+	user_jid_row_id INTEGER
+);
+CREATE TABLE message_system_value_change (message_row_id INTEGER PRIMARY KEY, old_data TEXT);
+CREATE TABLE message_system_number_change (
+	message_row_id INTEGER PRIMARY KEY,
+	old_jid_row_id INTEGER,
+	new_jid_row_id INTEGER
+);
+CREATE TABLE message_system_device_change (
+	message_row_id INTEGER PRIMARY KEY,
+	device_added_count INTEGER,
+	device_removed_count INTEGER
+);
+CREATE TABLE message_system_business_state (
+	message_row_id INTEGER PRIMARY KEY,
+	privacy_message_type INTEGER,
+	business_name TEXT
+);
+CREATE TABLE message_system_username_change (
+	message_row_id INTEGER PRIMARY KEY,
+	old_username TEXT,
+	new_username TEXT
+);
+CREATE TABLE message_system_block_contact (message_row_id INTEGER PRIMARY KEY, is_blocked INTEGER);
+CREATE TABLE message_system_with_group_nodes (message_row_id INTEGER PRIMARY KEY, group_subject TEXT);
 `
 
 // Row identifiers the tests refer to by name, so an assertion reads as a statement
@@ -237,10 +342,99 @@ func buildFixture(t *testing.T) string {
 	exec(`INSERT INTO message_edit_info (message_row_id, edited_timestamp) VALUES (8, ?)`, tsBase+99*tsStep)
 	exec(`INSERT INTO message_mentions (message_row_id, jid_row_id) VALUES (10, ?)`, jidHidden)
 
+	// Everything a message can carry beyond words, each in the table WhatsApp uses.
+	msg(20, chatAlice, false, jidAlice, 20, typeLocation, nil, 0)
+	msg(21, chatAlice, true, nil, 21, typePoll, "Where shall we eat?", 0)
+	msg(22, chatAlice, false, jidAlice, 22, typeCall, nil, 0)
+	msg(23, chatAlice, false, jidAlice, 23, typeMissedCall, nil, 0)
+	msg(24, chatAlice, true, nil, 24, typeText, "look at this", 0)
+	msg(25, chatAlice, false, jidAlice, 25, typeContact, nil, 0)
+	msg(26, chatAlice, false, jidAlice, 26, typeText, "will vanish", 0)
+	msg(27, chatAlice, true, nil, 27, typeGroupInvite, nil, 0)
+	msg(28, chatAlice, false, jidAlice, 28, typeAlbum, nil, 0)
+	msg(29, chatAlice, false, jidAlice, 29, typeImage, nil, 0)
+	msg(30, chatAlice, true, nil, 30, typeText, "forwarded along", 0)
+	msg(31, chatAlice, false, jidAlice, 31, typeText, nil, 0)
+	msg(32, chatAlice, false, jidAlice, 32, typeNotDisplayed, nil, 0)
+	msg(33, chatAlice, true, nil, 33, typeText, "replying to a photo", 0)
+
+	exec(`INSERT INTO message_location (message_row_id, latitude, longitude, place_name, place_address, live_location_share_duration)
+		VALUES (20, 41.3851, 2.1734, 'Sagrada Familia', 'Carrer de Mallorca', 0)`)
+	exec(`INSERT INTO message_poll (message_row_id, selectable_options_count, end_time) VALUES (21, 1, 0)`)
+	exec(`INSERT INTO message_poll_option (message_row_id, option_name, vote_total) VALUES
+		(21, 'Pizza', 3), (21, 'Sushi', 1)`)
+	exec(`INSERT INTO call_log (_id, jid_row_id, from_me, timestamp, video_call, duration, call_result)
+		VALUES (1, ?, 0, ?, 1, 125, 5)`, jidAlice, tsBase)
+	exec(`INSERT INTO message_call_log (message_row_id, call_log_row_id) VALUES (22, 1)`)
+	exec(`INSERT INTO missed_call_logs (message_row_id, video_call) VALUES (23, 0)`)
+	exec(`INSERT INTO message_text (message_row_id, url, page_title, description)
+		VALUES (24, 'https://example.org/article', 'An article', 'What the article was about')`)
+	exec(`INSERT INTO message_vcard (_id, message_row_id, vcard) VALUES
+		(1, 25, 'BEGIN:VCARD' || char(10) || 'VERSION:3.0' || char(10) || 'FN:Dana Smith' || char(10) || 'END:VCARD')`)
+	exec(`INSERT INTO message_vcard_jid (vcard_jid_row_id, vcard_row_id, message_row_id) VALUES (?, 1, 25)`, jidCarol)
+	exec(`INSERT INTO message_ephemeral (message_row_id, duration) VALUES (26, 604800)`)
+	exec(`INSERT INTO message_group_invite (message_row_id, group_jid_row_id, group_name, expiration)
+		VALUES (27, ?, 'Book club', ?)`, jidGroup, tsBase+1000*tsStep)
+	exec(`INSERT INTO message_album (message_row_id, image_count, video_count) VALUES (28, 3, 1)`)
+	// A picture whose file is gone but whose preview survives in the database.
+	exec(`INSERT INTO message_thumbnail (message_row_id, thumbnail) VALUES (29, ?)`, fakeJPEG())
+	exec(`INSERT INTO message_forwarded (message_row_id, forward_score) VALUES (30, 7)`)
+	exec(`INSERT INTO message_revoked (message_row_id, admin_jid_row_id, revoke_timestamp)
+		VALUES (31, ?, ?)`, jidAlice, tsBase+50*tsStep)
+	exec(`INSERT INTO message_quoted (message_row_id, chat_row_id, from_me, sender_jid_row_id, message_type, text_data)
+		VALUES (33, ?, 0, ?, ?, NULL)`, chatAlice, jidAlice, typeImage)
+	exec(`INSERT INTO message_quoted_media (message_row_id, mime_type, media_name, media_caption, thumbnail)
+		VALUES (33, 'image/jpeg', 'IMG-0002.jpg', 'the photo replied to', ?)`, fakeJPEG())
+
+	// System notices, one per phrasing worth proving.
+	notice := func(id int64, step int64, action int) {
+		t.Helper()
+		msg(id, chatGroup, false, jidAlice, step, typeSystem, nil, 0)
+		exec(`INSERT INTO message_system (message_row_id, action_type) VALUES (?, ?)`, id, action)
+	}
+	notice(40, 40, 18) // the security code changed
+	notice(41, 41, 12) // people were added
+	exec(`INSERT INTO message_system_chat_participant (message_row_id, user_jid_row_id) VALUES (41, ?), (41, ?)`, jidCarol, jidHidden)
+	notice(42, 42, 1) // the subject changed
+	exec(`UPDATE message SET text_data = 'Weekend plans' WHERE _id = 42`)
+	exec(`INSERT INTO message_system_value_change (message_row_id, old_data) VALUES (42, 'Old subject')`)
+	notice(43, 43, 12) // the owner was added, which reads backwards if is_me_joined is ignored
+	exec(`INSERT INTO message_system_group (message_row_id, is_me_joined) VALUES (43, 1)`)
+	notice(44, 44, 57) // linked devices changed
+	exec(`INSERT INTO message_system_device_change (message_row_id, device_added_count, device_removed_count) VALUES (44, 2, 1)`)
+	notice(45, 45, 67)  // the encryption banner
+	notice(46, 46, 165) // a code no source identifies
+	notice(47, 47, 10)  // a contact changed their phone number
+	exec(`INSERT INTO message_system_number_change (message_row_id, old_jid_row_id, new_jid_row_id)
+		VALUES (47, ?, ?)`, jidAlice, jidCarol)
+	notice(48, 48, 69) // a business notice
+	exec(`INSERT INTO message_system_business_state (message_row_id, privacy_message_type, business_name)
+		VALUES (48, 1, 'A shop')`)
+	notice(49, 49, 58) // a contact was blocked
+	exec(`INSERT INTO message_system_block_contact (message_row_id, is_blocked) VALUES (49, 1)`)
+	notice(50, 50, 110) // a community change
+	exec(`INSERT INTO message_system_with_group_nodes (message_row_id, group_subject) VALUES (50, 'Neighbours')`)
+	notice(51, 51, 165) // an unidentified code that still carried a username change
+	exec(`INSERT INTO message_system_username_change (message_row_id, old_username, new_username)
+		VALUES (51, 'oldname', 'newname')`)
+
+	// A group message whose sender column is empty, which real databases contain.
+	msg(52, chatGroup, false, nil, 52, typeText, "sender not recorded", 0)
+
 	if err := db.Close(); err != nil {
 		t.Fatalf("closing the fixture: %v", err)
 	}
 	return path
+}
+
+// fakeJPEG is a byte sequence shaped like a small JPEG. The reader never decodes
+// a preview, so its contents only have to be recognisable and stable.
+func fakeJPEG() []byte {
+	out := []byte{0xFF, 0xD8, 0xFF, 0xE0}
+	for i := range 64 {
+		out = append(out, byte(i))
+	}
+	return append(out, 0xFF, 0xD9)
 }
 
 // keyFor builds the stable message identifier WhatsApp assigns.

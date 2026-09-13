@@ -28,6 +28,17 @@ const (
 	KindCall     // an entry in the call history
 	KindViewOnce // media that could be opened once
 	KindPayment
+	// KindAlbum is the container row WhatsApp writes when several pictures were
+	// sent at once. The pictures themselves are separate messages.
+	KindAlbum
+	// KindInvite is an invitation to join a group.
+	KindInvite
+	// KindInteractive is a business message built from buttons, lists or cards.
+	// It usually carries readable text, which is the part worth keeping.
+	KindInteractive
+	// KindIgnored is a row WhatsApp itself does not display. It is recognised
+	// rather than unknown, so it can be left out without being reported as a gap.
+	KindIgnored
 )
 
 // String names the kind for diagnostics. User-visible wording is chosen by the
@@ -68,6 +79,14 @@ func (k Kind) String() string {
 		return "view-once"
 	case KindPayment:
 		return "payment"
+	case KindAlbum:
+		return "album"
+	case KindInvite:
+		return "invite"
+	case KindInteractive:
+		return "interactive"
+	case KindIgnored:
+		return "ignored"
 	case KindUnknown:
 		return "unknown"
 	default:
@@ -82,7 +101,8 @@ func (k Kind) HasAttachment() bool {
 	case KindImage, KindVideo, KindAudio, KindVoice, KindDocument, KindSticker, KindGIF, KindViewOnce:
 		return true
 	case KindUnknown, KindText, KindContact, KindLocation, KindPoll, KindEvent,
-		KindDeleted, KindSystem, KindCall, KindPayment:
+		KindDeleted, KindSystem, KindCall, KindPayment, KindAlbum, KindInvite,
+		KindInteractive, KindIgnored:
 		return false
 	default:
 		return false
@@ -99,7 +119,8 @@ func (k Kind) IsNotice() bool {
 		return true
 	case KindUnknown, KindText, KindImage, KindVideo, KindAudio, KindVoice,
 		KindDocument, KindSticker, KindGIF, KindContact, KindLocation, KindPoll,
-		KindEvent, KindDeleted, KindViewOnce, KindPayment:
+		KindEvent, KindDeleted, KindViewOnce, KindPayment, KindAlbum, KindInvite,
+		KindInteractive, KindIgnored:
 		return false
 	default:
 		return false
@@ -118,7 +139,16 @@ type Attachment struct {
 	Height    int
 	// Caption is the text sent alongside the file.
 	Caption string
+
+	// Preview is a small copy of the picture or video kept inside the message
+	// database. When the original file is gone, and for an old archive it usually
+	// is, this is the only surviving image of what was sent.
+	Preview Thumbnail
 }
+
+// HasPreview reports whether a recognisable image of the attachment survives even
+// though the file itself may not.
+func (a Attachment) HasPreview() bool { return !a.Preview.IsEmpty() }
 
 // Quote is the message a reply pointed at, as far as it can be recovered. WhatsApp
 // stores a copy of the quoted content rather than a reference, so a quote survives
@@ -128,6 +158,12 @@ type Quote struct {
 	FromMe bool
 	Kind   Kind
 	Text   string
+
+	// Attachment describes the file the quoted message carried, including its
+	// embedded preview, so a reply to a photo still shows what was replied to.
+	Attachment *Attachment
+	// Place is the location the quoted message pointed at.
+	Place *Place
 }
 
 // Reaction is an emoji someone attached to a message.
@@ -167,9 +203,37 @@ type Message struct {
 	Reactions  []Reaction
 	Mentions   []JID
 
+	// Everything below is content WhatsApp keeps in its own table. Each is nil
+	// unless the message actually carried it. Reading them is what turns a shared
+	// place, a poll or a contact card from a blank line back into content.
+	Place    *Place
+	Poll     *Poll
+	Call     *Call
+	Link     *LinkPreview
+	Contacts []ContactCard
+	Invite   *GroupInvite
+
+	// Deleted records that the message was withdrawn for everyone, and by whom.
+	// The words are gone; the fact that something was said is not.
+	Deleted *Deletion
+
+	// AlbumSize is how many items were sent together as one album, counted from
+	// the message that opens it.
+	AlbumSize int
+
+	// Expires marks a disappearing message and says how long it was set to last.
+	Expires time.Duration
+
 	Starred   bool
 	Forwarded bool
-	EditedAt  time.Time
+	// ForwardScore is how many times a message had been forwarded before it
+	// arrived. WhatsApp shows anything above four as "forwarded many times".
+	ForwardScore int
+	EditedAt     time.Time
+
+	// Notice carries the facts behind a system message: who did what to whom.
+	// It is nil for anything a person actually wrote.
+	Notice *Notice
 
 	// SystemText is the rendered description of a system notice, when one could be
 	// reconstructed from the source.
@@ -202,8 +266,38 @@ func (m Message) WasEdited() bool { return !m.EditedAt.IsZero() }
 // IsReply reports whether the message answered another one.
 func (m Message) IsReply() bool { return m.Quote != nil }
 
+// WasDeleted reports whether the message was withdrawn for everyone.
+func (m Message) WasDeleted() bool { return m.Deleted != nil || m.Kind == KindDeleted }
+
+// IsDisappearing reports whether the message was set to vanish on its own.
+func (m Message) IsDisappearing() bool { return m.Expires > 0 }
+
+// WasForwardedMany reports whether the message had been passed along enough times
+// for WhatsApp to label it as widely forwarded.
+func (m Message) WasForwardedMany() bool { return m.ForwardScore > 4 }
+
+// HasRecoveredContent reports whether anything beyond plain words survived for this
+// message: a place, a poll, a call, a link preview, a contact card, an invitation,
+// or a picture preview. It is what an archive counts to tell the user how much was
+// recovered rather than merely listed.
+func (m Message) HasRecoveredContent() bool {
+	return m.Place != nil || m.Poll != nil || m.Call != nil || m.Link != nil ||
+		m.Invite != nil || len(m.Contacts) > 0 ||
+		(m.Attachment != nil && m.Attachment.HasPreview())
+}
+
 // Displayable reports whether the message should appear in a conversation at all.
-// Some rows in a source database are bookkeeping rather than content.
+//
+// Two kinds of row are not content: those WhatsApp itself never shows, and the
+// container it writes when several pictures were sent together, whose pictures are
+// separate messages that would otherwise be counted twice.
 func (m Message) Displayable() bool {
-	return m.HasText() || m.Attachment != nil || m.Kind != KindUnknown
+	switch m.Kind {
+	case KindIgnored:
+		return false
+	case KindAlbum:
+		return m.HasText()
+	default:
+		return m.HasText() || m.Attachment != nil || m.Kind != KindUnknown
+	}
 }

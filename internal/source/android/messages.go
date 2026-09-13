@@ -149,12 +149,28 @@ func (r *Reader) enrich(ctx context.Context, chat model.Chat, page []model.Messa
 		index[m.ID] = i
 	}
 
+	// Order matters in two places: quotes are read before quoted attachments,
+	// which fill them in, and the media row is read before the embedded preview,
+	// which may have to create an attachment the media table never had.
 	for _, load := range []func(context.Context, []int64, map[int64]int, []model.Message) error{
 		r.attachMedia,
+		r.attachPreviews,
 		r.attachQuotes,
+		r.attachQuotedMedia,
 		r.attachReactions,
 		r.attachEdits,
 		r.attachMentions,
+		r.attachPlaces,
+		r.attachPolls,
+		r.attachCalls,
+		r.attachLinks,
+		r.attachContactCards,
+		r.attachDeletions,
+		r.attachForwardCounts,
+		r.attachAlbums,
+		r.attachExpiry,
+		r.attachInvites,
+		r.attachSystemNotices,
 	} {
 		if err := load(ctx, ids, index, page); err != nil {
 			return err
