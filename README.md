@@ -135,6 +135,15 @@ AMBERKEEP_GOLDEN_EXPECTED=/path/to/msgstore.db \
   go test ./internal/crypt15/ -run TestDecryptGolden
 ```
 
+## How the formats work
+
+WhatsApp publishes nothing about how it stores messages. These document what we
+established, with the evidence for each claim and an honest account of what is still
+unknown:
+
+- [docs/formats/android.md](docs/formats/android.md) — the crypt15 backup and `msgstore.db`
+- [docs/formats/ios.md](docs/formats/ios.md) — iPhone backups and `ChatStorage.sqlite`
+
 ## Contributing
 
 Read [docs/PRINCIPLES.md](docs/PRINCIPLES.md) first; it is binding, not advisory.
