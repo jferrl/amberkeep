@@ -5,8 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"html"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -30,8 +33,9 @@ func TestParseFormats(t *testing.T) {
 		{name: "one format", input: "text", want: []string{"text"}},
 		{name: "several", input: "text,json", want: []string{"text", "json"}},
 		{name: "spacing and case are forgiven", input: " TEXT , Json ", want: []string{"text", "json"}},
-		{name: "both is a shorthand", input: "both", want: []string{"text", "json"}},
-		{name: "all is the same shorthand", input: "all", want: []string{"text", "json"}},
+		{name: "the web page", input: "html", want: []string{"html"}},
+		{name: "both still means the two it always meant", input: "both", want: []string{"text", "json"}},
+		{name: "all means every format there is", input: "all", want: []string{"html", "text", "json"}},
 		{name: "a name that does not exist", input: "pdf", fails: true},
 		{name: "nothing at all", input: "", fails: true},
 		{name: "only separators", input: ",,", fails: true},
@@ -345,6 +349,43 @@ func TestEndToEnd(t *testing.T) {
 		}
 		if adviseOn(err) == "" {
 			t.Error("the refusal carried no advice about --force")
+		}
+	})
+
+	t.Run("the web archive has an index that links to real files", func(t *testing.T) {
+		// The whole archive again, as web pages, into a directory of its own.
+		web := filepath.Join(dir, "web")
+		err := run(context.Background(), []string{
+			"export", "--db", db, "--contacts", book, "--country", "34",
+			"--timezone", "Europe/Madrid", "--out", web, "--format", "html",
+		})
+		if err != nil {
+			t.Fatalf("the web export failed: %v", err)
+		}
+
+		index, err := os.ReadFile(filepath.Join(web, export.IndexName))
+		if err != nil {
+			t.Fatalf("the archive has no index: %v", err)
+		}
+		page := string(index)
+
+		if !strings.Contains(page, "Ana Lopez") {
+			t.Error("the index does not name the conversation")
+		}
+		links := regexp.MustCompile(`href="([^"]+)"`).FindAllStringSubmatch(page, -1)
+		if len(links) != 1 {
+			t.Fatalf("the index has %d links, want one per conversation", len(links))
+		}
+		target, err := url.PathUnescape(html.UnescapeString(links[0][1]))
+		if err != nil {
+			t.Fatalf("the index wrote an unusable link: %q", links[0][1])
+		}
+		conversation, err := os.ReadFile(filepath.Join(web, target))
+		if err != nil {
+			t.Fatalf("the index links to a file that is not there: %v", err)
+		}
+		if !strings.Contains(string(conversation), "hello there") {
+			t.Error("the conversation page is missing a message")
 		}
 	})
 

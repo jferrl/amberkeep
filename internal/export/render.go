@@ -115,9 +115,22 @@ func (r renderer) deleted(m model.Message) string {
 	return "This message was deleted"
 }
 
-// attachment describes a file that is not part of the archive, and says when a
-// picture of it survived anyway.
+// attachment describes a file that is not part of the archive, along with the
+// caption that came with it.
 func (r renderer) attachment(m model.Message) string {
+	note := r.attachmentNote(m)
+	if m.HasText() {
+		return note + " " + m.Text
+	}
+	return note
+}
+
+// attachmentNote is the description of the file alone, without the caption.
+//
+// It is separate because a page that can show the recovered picture puts the
+// caption beside the image rather than running the two together, and neither
+// format should have its own wording for the same thing.
+func (r renderer) attachmentNote(m model.Message) string {
 	noun := attachmentNoun(m.Kind)
 	var parts []string
 
@@ -132,9 +145,6 @@ func (r renderer) attachment(m model.Message) string {
 	if m.Attachment != nil && m.Attachment.HasPreview() {
 		// Worth saying: the file is gone but a recognisable image of it is not.
 		parts = append(parts, "[preview recovered]")
-	}
-	if m.HasText() {
-		parts = append(parts, m.Text)
 	}
 	return strings.Join(parts, " ")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,11 +16,11 @@ import (
 
 // runExport writes the archive out in the formats the caller asked for.
 func runExport(ctx context.Context, args []string) error {
-	fs := newFlagSet("export", "write the archive out as text and structured data")
+	fs := newFlagSet("export", "write the archive out as web pages, text and structured data")
 	var (
 		db       = fs.String("db", "", "the decrypted message database, usually msgstore.db")
 		out      = fs.String("out", "archive", "directory to write the archive into")
-		formats  = fs.String("format", "text", "which formats to write: text, json, or both")
+		formats  = fs.String("format", "html", "which formats to write: html, text, json, or all")
 		bookPath = fs.String("contacts", "", "an address book, so conversations show names instead of numbers")
 		waPath   = fs.String("whatsapp-contacts", "", "WhatsApp's own contacts database, usually wa.db")
 		country  = fs.String("country", "", "dialling code for numbers saved without one, such as 34")
@@ -62,6 +63,14 @@ func runExport(ctx context.Context, args []string) error {
 		return err
 	}
 
+	// The index only makes sense when there are pages for it to link to.
+	var indexed bool
+	for _, format := range wanted {
+		if format.name == "html" {
+			indexed = true
+		}
+	}
+
 	opts := export.Options{
 		Directory:        *out,
 		Names:            names,
@@ -75,6 +84,7 @@ func runExport(ctx context.Context, args []string) error {
 	var (
 		total   export.Result
 		skipped int
+		entries []export.Entry
 		started = time.Now()
 	)
 	for _, chat := range chats {
@@ -97,6 +107,7 @@ func runExport(ctx context.Context, args []string) error {
 			},
 		}
 
+		var written int
 		for i, format := range wanted {
 			result, err := format.write(conv, opts)
 			if err != nil {
@@ -107,11 +118,20 @@ func runExport(ctx context.Context, args []string) error {
 			if i == 0 {
 				total.Messages += result.Messages
 				total.Skipped += result.Skipped
+				written = result.Messages
 			}
 			total.Bytes += result.Bytes
 			total.Files = append(total.Files, result.Files...)
 		}
 		total.Conversations++
+
+		if indexed {
+			entries = append(entries, export.Entry{
+				Chat:     chat,
+				File:     export.FileName(chat, ".html"),
+				Messages: written,
+			})
+		}
 
 		// A large archive takes minutes, and silence looks like a hang.
 		if total.Conversations%100 == 0 {
@@ -119,6 +139,18 @@ func runExport(ctx context.Context, args []string) error {
 		}
 	}
 	fmt.Fprint(os.Stderr, "\r\033[K")
+
+	// The index is written last because only now is it known what the archive
+	// holds. Several thousand files in a folder is a pile; this is what makes it
+	// something somebody can open.
+	if indexed {
+		result, err := export.WriteIndex(entries, opts)
+		if err != nil {
+			return fmt.Errorf("writing the archive index: %w", err)
+		}
+		total.Bytes += result.Bytes
+		total.Files = append(total.Files, result.Files...)
+	}
 
 	fmt.Printf("wrote %d conversations and %d messages to %s\n",
 		total.Conversations, total.Messages, abbreviate(*out))
@@ -130,6 +162,10 @@ func runExport(ctx context.Context, args []string) error {
 		fmt.Printf("  %d empty or excluded conversations skipped\n", skipped)
 	}
 	fmt.Printf("  took %s\n", time.Since(started).Round(time.Second))
+	if indexed {
+		fmt.Printf("\nopen %s to read the archive\n",
+			abbreviate(filepath.Join(*out, export.IndexName)))
+	}
 
 	if named := names.Identified(); named == 0 {
 		fmt.Printf("\nNo names were available, so conversations are labelled by phone number.\n")
@@ -147,6 +183,7 @@ type format struct {
 // parseFormats turns the option into the writers to run.
 func parseFormats(s string) ([]format, error) {
 	available := map[string]format{
+		"html": {"html", export.WriteHTML},
 		"text": {"text", export.WriteText},
 		"json": {"json", export.WriteJSON},
 	}
@@ -157,12 +194,15 @@ func parseFormats(s string) ([]format, error) {
 		switch name {
 		case "":
 			continue
-		case "both", "all":
+		case "all":
+			return []format{available["html"], available["text"], available["json"]}, nil
+		case "both":
+			// It means two, and it meant these two before there were three.
 			return []format{available["text"], available["json"]}, nil
 		}
 		f, ok := available[name]
 		if !ok {
-			return nil, fmt.Errorf("there is no format called %q; choose text, json, or both", name)
+			return nil, fmt.Errorf("there is no format called %q; choose html, text, json, or all", name)
 		}
 		wanted = append(wanted, f)
 	}
