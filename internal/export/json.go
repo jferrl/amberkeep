@@ -37,7 +37,7 @@ func WriteJSON(conv Conversation, opts Options) (Result, error) {
 
 	var result Result
 	written, err := atomicWrite(path, opts.Overwrite, func(w io.Writer) error {
-		out := bufio.NewWriter(w)
+		out := bufio.NewWriterSize(w, writeBuffer)
 
 		// Each value is encoded into a buffer first so the trailing newline that
 		// Encode always appends can be dropped, which a list cannot carry. Encoding

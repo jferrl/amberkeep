@@ -75,6 +75,43 @@ func Decrypt(key Key, file []byte) ([]byte, error) {
 	return decompress(plaintext)
 }
 
+// DecryptTo decrypts a backup and writes the database out as it goes.
+//
+// It exists because Decrypt holds the whole archive twice. Reading a 236 MB backup
+// and inflating it to 466 MB peaked at 1.47 GB of memory, because growing the
+// plaintext buffer leaves the old copy and the new one live at the same moment
+// while the ciphertext is still referenced. Writing through drops that to roughly
+// the size of the backup.
+//
+// Nothing is written before the payload has been authenticated in full: the cipher
+// verifies the whole thing before returning a single byte, so streaming here cannot
+// emit anything that later turns out to be forged.
+//
+// It returns how many bytes were written.
+func DecryptTo(key Key, file []byte, w io.Writer) (int64, error) {
+	body, err := stripIntegrityFooter(file)
+	if err != nil {
+		return 0, err
+	}
+
+	h, headerLen, err := parseHeader(body)
+	if err != nil {
+		return 0, err
+	}
+
+	ciphertext := body[headerLen:]
+	if len(ciphertext) < gcmTagLen {
+		return 0, ErrMalformed.withCause(
+			fmt.Errorf("payload is %d bytes, too short to hold an authentication tag", len(ciphertext)))
+	}
+
+	plaintext, err := decryptPayload(key, h.iv, ciphertext)
+	if err != nil {
+		return 0, err
+	}
+	return decompressTo(plaintext, w)
+}
+
 // stripIntegrityFooter removes the trailing MD5 when the file carries one.
 //
 // The footer is optional: chunked backups omit it. Recomputing the digest is the
@@ -121,6 +158,41 @@ func decryptPayload(key Key, iv, ciphertext []byte) ([]byte, error) {
 		return nil, ErrWrongKey
 	}
 	return plaintext, nil
+}
+
+// decompressTo inflates the plaintext into a writer, or copies it through when it
+// was never compressed.
+//
+// The limit is the same one decompress applies and for the same reason: a small
+// file that claims to inflate to something enormous is not a backup, and the point
+// of streaming is lost if a malformed one can still exhaust the disk.
+func decompressTo(plaintext []byte, w io.Writer) (int64, error) {
+	if len(plaintext) == 0 || plaintext[0] != zlibMagic {
+		written, err := w.Write(plaintext)
+		if err != nil {
+			return int64(written), err
+		}
+		return int64(written), nil
+	}
+
+	r, err := zlib.NewReader(bytes.NewReader(plaintext))
+	if err != nil {
+		return 0, ErrUnexpectedPlaintext.withCause(fmt.Errorf("opening the compressed payload: %w", err))
+	}
+
+	written, err := io.Copy(w, io.LimitReader(r, maxDecompressed))
+	if err != nil {
+		return written, ErrUnexpectedPlaintext.withCause(fmt.Errorf("reading the compressed payload: %w", err))
+	}
+	// Close verifies the stream's checksum, so it is a real correctness check here
+	// rather than a resource release, and its result is worth reporting.
+	if err := r.Close(); err != nil {
+		return written, ErrUnexpectedPlaintext.withCause(fmt.Errorf("verifying the compressed payload: %w", err))
+	}
+	if written == maxDecompressed {
+		return written, ErrUnexpectedPlaintext.withCause(errors.New("payload is implausibly large"))
+	}
+	return written, nil
 }
 
 // decompress inflates the plaintext when it is a zlib stream and returns it

@@ -128,6 +128,10 @@ func New(ctx context.Context, archive Archive, opts Options) (http.Handler, erro
 		s.chats = append(s.chats, chat)
 		s.byJID[chat.JID.String()] = chat
 	}
+	// Ordered once here rather than on every request. A real archive holds several
+	// thousand conversations, and the order they are listed in cannot change while
+	// the server is running.
+	s.chats = sortedByRecency(s.chats)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/archive", s.handleArchive)
@@ -243,7 +247,7 @@ func (s *server) handleChats(w http.ResponseWriter, r *http.Request) {
 		skipRemaining = offset
 	)
 
-	for _, chat := range sortedByRecency(s.chats) {
+	for _, chat := range s.chats {
 		if q != "" && !strings.Contains(strings.ToLower(chat.Title()), q) {
 			continue
 		}

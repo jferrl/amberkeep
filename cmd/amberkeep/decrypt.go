@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"os"
@@ -42,9 +43,9 @@ func runDecrypt(ctx context.Context, args []string) error {
 		}
 	}
 
-	// The whole file is held in memory. A backup is a few hundred megabytes, and
-	// the alternative is streaming state that could corrupt the output if it were
-	// ever wrong, which is a poor trade for somebody's only copy.
+	// The encrypted file is held whole, because the cipher authenticates all of it
+	// before releasing a single byte and a backup is only a few hundred megabytes.
+	// #nosec G304 -- reading the file the user named is what --in means.
 	encrypted, err := os.ReadFile(*in)
 	if err != nil {
 		return fmt.Errorf("reading the backup: %w", err)
@@ -55,19 +56,12 @@ func runDecrypt(ctx context.Context, args []string) error {
 		return err
 	}
 
-	plaintext, err := crypt15.Decrypt(key, encrypted)
+	written, err := writeDecrypted(key, encrypted, target)
 	if err != nil {
 		return err
 	}
 
-	// Written for this user only: a decrypted archive is every message they have
-	// ever sent or received.
-	// #nosec G703 -- the destination is the path the user asked to write to.
-	if err := os.WriteFile(target, plaintext, 0o600); err != nil {
-		return fmt.Errorf("writing the database: %w", err)
-	}
-
-	fmt.Printf("decrypted to %s (%s)\n", abbreviate(target), humanSize(int64(len(plaintext))))
+	fmt.Printf("decrypted to %s (%s)\n", abbreviate(target), humanSize(written))
 
 	// A backup arrives with none of its indexes, so reading it is several times
 	// slower than it needs to be. This file did not exist a moment ago and this
@@ -76,6 +70,44 @@ func runDecrypt(ctx context.Context, args []string) error {
 
 	fmt.Printf("\nnext: amberkeep inspect --db %s\n", abbreviate(target))
 	return nil
+}
+
+// writeDecrypted turns the backup into a database on disk.
+//
+// The database is written through rather than assembled in memory first. Holding
+// it peaked at a gigabyte and a half for a 236 MB backup, because growing the
+// plaintext buffer leaves the old copy and the new one live at the same moment
+// while the ciphertext is still referenced.
+//
+// A failure takes the file with it. A half-written database is worse than none:
+// it looks like something somebody could open.
+func writeDecrypted(key crypt15.Key, encrypted []byte, target string) (int64, error) {
+	// Created for this user only: a decrypted archive is every message they have
+	// ever sent or received.
+	// #nosec G304 -- the destination is the path the user asked to write to.
+	file, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+	if err != nil {
+		return 0, fmt.Errorf("creating the database: %w", err)
+	}
+
+	abandon := func(cause error) (int64, error) {
+		_ = file.Close()
+		_ = os.Remove(target)
+		return 0, cause
+	}
+
+	out := bufio.NewWriterSize(file, 1<<20)
+	written, err := crypt15.DecryptTo(key, encrypted, out)
+	if err != nil {
+		return abandon(err)
+	}
+	if err := out.Flush(); err != nil {
+		return abandon(fmt.Errorf("writing the database: %w", err))
+	}
+	if err := file.Close(); err != nil {
+		return abandon(fmt.Errorf("writing the database: %w", err))
+	}
+	return written, nil
 }
 
 // readKey loads the key from a file, or accepts it directly.

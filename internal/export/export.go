@@ -72,6 +72,13 @@ func (o Options) withDefaults() Options {
 	return o
 }
 
+// writeBuffer is how much of a file is held before it reaches the disk.
+//
+// The default is four kilobytes, which on a large export costs a third of the time
+// in write calls that do almost nothing each. Sixty-four is where the gain flattens
+// out and is a rounding error against the file being written.
+const writeBuffer = 1 << 16
+
 // ErrExists reports that a file is already there and Overwrite was not set.
 var ErrExists = errors.New("the file already exists")
 

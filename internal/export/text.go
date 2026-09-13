@@ -40,7 +40,7 @@ func WriteText(conv Conversation, opts Options) (Result, error) {
 
 	var result Result
 	bytes, err := atomicWrite(path, opts.Overwrite, func(w io.Writer) error {
-		out := bufio.NewWriter(w)
+		out := bufio.NewWriterSize(w, writeBuffer)
 		writeTextHeader(out, conv.Chat, r)
 
 		for m, err := range conv.Messages {

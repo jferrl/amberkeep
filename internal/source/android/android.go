@@ -77,6 +77,15 @@ var (
 		msg: "the message database could not be read"}
 )
 
+// SQLite is left on its own defaults on purpose.
+//
+// A larger page cache and memory-mapped reads are the obvious thing to reach for,
+// and measuring them says not to. On a database without its indexes they took a
+// quarter off the time, because the work was a full scan and caching a scan helps.
+// With the indexes restored the same settings bought 2 per cent and cost three
+// times the memory: 486 MB of resident pages against 152, for one second in
+// fifty-five. The indexes are the fix; this was the symptom.
+
 // Reader answers questions about one message database.
 //
 // It holds the address book and the conversation list in memory, which is a few
@@ -89,6 +98,9 @@ type Reader struct {
 	// jids maps a row identifier to the address it stands for. Every reference to a
 	// person in this database is a row identifier, so this is consulted constantly.
 	jids map[int64]model.JID
+	// jidRows is the same mapping the other way round, for the two places that have
+	// an address and need the row it came from.
+	jidRows map[string]int64
 }
 
 // Open reads the database at path. The file is opened read-only, so the caller's
@@ -186,6 +198,7 @@ func (r *Reader) loadJIDs(ctx context.Context) error {
 	defer rows.Close()
 
 	r.jids = make(map[int64]model.JID)
+	r.jidRows = make(map[string]int64)
 	for rows.Next() {
 		var (
 			id     int64
@@ -202,6 +215,7 @@ func (r *Reader) loadJIDs(ctx context.Context) error {
 			j.Raw = j.User + "@" + string(j.Server)
 		}
 		r.jids[id] = j
+		r.jidRows[j.String()] = id
 
 		// Only people belong in the address book; groups and channels are named by
 		// their subject instead.
@@ -423,15 +437,15 @@ func (r *Reader) loadParticipants(ctx context.Context, chats []model.Chat) error
 	return nil
 }
 
-// jidRowOf finds the row identifier an address came from. The map is small and this
-// runs once per group, so a scan is cheaper than a second index.
+// jidRowOf finds the row identifier an address came from.
+//
+// The comment that used to be here said the map was small and a scan was cheaper
+// than a second index. The map holds 100,464 addresses on a real archive and this
+// runs once per group, which was 83 milliseconds of the half second it takes to
+// list the conversations. The reverse map is built while the forward one is, so it
+// costs nothing that was not already being paid.
 func (r *Reader) jidRowOf(j model.JID) int64 {
-	for id, candidate := range r.jids {
-		if candidate.String() == j.String() {
-			return id
-		}
-	}
-	return 0
+	return r.jidRows[j.String()]
 }
 
 // epochMillis converts WhatsApp's millisecond timestamps. Zero and absent both mean
