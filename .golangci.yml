@@ -30,6 +30,13 @@ linters:
     errcheck:
       check-type-assertions: true
       check-blank: true
+      # Closing a read-only handle reports nothing a caller could act on, and these
+      # appear on cleanup paths where an earlier error is already being returned.
+      # Anything whose Close verifies data, such as a decompressor, is still checked.
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Stmt).Close
     exhaustive:
       default-signifies-exhaustive: true
     gocritic:
@@ -65,6 +72,20 @@ linters:
           - gosec
           - errcheck
           - forcetypeassert
+          # Fixture setup builds databases in a temporary directory; there is
+          # nothing to cancel and threading a context through it adds noise.
+          - noctx
+
+      # Readers assemble their queries from the columns a database actually has,
+      # because WhatsApp renames and removes them between releases. The interpolated
+      # text always comes from sqlite_master or PRAGMA table_info on the file being
+      # read, never from user input, and every value is still a bound parameter.
+      # That is the version-tolerance design, so the warning is expected here and
+      # nowhere else.
+      - path: internal/source/
+        text: "G201|G202|G70[0-9]"
+        linters:
+          - gosec
 
 formatters:
   enable:
