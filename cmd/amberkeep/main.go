@@ -115,14 +115,14 @@ Getting started, from an Android phone:
      lives in Android/media/com.whatsapp/WhatsApp/Databases.
   3. amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
   4. amberkeep export  --db msgstore.db --out archive/
-  5. amberkeep search  --db msgstore.db "whatever you remember"
-
-Or, to look around before exporting anything:
-
-  amberkeep serve --db msgstore.db
 
 Then open archive/index.html. Everything it shows is inside the files:
 it works with the network switched off, and always will.
+
+Or, without writing anything to disk:
+
+  amberkeep serve  --db msgstore.db
+  amberkeep search --db msgstore.db "whatever you remember"
 
 Nothing here contacts WhatsApp, and nothing leaves this machine.
 
