@@ -1,7 +1,10 @@
 # Build output
 /dist/
 /bin/
-amberkeep
+# Anchored: an unanchored "amberkeep" also matches the cmd/amberkeep directory,
+# which would quietly keep the whole command out of the repository.
+/amberkeep
+/cmd/amberkeep/amberkeep
 *.exe
 
 # Go

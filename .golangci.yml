@@ -38,9 +38,13 @@ linters:
         - (*database/sql.DB).Close
         - (*database/sql.Stmt).Close
         - (*os.File).Close
+        # The same read-only handle, one layer up: Reader.Close only wraps the
+        # sql.DB.Close above, so checking it would report the same nothing twice.
+        - (*github.com/jferrl/amberkeep/internal/source/android.Reader).Close
         # A buffered writer records the first failure and reports it from Flush,
         # which every writer here checks. Testing each individual write would add
         # noise without catching anything the Flush does not.
+        - fmt.Fprint
         - fmt.Fprintf
         - fmt.Fprintln
         - (*bufio.Writer).WriteString
