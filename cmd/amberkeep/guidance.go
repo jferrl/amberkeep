@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 
+	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/search"
@@ -97,6 +98,62 @@ archive depends on it, so the fix is to build it again:
 If that keeps happening, check there is room on the disk: an index is
 roughly a third the size of the archive.`,
 
+	backupfs.GuidancePermissionDenied: `macOS keeps iPhone backups behind Full Disk Access, and this program does
+not have it.
+
+  System Settings > Privacy & Security > Full Disk Access
+
+Add your terminal, or whichever program is running this, then run the
+command again. Nothing is granted to anybody else by doing so, and it can
+be taken away afterwards.
+
+If you would rather not, copy the backup folder somewhere ordinary in
+Finder and point at the copy instead:
+
+  amberkeep extract --backup /path/to/the/copy --out .`,
+
+	backupfs.GuidanceEncrypted: `This backup is encrypted, so nothing but the phone it came from can read
+it. That is Apple's design and not something any program can work around.
+
+Turn encryption off and make a fresh backup:
+
+  Finder > the phone in the sidebar > uncheck "Encrypt local backup"
+
+It asks for the password that was set. Your chats are unaffected, but an
+unencrypted backup leaves out saved passwords and Health data, so turn it
+back on when you are done.
+
+Make the safety copy first: Finder keeps one backup per device and
+overwrites it. Right-click the existing backup in Manage Backups and choose
+Archive, and it will survive.`,
+
+	backupfs.GuidanceNotABackup: `That folder is not an iPhone backup.
+
+A backup folder is named after the device's identifier, a long string of
+digits and letters, and holds Manifest.db, Manifest.plist, Info.plist and
+Status.plist. The folder above it holds one such folder per device.
+
+Run "amberkeep backups" to find them.`,
+
+	backupfs.GuidanceFileNotFound: `That file is not in this backup.
+
+WhatsApp's message store is called ChatStorage.sqlite. If it is missing,
+the phone may not have had WhatsApp installed when the backup was made, or
+the backup may have finished early. Check the backup's date and make a
+fresh one if it looks old.`,
+
+	backupfs.GuidanceCorruptManifest: `The backup's own index could not be read, which usually means the backup
+did not finish.
+
+Make a fresh one. A half-written backup cannot be repaired, and using one
+would give an archive missing whatever had not been copied yet.`,
+
+	backupfs.GuidanceUnreadable: `The backup could not be read. Check the path, and that the backup finished
+copying if it came from somewhere else.`,
+
+	backupfs.GuidanceNotAFile: `That entry in the backup is a folder rather than a file, so there is
+nothing to take out of it.`,
+
 	ios.GuidanceNotAMessageStore: `This is a database, but not the one an iPhone keeps messages in.
 
 The file you want is called ChatStorage.sqlite. It lives inside an iPhone
@@ -144,6 +201,11 @@ func adviseOn(err error) string {
 	var searching *search.Error
 	if errors.As(err, &searching) {
 		return advice[searching.Guidance]
+	}
+
+	var backup *backupfs.Error
+	if errors.As(err, &backup) {
+		return advice[backup.Guidance]
 	}
 
 	var iphone *ios.Error

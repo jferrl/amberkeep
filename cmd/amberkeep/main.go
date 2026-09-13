@@ -32,6 +32,8 @@ type command struct {
 
 func commands() []command {
 	return []command{
+		{"backups", "list the iPhone backups on this computer", runBackups},
+		{"extract", "take WhatsApp's message store out of an iPhone backup", runExtract},
 		{"decrypt", "turn an encrypted backup into a readable database", runDecrypt},
 		{"inspect", "report what an archive contains, without changing anything", runInspect},
 		{"prepare", "make a decrypted database quick to read", runPrepare},
@@ -107,6 +109,14 @@ Commands:
 	}
 	fmt.Fprint(w, `
 Run "amberkeep <command> --help" for what each one takes.
+
+Getting started, from an iPhone:
+
+  1. Back the phone up to this computer with Finder, with "Encrypt local
+     backup" switched off.
+  2. amberkeep backups
+  3. amberkeep extract --backup <the folder it printed> --out .
+  4. amberkeep serve   --db ChatStorage.sqlite
 
 Getting started, from an Android phone:
 

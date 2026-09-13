@@ -43,6 +43,7 @@ linters:
         - (*github.com/jferrl/amberkeep/internal/source/android.Reader).Close
         - (*github.com/jferrl/amberkeep/internal/search.Index).Close
         - (github.com/jferrl/amberkeep/internal/source.Archive).Close
+        - (*github.com/jferrl/amberkeep/internal/backupfs.Archive).Close
         # Rolling back a transaction that already committed is how the deferred
         # cleanup is written; it reports ErrTxDone and means nothing went wrong.
         - (*database/sql.Tx).Rollback

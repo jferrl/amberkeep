@@ -16,6 +16,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
+	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/search"
@@ -216,6 +217,13 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		ios.ErrLocked,
 		ios.ErrUnreadable,
 		source.ErrUnrecognised,
+		backupfs.ErrNotABackup,
+		backupfs.ErrEncrypted,
+		backupfs.ErrPermissionDenied,
+		backupfs.ErrCorruptManifest,
+		backupfs.ErrFileNotFound,
+		backupfs.ErrNotAFile,
+		backupfs.ErrUnreadable,
 	}
 
 	for _, err := range failures {
@@ -267,6 +275,8 @@ func TestCommandDispatch(t *testing.T) {
 		{name: "export with nothing to work on", args: []string{"export"}, fails: true},
 		{name: "search with nothing to work on", args: []string{"search"}, fails: true},
 		{name: "search with a database but no words", args: []string{"search", "--db", "x"}, fails: true},
+		{name: "extract with no backup to work on", args: []string{"extract"}, fails: true},
+		{name: "prepare with nothing to work on", args: []string{"prepare"}, fails: true},
 	}
 
 	for _, tt := range tests {
