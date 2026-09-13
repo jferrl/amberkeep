@@ -52,6 +52,10 @@ linters:
         - fmt.Fprintf
         - fmt.Fprintln
         - (*bufio.Writer).WriteString
+        # Writing a response body after its status line has gone out. A failure
+        # means the reader closed the page: there is no way left to report it and
+        # nobody to report it to.
+        - io.WriteString
         # Removing a temporary file on a path that is already returning an error.
         # There is nothing further to report and nothing a caller could do.
         - os.Remove

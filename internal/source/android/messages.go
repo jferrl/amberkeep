@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"iter"
+	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -25,12 +27,9 @@ const pageSize = 2000
 // caller may stop early; the underlying statements are released either way.
 func (r *Reader) Messages(ctx context.Context, chat model.Chat) iter.Seq2[model.Message, error] {
 	return func(yield func(model.Message, error) bool) {
-		var (
-			afterTime int64
-			afterID   int64
-		)
+		var from model.Cursor
 		for {
-			page, err := r.readPage(ctx, chat, afterTime, afterID)
+			page, err := r.read(ctx, chat, from, pageSize, forwards)
 			if err != nil {
 				yield(model.Message{}, err)
 				return
@@ -51,35 +50,97 @@ func (r *Reader) Messages(ctx context.Context, chat model.Chat) iter.Seq2[model.
 				return
 			}
 			last := page[len(page)-1]
-			afterTime, afterID = last.SentAt.UnixMilli(), last.ID
+			from = last.At()
 		}
 	}
 }
 
-// readPage fetches the next batch of messages after a position, without their
-// details. Paging on the sort key rather than an offset keeps every page cheap no
-// matter how deep into a conversation it is.
-func (r *Reader) readPage(ctx context.Context, chat model.Chat, afterTime, afterID int64) ([]model.Message, error) {
+// Page reads up to limit messages ending just before a position, oldest first.
+//
+// This is what looking at a conversation needs and streaming cannot give: somebody
+// opens a conversation at its end and scrolls backwards, and reading a hundred
+// thousand messages to show the last fifty is not a way to do that.
+//
+// The cursor returned names where the next page back begins. It is zero once the
+// beginning of the conversation has been reached.
+func (r *Reader) Page(ctx context.Context, chat model.Chat, before model.Cursor, limit int) ([]model.Message, model.Cursor, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	page, err := r.read(ctx, chat, before, limit, backwards)
+	if err != nil {
+		return nil, model.Cursor{}, err
+	}
+	if len(page) == 0 {
+		return nil, model.Cursor{}, nil
+	}
+	if err := r.enrich(ctx, chat, page); err != nil {
+		return nil, model.Cursor{}, err
+	}
+
+	// Read newest first so the limit takes the most recent, then turned around so
+	// that a caller always sees a conversation in the order it was written.
+	slices.Reverse(page)
+
+	var next model.Cursor
+	if len(page) == limit {
+		next = page[0].At()
+	}
+	return page, next, nil
+}
+
+// direction is which way through a conversation a page is read.
+type direction bool
+
+const (
+	forwards  direction = false
+	backwards direction = true
+)
+
+// read fetches one batch of messages from a position, without their details.
+//
+// Paging on the sort key rather than an offset keeps every page cheap no matter how
+// deep into a conversation it is, which is the difference between a viewer that
+// scrolls and one that stalls.
+func (r *Reader) read(ctx context.Context, chat model.Chat, from model.Cursor, limit int, back direction) ([]model.Message, error) {
 	origin := r.schema.columnOrNull("message", "origin")
 	starred := r.schema.columnOrNull("message", "starred")
 	flags := r.schema.columnOrNull("message", "origination_flags")
+
+	// Reading forwards starts before the first message; reading backwards starts
+	// after the last. A cursor of nothing means whichever end that is, expressed as
+	// a bound the comparison is always true against, so one query shape serves both
+	// directions and every page.
+	at, id := from.SentAt.UnixMilli(), from.ID
+	bound := "message.timestamp > :at OR (message.timestamp = :at AND message._id > :id)"
+	order := "message.timestamp, message._id"
+	if back {
+		bound = "message.timestamp < :at OR (message.timestamp = :at AND message._id < :id)"
+		order = "message.timestamp DESC, message._id DESC"
+		if from.IsZero() {
+			at, id = math.MaxInt64, math.MaxInt64
+		}
+	}
 
 	query := fmt.Sprintf(`
 		SELECT message._id, message.from_me, message.sender_jid_row_id, message.timestamp,
 		       message.message_type, message.text_data, message.key_id, %s, %s, %s
 		FROM message
-		WHERE message.chat_row_id = ?
-		  AND (message.timestamp > ? OR (message.timestamp = ? AND message._id > ?))
-		ORDER BY message.timestamp, message._id
-		LIMIT ?`, origin, starred, flags)
+		WHERE message.chat_row_id = :chat
+		  AND (%s)
+		ORDER BY %s
+		LIMIT :limit`, origin, starred, flags, bound, order)
 
-	rows, err := r.db.QueryContext(ctx, query, chat.ID, afterTime, afterTime, afterID, pageSize)
+	rows, err := r.db.QueryContext(ctx, query,
+		sql.Named("at", at), sql.Named("id", id),
+		sql.Named("chat", chat.ID), sql.Named("limit", limit))
 	if err != nil {
 		return nil, ErrUnreadable.withCause(fmt.Errorf("reading messages: %w", err))
 	}
 	defer rows.Close()
 
-	page := make([]model.Message, 0, pageSize)
+	page := make([]model.Message, 0, limit)
 	for rows.Next() {
 		var (
 			id        int64

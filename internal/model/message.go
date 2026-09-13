@@ -293,6 +293,24 @@ func (m Message) HasRecoveredContent() bool {
 		(m.Attachment != nil && m.Attachment.HasPreview())
 }
 
+// Cursor is a position in a conversation, for reading it a page at a time.
+//
+// It is a message's own sort key rather than a row offset, so a page deep into a
+// conversation of ninety thousand messages costs the same as the first one. It
+// lives here rather than in a reader because every source has to express the same
+// idea, and a viewer should not have to know which one it is talking to.
+type Cursor struct {
+	SentAt time.Time
+	ID     int64
+}
+
+// IsZero reports whether the cursor names no position, which means the start or the
+// end of the conversation depending on which way it is being read.
+func (c Cursor) IsZero() bool { return c.ID == 0 && c.SentAt.IsZero() }
+
+// At returns the cursor pointing at this message.
+func (m Message) At() Cursor { return Cursor{SentAt: m.SentAt, ID: m.ID} }
+
 // SearchText is every word this message contains, for an index to find it by.
 //
 // It is deliberately more than the text column. A photograph is findable by the

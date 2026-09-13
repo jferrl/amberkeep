@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Amberkeep</title>
+<link rel="stylesheet" href="app.css">
+<style>
+/* The two-pane shell. Everything inside a conversation is styled by the archive's
+   own stylesheet, so what is read here and what is written to disk look alike. */
+body { height: 100vh; overflow: hidden; }
+.shell { display: grid; grid-template-columns: 20rem 1fr; height: 100vh; }
+.side {
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  display: flex; flex-direction: column; min-height: 0;
+}
+.side header { padding: 0.8rem 0.9rem 0.6rem; border-bottom: 1px solid var(--line); }
+.side header h1 { margin: 0 0 0.15rem; font-size: 1rem; }
+.side header .about { margin: 0; color: var(--muted); font-size: 0.75rem; }
+.side .find { margin-top: 0.6rem; }
+.side .list { overflow-y: auto; flex: 1; min-height: 0; }
+.side .list ul.chats { margin: 0; }
+.side .list a { padding: 0.5rem 0.9rem; }
+.side .list a.on { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent); }
+
+.pane { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+.pane > header {
+  padding: 0.7rem 1rem; border-bottom: 1px solid var(--line);
+  background: var(--panel); display: flex; justify-content: space-between;
+  gap: 1rem; align-items: baseline;
+}
+.pane > header h2 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+.pane > header .about { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+.thread { overflow-y: auto; flex: 1; min-height: 0; padding: 0 1rem 2rem; }
+.thread > .inner { max-width: 46rem; margin: 0 auto; }
+
+.more {
+  display: block; margin: 0.8rem auto; padding: 0.35rem 0.9rem;
+  border: 1px solid var(--line); border-radius: 1rem;
+  background: var(--panel); color: inherit; font: inherit; cursor: pointer;
+}
+.more:hover { border-color: var(--accent); }
+.empty { color: var(--muted); text-align: center; padding: 3rem 1rem; }
+.results { padding: 0.5rem 0; }
+.results .hit {
+  display: block; width: 100%; text-align: left;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: none; color: inherit; font: inherit;
+  padding: 0.55rem 0.4rem; cursor: pointer;
+}
+.results .hit:hover { background: var(--panel); }
+.results .hit .who { color: var(--accent); font-weight: 600; font-size: 0.8rem; }
+.results .hit .when { color: var(--muted); font-size: 0.72rem; margin-left: 0.4rem; }
+.results .hit .line { margin-top: 0.1rem; overflow-wrap: anywhere; }
+
+@media (max-width: 46rem) {
+  .shell { grid-template-columns: 1fr; }
+  .side { display: none; }
+  body.browsing .side { display: flex; }
+  body.browsing .pane { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <nav class="side">
+    <header>
+      <h1 id="title">Archive</h1>
+      <p class="about" id="about">reading…</p>
+      <div class="find">
+        <input id="q" type="search" spellcheck="false" autocomplete="off"
+               placeholder="Search everything" aria-label="Search everything">
+        <button type="button" class="clear" id="clear">Clear</button>
+      </div>
+      <p class="about" id="found"></p>
+    </header>
+    <div class="list" id="list"></div>
+  </nav>
+
+  <section class="pane">
+    <header>
+      <h2 id="who">Pick a conversation</h2>
+      <span class="about" id="detail"></span>
+    </header>
+    <div class="thread" id="thread"><div class="inner">
+      <p class="empty">Choose a conversation on the left, or search across all of them.</p>
+    </div></div>
+  </section>
+</div>
+<dialog class="zoom"><img alt=""></dialog>
+<script src="app.js"></script>
+</body>
+</html>

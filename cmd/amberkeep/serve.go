@@ -1,0 +1,194 @@
+package main
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"errors"
+	"fmt"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
+	"time"
+
+	"github.com/jferrl/amberkeep/internal/api"
+	"github.com/jferrl/amberkeep/internal/search"
+	"github.com/jferrl/amberkeep/internal/source/android"
+)
+
+// runServe opens the archive in a browser, on this machine only.
+//
+// The alternative, writing the whole archive to disk first, is a fine thing to have
+// and a poor way to look around: it costs a few hundred megabytes and several
+// minutes before the first conversation can be read. This costs a second.
+func runServe(ctx context.Context, args []string) error {
+	fs := newFlagSet("serve", "read the archive in a browser, on this machine only")
+	var (
+		db       = fs.String("db", "", "the decrypted message database, usually msgstore.db")
+		indexAt  = fs.String("index", "", "where to keep the search index (default: beside the database)")
+		bookPath = fs.String("contacts", "", "an address book, so conversations show names instead of numbers")
+		waPath   = fs.String("whatsapp-contacts", "", "WhatsApp's own contacts database, usually wa.db")
+		country  = fs.String("country", "", "dialling code for numbers saved without one, such as 34")
+		zone     = fs.String("timezone", "", "time zone for timestamps (default: this machine's)")
+		me       = fs.String("me", "You", "what to call yourself")
+		port     = fs.Int("port", 0, "port to listen on (default: one the system picks)")
+		noSearch = fs.Bool("no-search", false, "skip the search index, which takes minutes to build the first time")
+		noOpen   = fs.Bool("no-open", false, "do not open a browser")
+	)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if *db == "" {
+		fs.Usage()
+		return fmt.Errorf("--db is needed")
+	}
+
+	location, err := parseZone(*zone)
+	if err != nil {
+		return err
+	}
+
+	reader, err := android.Open(ctx, *db)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+
+	names, err := loadNames(ctx, reader, *bookPath, *waPath, *country)
+	if err != nil {
+		return err
+	}
+
+	var index *search.Index
+	if !*noSearch {
+		index, err = openIndex(ctx, *db, indexPath(*db, *indexAt), indexSettings{
+			me: *me, book: *bookPath, whatsApp: *waPath, country: *country,
+		})
+		if err != nil {
+			return err
+		}
+		defer func() { _ = index.Close() }()
+	}
+
+	token, err := secret()
+	if err != nil {
+		return err
+	}
+
+	handler, err := api.New(ctx, reader, api.Options{
+		Names:    names,
+		Location: location,
+		Me:       *me,
+		Title:    "Archive",
+		Token:    token,
+		Index:    index,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Loopback only, and said explicitly rather than left to the default: an
+	// archive reachable from the network is somebody's whole history reachable from
+	// the network.
+	var config net.ListenConfig
+	listener, err := config.Listen(ctx, "tcp", fmt.Sprintf("127.0.0.1:%d", *port))
+	if err != nil {
+		return fmt.Errorf("could not start the viewer: %w", err)
+	}
+
+	address := fmt.Sprintf("http://127.0.0.1:%d/?t=%s", portOf(listener), token)
+	server := &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+
+	fmt.Printf("reading the archive at %s\n", address)
+	fmt.Printf("\nThis address works in this browser only, and only from this computer.\n")
+	fmt.Printf("Press control-C to stop.\n")
+
+	if !*noOpen {
+		openBrowser(ctx, address)
+	}
+
+	// Serving stops when the command does, and anything still being read is given a
+	// moment to finish rather than cut off mid-response.
+	done := make(chan error, 1)
+	go func() { done <- server.Serve(listener) }()
+
+	select {
+	case err := <-done:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	case <-ctx.Done():
+		// Anything still being read is given a moment to finish rather than cut off
+		// mid-response. A failure to stop tidily is not worth reporting: the process
+		// is ending either way.
+		shutdown, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+		defer cancel()
+		if err := server.Shutdown(shutdown); err != nil {
+			fmt.Fprintf(os.Stderr, "the viewer did not stop tidily: %v\n", err)
+		}
+		fmt.Println("\nstopped.")
+		return nil
+	}
+}
+
+// portOf is the port the viewer actually got, which is the one the system picked
+// unless the caller asked for a particular one.
+func portOf(listener net.Listener) int {
+	if address, ok := listener.Addr().(*net.TCPAddr); ok {
+		return address.Port
+	}
+	return 0
+}
+
+// secret makes the single-use password for this launch.
+//
+// It is what keeps another program on the same computer from reading somebody's
+// messages by trying ports, which is otherwise all that stands between them.
+func secret() (string, error) {
+	raw := make([]byte, 32)
+	if _, err := rand.Read(raw); err != nil {
+		return "", fmt.Errorf("could not make a secret for this session: %w", err)
+	}
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
+// openBrowser asks the desktop to open the viewer.
+//
+// A failure here is not a failure of the command: the address is already printed,
+// and somebody can paste it themselves.
+func openBrowser(ctx context.Context, address string) {
+	var argv []string
+	switch runtime.GOOS {
+	case "darwin":
+		argv = []string{"open", address}
+	case "windows":
+		argv = []string{"rundll32", "url.dll,FileProtocolHandler", address}
+	default:
+		argv = []string{"xdg-open", address}
+	}
+
+	// The context is deliberately one that is never cancelled. Control-C here should
+	// stop serving the archive, not close the window somebody is reading it in.
+	//
+	// #nosec G204 -- the address is this function's own, built from a port the
+	// system assigned and a secret this program generated. Nothing a user typed or
+	// a file contained reaches it.
+	cmd := exec.CommandContext(context.WithoutCancel(ctx), argv[0], argv[1:]...)
+	if err := cmd.Start(); err != nil {
+		fmt.Fprintf(os.Stderr, "could not open a browser (%v); open the address above yourself\n", err)
+		return
+	}
+	// Waited on in the background so the browser process is not left behind as a
+	// zombie. Whether it exited well is the desktop's business, not this program's.
+	go func() {
+		if err := cmd.Wait(); err != nil {
+			fmt.Fprintf(os.Stderr, "the browser reported: %v\n", err)
+		}
+	}()
+}

@@ -36,6 +36,7 @@ func commands() []command {
 		{"inspect", "report what an archive contains, without changing anything", runInspect},
 		{"export", "write the archive out as web pages, text and structured data", runExport},
 		{"search", "find messages anywhere in the archive", runSearch},
+		{"serve", "read the archive in a browser, on this machine only", runServe},
 	}
 }
 
@@ -115,6 +116,10 @@ Getting started, from an Android phone:
   3. amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
   4. amberkeep export  --db msgstore.db --out archive/
   5. amberkeep search  --db msgstore.db "whatever you remember"
+
+Or, to look around before exporting anything:
+
+  amberkeep serve --db msgstore.db
 
 Then open archive/index.html. Everything it shows is inside the files:
 it works with the network switched off, and always will.

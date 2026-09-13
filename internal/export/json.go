@@ -258,6 +258,28 @@ type deletionJSON struct {
 	ByAdmin bool       `json:"by_admin,omitempty"`
 }
 
+// MessageValue renders one message in the same structured form the JSON export
+// writes, for anything that serves an archive rather than writing it.
+//
+// It returns an opaque value on purpose. The contract is the shape of the JSON,
+// which is promised to stay stable, not a Go type somebody could depend on the
+// fields of. Sharing it is what keeps a file and an HTTP response from drifting
+// apart and quietly disagreeing about what an archive contains.
+func MessageValue(m model.Message, opts Options) any {
+	opts = opts.withDefaults()
+	return jsonMessage(m, newRenderer(opts.Names, opts), opts)
+}
+
+// ChatValue renders one conversation in that same form.
+func ChatValue(c model.Chat, opts Options) any {
+	opts = opts.withDefaults()
+	return jsonChat(c, newRenderer(opts.Names, opts))
+}
+
+// Stylesheet is the archive's own stylesheet, so an archive being looked at over
+// HTTP and one written to disk look like the same thing.
+func Stylesheet() string { return pageCSS }
+
 // jsonChat converts a conversation.
 func jsonChat(c model.Chat, r renderer) chatJSON {
 	out := chatJSON{

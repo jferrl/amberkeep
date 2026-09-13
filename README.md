@@ -20,6 +20,7 @@ search and export. The iPhone side and the desktop application are being built.
 | Android message reader | working, including hidden identities and every content table |
 | Export: web pages, text, JSON | working |
 | Full-text search | working, accent-insensitive |
+| Local viewer (`serve`) | working |
 | Command-line tool | working |
 | iPhone reader and backup access | next |
 | Desktop application | planned |
@@ -33,15 +34,23 @@ Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a
 | export every conversation as web pages | 5 min |
 | build the search index | 5 min |
 | a search across the whole archive | under 10 ms |
+| open a 92,180-message conversation in the viewer | 0.12 s |
 
 ## Using it
 
 ```sh
 amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
 amberkeep inspect --db msgstore.db --full
+amberkeep serve   --db msgstore.db --contacts contacts.vcf --country 34
 amberkeep export  --db msgstore.db --contacts contacts.vcf --country 34 --out archive/
 amberkeep search  --db msgstore.db "whatever you remember"
 ```
+
+`serve` opens the archive in a browser. It listens on the loopback address only, and
+every request carries a secret made fresh at each launch, so nothing else on the
+computer can read the archive by finding the port. A conversation opens at its end
+and loads earlier messages as you scroll, which is what makes a conversation of
+ninety thousand messages open at all.
 
 `export` writes one web page per conversation and an index to open them from. Each page
 is a single file with the stylesheet, the script and every recovered picture inside it,

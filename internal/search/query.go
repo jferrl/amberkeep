@@ -47,6 +47,19 @@ func (q Query) withDefaults() Query {
 	return q
 }
 
+// MarkOpen and MarkClose wrap the words that matched, for a caller that will turn
+// them into something visible rather than showing them.
+//
+// They are control characters because no message contains one, so nothing a person
+// wrote can be mistaken for a mark. Not the null character, which looks like the
+// obvious choice and is the wrong one: SQLite's own snippet function builds its
+// output with C string handling, and a null passed in as a mark is silently dropped,
+// which loses the opening of every match while leaving the closing in place.
+const (
+	MarkOpen  = "\x02"
+	MarkClose = "\x03"
+)
+
 // Hit is one message the search found.
 type Hit struct {
 	Chat    string

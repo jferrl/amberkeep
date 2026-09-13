@@ -271,6 +271,24 @@ func TestSnippetMarksTheMatch(t *testing.T) {
 	if !strings.Contains(hits[0].Snippet, "[beach]") {
 		t.Errorf("the snippet does not mark the match: %q", hits[0].Snippet)
 	}
+
+	// The marks a program uses rather than a person reads. The null character looks
+	// like the natural choice for this and is silently dropped by SQLite, which
+	// loses the opening of every match and leaves the closing in place, so the pair
+	// that is actually used is checked here.
+	t.Run("the marks meant for a program survive", func(t *testing.T) {
+		marked, err := index.Search(context.Background(), "beach",
+			Query{Before: MarkOpen, After: MarkClose})
+		if err != nil {
+			t.Fatalf("Search() failed: %v", err)
+		}
+		if len(marked) != 1 {
+			t.Fatalf("Search() found %d messages, want 1", len(marked))
+		}
+		if want := MarkOpen + "beach" + MarkClose; !strings.Contains(marked[0].Snippet, want) {
+			t.Errorf("the snippet is %q, want it to contain %q", marked[0].Snippet, want)
+		}
+	})
 	if hits[0].Chat != "Ana Lopez" {
 		t.Errorf("the hit names the conversation %q, want %q", hits[0].Chat, "Ana Lopez")
 	}
