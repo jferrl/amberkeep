@@ -37,6 +37,7 @@ linters:
         - (*database/sql.Rows).Close
         - (*database/sql.DB).Close
         - (*database/sql.Stmt).Close
+        - (*os.File).Close
     exhaustive:
       default-signifies-exhaustive: true
     gocritic:

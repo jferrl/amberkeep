@@ -152,24 +152,24 @@ func (d *Directory) Lookup(j JID) Contact {
 			best.Phone = phone
 		}
 	}
-	if best.IsIdentified() {
-		return best
-	}
 
-	// The same person under their other address, in either direction.
+	// Everything known about this person is merged rather than stopping at the
+	// first record that names them at all. Stopping early would let a name
+	// somebody chose for themselves beat a name the archive's owner saved, purely
+	// because the two were recorded against different addresses.
 	for _, linked := range []JID{d.aliases[j.String()], d.reverse[j.String()]} {
 		if linked.IsZero() {
 			continue
 		}
-		if c, ok := d.byJID[linked.String()]; ok && c.IsIdentified() {
-			return best.named(c)
+		if c, ok := d.byJID[linked.String()]; ok {
+			best = best.named(c)
 		}
 	}
 
 	// Two records of the same number that were never explicitly linked.
 	if best.Phone != "" {
-		if c, ok := d.byPhone[best.Phone]; ok && c.IsIdentified() {
-			return best.named(c)
+		if c, ok := d.byPhone[best.Phone]; ok {
+			best = best.named(c)
 		}
 	}
 	return best
