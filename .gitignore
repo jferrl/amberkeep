@@ -1,0 +1,31 @@
+# Build output
+/dist/
+/bin/
+amberkeep
+*.exe
+
+# Go
+*.test
+*.out
+/coverage.*
+
+# Private data must never enter this repository.
+# Real backups, keys and message databases stay on the developer's machine only.
+*.crypt15
+*.crypt14
+*.crypt12
+msgstore*.db
+ChatStorage*.sqlite*
+wa.db
+key.txt
+*.vcf
+/testdata/private/
+
+# Frontend
+/web/node_modules/
+/web/dist/
+
+# Editors
+.DS_Store
+.idea/
+.vscode/

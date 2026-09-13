@@ -1,0 +1,80 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck       # every returned error is handled or explicitly ignored
+    - govet
+    - staticcheck
+    - ineffassign
+    - unused
+    - revive         # style, close to the Google Go Style Guide
+    - gocritic
+    - gosec          # this code handles keys and reads untrusted files
+    - errorlint      # errors are compared with errors.Is/As, not ==
+    - bodyclose
+    - noctx          # every outbound request carries a context
+    - nilerr
+    - unconvert
+    - misspell
+    - predeclared
+    - makezero
+    - copyloopvar
+    - durationcheck
+    - errname        # sentinel errors are ErrX, error types are XError
+    - exhaustive     # switches over enums are complete or explicitly default
+    - contextcheck
+    - forcetypeassert
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+    exhaustive:
+      default-signifies-exhaustive: true
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam        # readers legitimately take a Key by value
+        - rangeValCopy
+    gosec:
+      excludes:
+        - G401  # MD5 appears as the format's own integrity marker, never as a control
+        - G501
+    revive:
+      rules:
+        - name: exported
+          arguments: ["checkPrivateReceivers", "disableStutteringCheck"]
+        - name: package-comments
+        - name: error-strings
+        - name: error-naming
+        - name: context-as-argument
+        - name: indent-error-flow
+        - name: var-naming
+        - name: early-return
+
+  exclusions:
+    rules:
+      # Tests build deliberately malformed fixtures and may ignore errors that the
+      # production path must not.
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+          - forcetypeassert
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/jferrl/amberkeep
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
