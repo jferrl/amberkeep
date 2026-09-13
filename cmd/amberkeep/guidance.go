@@ -5,6 +5,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
+	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source/android"
 )
 
@@ -75,6 +76,25 @@ If the phone still works, making a fresh backup will produce the current
 layout. Otherwise this is worth reporting: the older layout is documented
 and supporting it is a matter of work rather than discovery.`,
 
+	search.GuidanceEmptyQuery: `There are no words in that search.
+
+Type what you remember of the message. A part of a word works too, with a
+star at the end: vermu* finds vermut and vermuts.`,
+
+	search.GuidanceNoFullText: `This build cannot search, which should not be possible in a release and is
+worth reporting.
+
+Everything else still works: the archive can be exported and read as web
+pages, which carry their own search.`,
+
+	search.GuidanceIndexUnreadable: `The search index could not be used. It is a derived file and nothing in the
+archive depends on it, so the fix is to build it again:
+
+  amberkeep search --db msgstore.db --rebuild "your search"
+
+If that keeps happening, check there is room on the disk: an index is
+roughly a third the size of the archive.`,
+
 	android.GuidanceUnreadable: `The file could not be opened at all. Check that the path is right, that the
 file finished copying, and that you have permission to read it.`,
 }
@@ -90,6 +110,11 @@ func adviseOn(err error) string {
 	var reading *android.Error
 	if errors.As(err, &reading) {
 		return advice[reading.Guidance]
+	}
+
+	var searching *search.Error
+	if errors.As(err, &searching) {
+		return advice[searching.Guidance]
 	}
 
 	if errors.Is(err, export.ErrExists) {

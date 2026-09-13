@@ -28,12 +28,20 @@ and settles the next decision.
 
 **Why.** It is a transpiled SQLite with FTS5 and JSON1 compiled in, and it needs no C
 toolchain, so Windows builds and macOS notarisation stay simple. It runs roughly one
-and a half to three times slower than the C library on processor-bound work, which for
-a one-off full-text index build over a million messages means tens of seconds and, for
-queries, tens of milliseconds. That is comfortably good enough for a desktop tool.
+and a half to three times slower than the C library on processor-bound work, which this
+decision assumed would still be fast enough for a desktop tool.
+
+**Measured, on a real archive of 1,121,482 messages.** Building the full-text index
+takes five minutes and produces a file about a third the size of the archive; searches
+against it return in under ten milliseconds. Reading every message and writing the whole
+archive out as web pages takes about the same five minutes. The original estimate of
+"tens of seconds" for the index build was optimistic by roughly an order of magnitude,
+and the conclusion is unchanged: a wait of minutes, once, for a permanent index is a
+good trade, and no part of this is near being a problem.
 
 **Alternative if it ever bites.** `ncruces/go-sqlite3`, which is also free of cgo and
-closer to C speed. Not `mattn/go-sqlite3`, which would reintroduce the toolchain.
+closer to C speed. Not `mattn/go-sqlite3`, which would reintroduce the toolchain. On
+this evidence there is no reason to move.
 
 ## No device protocol in version one
 

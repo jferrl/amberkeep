@@ -18,6 +18,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
+	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source/android"
 )
 
@@ -206,6 +207,9 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		android.ErrLegacyUnsupported,
 		android.ErrUnreadable,
 		export.ErrExists,
+		search.ErrEmptyQuery,
+		search.ErrNoFullText,
+		search.ErrUnreadable,
 	}
 
 	for _, err := range failures {
@@ -255,6 +259,8 @@ func TestCommandDispatch(t *testing.T) {
 		{name: "decrypt with nothing to work on", args: []string{"decrypt"}, fails: true},
 		{name: "inspect with nothing to work on", args: []string{"inspect"}, fails: true},
 		{name: "export with nothing to work on", args: []string{"export"}, fails: true},
+		{name: "search with nothing to work on", args: []string{"search"}, fails: true},
+		{name: "search with a database but no words", args: []string{"search", "--db", "x"}, fails: true},
 	}
 
 	for _, tt := range tests {
@@ -386,6 +392,49 @@ func TestEndToEnd(t *testing.T) {
 		}
 		if !strings.Contains(string(conversation), "hello there") {
 			t.Error("the conversation page is missing a message")
+		}
+	})
+
+	t.Run("search builds an index and finds a message", func(t *testing.T) {
+		index := filepath.Join(dir, "index.db")
+		args := []string{
+			"search", "--db", db, "--index", index, "--contacts", book, "--country", "34",
+			"--timezone", "Europe/Madrid", "hello",
+		}
+		if err := run(context.Background(), args); err != nil {
+			t.Fatalf("the search failed: %v", err)
+		}
+		if _, err := os.Stat(index); err != nil {
+			t.Fatalf("the search did not leave an index behind: %v", err)
+		}
+
+		// The second run must reuse what the first built rather than pay for it
+		// again, which is the whole reason the index is a file.
+		before, err := os.Stat(index)
+		if err != nil {
+			t.Fatalf("looking at the index: %v", err)
+		}
+		if err := run(context.Background(), args); err != nil {
+			t.Fatalf("the second search failed: %v", err)
+		}
+		after, err := os.Stat(index)
+		if err != nil {
+			t.Fatalf("looking at the index: %v", err)
+		}
+		if !before.ModTime().Equal(after.ModTime()) {
+			t.Error("the second search rebuilt the index instead of reusing it")
+		}
+	})
+
+	t.Run("a search with no words in it says so", func(t *testing.T) {
+		err := run(context.Background(), []string{
+			"search", "--db", db, "--index", filepath.Join(dir, "index2.db"), "!!!",
+		})
+		if !errors.Is(err, search.ErrEmptyQuery) {
+			t.Errorf("the search error = %v, want it to say there is nothing to search for", err)
+		}
+		if adviseOn(err) == "" {
+			t.Error("the refusal carried no advice")
 		}
 	})
 

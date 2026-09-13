@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"strings"
+	"time"
+)
 
 // Kind is what a message is. It is deliberately smaller than the set of numeric
 // codes WhatsApp uses: several codes mean "a photo" and callers should not care
@@ -288,6 +291,60 @@ func (m Message) HasRecoveredContent() bool {
 	return m.Place != nil || m.Poll != nil || m.Call != nil || m.Link != nil ||
 		m.Invite != nil || len(m.Contacts) > 0 ||
 		(m.Attachment != nil && m.Attachment.HasPreview())
+}
+
+// SearchText is every word this message contains, for an index to find it by.
+//
+// It is deliberately more than the text column. A photograph is findable by the
+// name of its file, a poll by its question and its answers, a shared link by the
+// title the page had at the time, a place by its name and address, a contact card
+// by whose it was. Indexing only what somebody typed would hide most of what a
+// reader worked to recover.
+//
+// The words are joined with newlines and carry no punctuation of their own: this
+// is something to search, not something to read.
+func (m Message) SearchText() string {
+	var words []string
+	add := func(values ...string) {
+		for _, v := range values {
+			if v != "" {
+				words = append(words, v)
+			}
+		}
+	}
+
+	add(m.Text, m.SystemText, m.PushName)
+	if m.Attachment != nil {
+		add(m.Attachment.FileName, m.Attachment.Caption)
+	}
+	if m.Quote != nil {
+		add(m.Quote.Text)
+		if m.Quote.Attachment != nil {
+			add(m.Quote.Attachment.FileName)
+		}
+	}
+	if m.Poll != nil {
+		add(m.Poll.Question)
+		for _, option := range m.Poll.Options {
+			add(option.Name)
+		}
+	}
+	if m.Link != nil {
+		add(m.Link.Title, m.Link.Description, m.Link.URL)
+	}
+	if m.Place != nil {
+		add(m.Place.Name, m.Place.Address)
+	}
+	for _, card := range m.Contacts {
+		add(card.Name)
+	}
+	if m.Invite != nil {
+		add(m.Invite.GroupName)
+	}
+	if m.Notice != nil {
+		add(m.Notice.Old, m.Notice.New, m.Notice.Subject, m.Notice.Business)
+	}
+	return strings.Join(words, "\n")
 }
 
 // Displayable reports whether the message should appear in a conversation at all.

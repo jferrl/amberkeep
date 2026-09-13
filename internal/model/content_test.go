@@ -351,3 +351,172 @@ func TestContactCardKeepsWhatWasSent(t *testing.T) {
 		t.Error("the telephone number was lost")
 	}
 }
+
+// TestSearchTextGathersEveryWord is the contract the index depends on. A message
+// that carried a photograph, a poll or a shared place is findable by the words
+// that survived with it, and testing this here is what stops a new kind of content
+// being added without becoming searchable.
+func TestSearchTextGathersEveryWord(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		message Message
+		want    []string
+		absent  []string
+	}{
+		{
+			name:    "what somebody typed",
+			message: Message{Kind: KindText, Text: "hola mundo"},
+			want:    []string{"hola mundo"},
+		},
+		{
+			name: "the name of a file whose picture is gone",
+			message: Message{
+				Kind:       KindImage,
+				Attachment: &Attachment{FileName: "IMG-20190614-WA0007.jpg", Caption: "at the beach"},
+			},
+			want: []string{"IMG-20190614-WA0007.jpg", "at the beach"},
+		},
+		{
+			name: "a poll's question and its answers",
+			message: Message{
+				Kind: KindPoll,
+				Poll: &Poll{
+					Question: "Where shall we eat",
+					Options:  []PollOption{{Name: "Casa Blanca"}, {Name: "Sushi"}},
+				},
+			},
+			want: []string{"Where shall we eat", "Casa Blanca", "Sushi"},
+		},
+		{
+			name: "what a page said when it was shared",
+			message: Message{
+				Kind: KindText,
+				Link: &LinkPreview{URL: "https://example.org/x", Title: "El Vermut", Description: "A bar"},
+			},
+			want: []string{"El Vermut", "A bar", "https://example.org/x"},
+		},
+		{
+			name: "where a place was",
+			message: Message{
+				Kind:  KindLocation,
+				Place: &Place{Name: "Parc Güell", Address: "Carrer Olot 5"},
+			},
+			want: []string{"Parc Güell", "Carrer Olot 5"},
+		},
+		{
+			name:    "whose card was shared",
+			message: Message{Kind: KindContact, Contacts: []ContactCard{{Name: "Marta Ruiz"}}},
+			want:    []string{"Marta Ruiz"},
+		},
+		{
+			name: "the message a reply answered",
+			message: Message{
+				Kind:  KindText,
+				Text:  "yes",
+				Quote: &Quote{Text: "shall we go on Sunday", Attachment: &Attachment{FileName: "plan.pdf"}},
+			},
+			want: []string{"yes", "shall we go on Sunday", "plan.pdf"},
+		},
+		{
+			name:    "an invitation to a group",
+			message: Message{Kind: KindInvite, Invite: &GroupInvite{GroupName: "Vermut del sábado"}},
+			want:    []string{"Vermut del sábado"},
+		},
+		{
+			name: "what a notice recorded",
+			message: Message{
+				Kind:       KindSystem,
+				SystemText: "Ana changed the subject",
+				Notice:     &Notice{Old: "Comida", New: "Cena", Subject: "Familia", Business: "Bar Pepe"},
+			},
+			want: []string{"Ana changed the subject", "Comida", "Cena", "Familia", "Bar Pepe"},
+		},
+		{
+			name:    "the name the sender had at the time",
+			message: Message{Kind: KindText, Text: "hola", PushName: "Anita"},
+			want:    []string{"hola", "Anita"},
+		},
+		{
+			name:    "a call has no words of its own",
+			message: Message{Kind: KindCall, Call: &Call{}},
+			want:    nil,
+		},
+		{
+			name:    "an empty message yields nothing to index",
+			message: Message{Kind: KindText},
+			want:    nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := tt.message.SearchText()
+			if len(tt.want) == 0 {
+				if got != "" {
+					t.Errorf("SearchText() = %q, want nothing to index", got)
+				}
+				return
+			}
+			for _, word := range tt.want {
+				if !strings.Contains(got, word) {
+					t.Errorf("SearchText() = %q, missing %q", got, word)
+				}
+			}
+			for _, word := range tt.absent {
+				if strings.Contains(got, word) {
+					t.Errorf("SearchText() = %q, should not contain %q", got, word)
+				}
+			}
+		})
+	}
+
+	t.Run("the words are separated so two of them cannot run together", func(t *testing.T) {
+		t.Parallel()
+
+		m := Message{Kind: KindText, Text: "hola", PushName: "Anita"}
+		if got := m.SearchText(); got != "hola\nAnita" {
+			t.Errorf("SearchText() = %q, want the words on separate lines", got)
+		}
+	})
+}
+
+// TestMessageStatePredicates covers the questions a message answers about itself,
+// which callers ask instead of comparing fields.
+func TestMessageStatePredicates(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		message Message
+		deleted bool
+		expires bool
+		spread  bool
+	}{
+		{name: "an ordinary message", message: Message{Kind: KindText, Text: "hola"}},
+		{name: "deleted by its kind", message: Message{Kind: KindDeleted}, deleted: true},
+		{name: "deleted by record", message: Message{Kind: KindText, Deleted: &Deletion{}}, deleted: true},
+		{name: "disappearing", message: Message{Kind: KindText, Expires: time.Hour}, expires: true},
+		{name: "forwarded a few times", message: Message{Kind: KindText, ForwardScore: 3}},
+		{name: "forwarded many times", message: Message{Kind: KindText, ForwardScore: 5}, spread: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := tt.message.WasDeleted(); got != tt.deleted {
+				t.Errorf("WasDeleted() = %v, want %v", got, tt.deleted)
+			}
+			if got := tt.message.IsDisappearing(); got != tt.expires {
+				t.Errorf("IsDisappearing() = %v, want %v", got, tt.expires)
+			}
+			if got := tt.message.WasForwardedMany(); got != tt.spread {
+				t.Errorf("WasForwardedMany() = %v, want %v", got, tt.spread)
+			}
+		})
+	}
+}

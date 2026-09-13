@@ -11,17 +11,48 @@ Amber preserves an insect perfectly for fifty million years. That is the idea.
 
 ## Status
 
-Early. The decryption engine works and is verified against the reference
-implementation on real backups. Everything else is being built.
+The engine and the command-line tool work end to end on real archives: decrypt, read,
+search and export. The iPhone side and the desktop application are being built.
 
 | Component | State |
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
-| Android message reader | next |
-| iPhone reader and backup access | planned |
-| Export (text, JSON, HTML) | planned |
+| Android message reader | working, including hidden identities and every content table |
+| Export: web pages, text, JSON | working |
+| Full-text search | working, accent-insensitive |
+| Command-line tool | working |
+| iPhone reader and backup access | next |
 | Desktop application | planned |
 | Android to iPhone migration | planned |
+
+Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a laptop:
+
+| Step | Time |
+|---|---|
+| decrypt 236 MB to 466 MB | 5 s |
+| export every conversation as web pages | 5 min |
+| build the search index | 5 min |
+| a search across the whole archive | under 10 ms |
+
+## Using it
+
+```sh
+amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
+amberkeep inspect --db msgstore.db --full
+amberkeep export  --db msgstore.db --contacts contacts.vcf --country 34 --out archive/
+amberkeep search  --db msgstore.db "whatever you remember"
+```
+
+`export` writes one web page per conversation and an index to open them from. Each page
+is a single file with the stylesheet, the script and every recovered picture inside it,
+so it works with the network switched off and will keep working.
+
+`--contacts` takes a vCard export from the phone's address book. Without it,
+conversations are labelled by phone number, which is the single most noticeable way an
+archive can disappoint.
+
+Every failure this tool understands comes with what to do about it, in the output,
+rather than an error to search the internet for.
 
 ## What it does differently
 

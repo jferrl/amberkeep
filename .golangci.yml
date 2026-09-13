@@ -41,6 +41,10 @@ linters:
         # The same read-only handle, one layer up: Reader.Close only wraps the
         # sql.DB.Close above, so checking it would report the same nothing twice.
         - (*github.com/jferrl/amberkeep/internal/source/android.Reader).Close
+        - (*github.com/jferrl/amberkeep/internal/search.Index).Close
+        # Rolling back a transaction that already committed is how the deferred
+        # cleanup is written; it reports ErrTxDone and means nothing went wrong.
+        - (*database/sql.Tx).Rollback
         # A buffered writer records the first failure and reports it from Flush,
         # which every writer here checks. Testing each individual write would add
         # noise without catching anything the Flush does not.

@@ -35,6 +35,7 @@ func commands() []command {
 		{"decrypt", "turn an encrypted backup into a readable database", runDecrypt},
 		{"inspect", "report what an archive contains, without changing anything", runInspect},
 		{"export", "write the archive out as web pages, text and structured data", runExport},
+		{"search", "find messages anywhere in the archive", runSearch},
 	}
 }
 
@@ -113,6 +114,7 @@ Getting started, from an Android phone:
      lives in Android/media/com.whatsapp/WhatsApp/Databases.
   3. amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
   4. amberkeep export  --db msgstore.db --out archive/
+  5. amberkeep search  --db msgstore.db "whatever you remember"
 
 Then open archive/index.html. Everything it shows is inside the files:
 it works with the network switched off, and always will.
