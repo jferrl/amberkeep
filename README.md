@@ -21,10 +21,11 @@ search and export. The iPhone side and the desktop application are being built.
 | iPhone message reader | working, including replies no other tool recovers |
 | Export: web pages, text, JSON | working |
 | Full-text search | working, accent-insensitive |
-| Local viewer (`serve`) | working |
+| Local viewer (`serve`) | working, React 19 and TypeScript, built into the binary |
 | Command-line tool | working |
 | iPhone backup access | next |
 | Desktop application | planned |
+| English and Spanish | working |
 | Android to iPhone migration | planned |
 
 Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a laptop:
@@ -117,13 +118,28 @@ Amberkeep detects both and explains what to do instead.
 
 ## Building
 
-Go 1.24 or newer. No cgo, no external toolchain.
+Go 1.24 or newer. No cgo, no external toolchain, and **no Node.js**: the viewer is
+built into the repository already.
 
 ```sh
 go build ./...
 go test ./... -race
 golangci-lint run ./...
 ```
+
+Changing the viewer needs Node 24. It lives in `web/` and builds into
+`internal/viewer/dist`, which the binary embeds and which is committed.
+
+```sh
+cd web
+npm ci
+npm run typecheck && npm run lint && npm test && npm run doctor
+npm run build
+```
+
+`npm run doctor` is React Doctor, run with its own severity gate and without its
+score, because obtaining the score means a request to somebody else's server and
+this project makes none.
 
 The golden test runs against a real backup when you point it at one. Real backups and
 real keys must never be committed:

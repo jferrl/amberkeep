@@ -63,7 +63,16 @@ wrong here.
 gofmt -w . && go build ./... && go test ./... -race -count=1 && golangci-lint run ./...
 ```
 
-All four clean, every time. The linter configuration is strict on purpose and its
+And, if anything under `web/` changed:
+
+```sh
+cd web && npm run typecheck && npm run lint && npm test && npm run doctor && npm run build
+```
+
+The build writes into `internal/viewer/dist`, which is committed, so a viewer change
+is not finished until that output is rebuilt and staged with it.
+
+All of them clean, every time. The linter configuration is strict on purpose and its
 exemptions each carry a written reason; add to that list rather than weakening a rule,
 and say why in the same change.
 
@@ -87,6 +96,9 @@ measurement that settled an argument, the thing that turned out to be wrong.
   `immutable` puts two new files inside somebody's backup.
 - **Search markers cannot be the null character.** SQLite's `snippet()` builds its
   output with C string handling and silently drops it.
+- **A message must never become markup.** Everything the page renders is a text
+  node; the linter bans `dangerouslySetInnerHTML` and a test checks the outcome.
+- **`go build ./...` walks `node_modules`.** `web/go.mod` exists only to stop it.
 - **Measure before optimising, and measure again after.** A larger page cache was
   worth 25% before the indexes were restored and 2% after, for three times the memory.
 
@@ -105,5 +117,7 @@ measurement that settled an argument, the thing that turned out to be wrong.
 | `internal/search` | the full-text index |
 | `internal/api` | the archive over HTTP, loopback only |
 | `cmd/amberkeep` | the command-line tool |
+| `web/` | the viewer: React, TypeScript, its own nested Go module marker |
+| `internal/viewer` | the built viewer, embedded into the binary |
 | `docs/formats/` | how each database is laid out and what is known about it |
 | `docs/adr/` | decisions and why they were made |
