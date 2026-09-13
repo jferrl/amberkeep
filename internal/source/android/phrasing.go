@@ -50,6 +50,12 @@ const (
 	actionMessagePinned       = 118 //
 	actionSenderInContacts    = 129 //
 	actionJoinedWhatsApp      = 136 //
+	// actionUsernameChanged is named by the data rather than by a published table.
+	// On a real archive every one of its 26 notices has a row in
+	// message_system_username_change, and that table holds notices of no other
+	// code. Containment in both directions is as close to a specification as an
+	// undocumented code gets.
+	actionUsernameChanged = 165
 )
 
 // unidentifiedActions are the codes that appear in real archives and that no
@@ -59,9 +65,12 @@ const (
 //	2   possibly a group creation, but that contradicts code 11
 //	83  possibly a request to join, from one weak source
 //	109 and 111 sit in the community-management range, unnamed
-//	165 is newer than every published table
+//
+// 165 used to be here. The reader was already recovering the old and new usernames
+// for it and then printing "unrecognised notice", because no published table names
+// it. The data names it: see actionUsernameChanged.
 var unidentifiedActions = map[int]string{
-	2: "", 83: "", 109: "", 111: "", 165: "",
+	2: "", 83: "", 109: "", 111: "",
 }
 
 // phraseNotice renders what happened, in English, from what was recovered.
@@ -70,6 +79,20 @@ func phraseNotice(n model.Notice, dir *model.Directory) string {
 	targets := names(dir, n.Targets)
 
 	switch n.Action {
+	case actionUsernameChanged:
+		switch {
+		case n.Old != "" && n.New != "":
+			return withActor(actor,
+				fmt.Sprintf("changed their username from %q to %q", n.Old, n.New),
+				fmt.Sprintf("The username %q changed to %q", n.Old, n.New))
+		case n.New != "":
+			return withActor(actor,
+				fmt.Sprintf("changed their username to %q", n.New),
+				fmt.Sprintf("A username changed to %q", n.New))
+		default:
+			return withActor(actor, "changed their username", "A username changed")
+		}
+
 	case actionSecurityCode:
 		if actor != "" {
 			return fmt.Sprintf("Your security code with %s changed", actor)

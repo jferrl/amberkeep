@@ -17,8 +17,12 @@ import (
 // therefore scans the whole table, and on a real archive that is 1.12 million rows
 // scanned several thousand times over.
 //
-// Putting them back takes about a second and adds six per cent to the file. It took
-// exporting a real archive from five minutes to forty-seven seconds.
+// Putting them back takes about a second and adds five per cent to the file. It took
+// exporting a real archive from five and a half minutes to fifty-five seconds.
+//
+// Almost all of that comes from one index. The tables holding what a message carried
+// beyond words already have the column they are read by as their primary key, which
+// SQLite indexes for free, so only the ones that do not are built here.
 //
 // What this writes is only derived data: an index holds no information that is not
 // already in the table it indexes, and removing one again loses nothing. It is
@@ -167,9 +171,12 @@ func indexesFor(s schema) []wanted {
 	}
 
 	// Everything a message carried beyond words lives in its own table, and each is
-	// read by the row of the message it belongs to.
+	// read by the row of the message it belongs to. Most of those tables already
+	// have that column as their primary key, which SQLite indexes for free: of the
+	// thirty indexes an earlier version of this built, twenty-three were duplicates
+	// of one that already existed, and all of the gain came from the one above.
 	for _, table := range read {
-		if s.hasColumn(table, "message_row_id") {
+		if s.hasColumn(table, "message_row_id") && !s.keyedBy(table, "message_row_id") {
 			add(table, "message_row_id")
 		}
 	}
@@ -187,7 +194,7 @@ func indexesFor(s schema) []wanted {
 // Indexed reports whether the database has the indexes that make it quick to read.
 //
 // A reader says so rather than silently taking six times as long, because somebody
-// waiting five minutes deserves to know it could be forty seconds.
+// waiting five minutes deserves to know it could be under one.
 func (r *Reader) Indexed() bool {
 	return r.schema.hasIndex(indexPrefix + "message")
 }

@@ -107,7 +107,7 @@ func TestChats(t *testing.T) {
 			id:           chatAlice,
 			wantKind:     model.ChatDirect,
 			wantTitle:    "+34600111222",
-			wantMessages: 22,
+			wantMessages: 24,
 			wantIncluded: true,
 		},
 		{

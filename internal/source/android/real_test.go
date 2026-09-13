@@ -2,7 +2,9 @@ package android
 
 import (
 	"context"
+	"maps"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
@@ -210,17 +212,15 @@ func TestAgainstARealDatabase(t *testing.T) {
 	t.Logf("  albums: %d, disappearing: %d", albums, expiring)
 	t.Logf("  notices: %d, %d with recovered detail, %d phrased", notices, detailed, phrased)
 
-	// A notice code nobody has identified is reported rather than quietly rendered
-	// as a number, so the mapping can be extended from real archives.
-	var unphrased int
-	for code, n := range noticeCodes {
-		if code != 0 {
-			_ = code
+	// Every notice code the archive holds is reported, identified or not, because a
+	// code this build cannot phrase is exactly what a real archive is read for.
+	for _, code := range slices.Sorted(maps.Keys(noticeCodes)) {
+		mark := " (not identified)"
+		if IsIdentifiedNotice(code) {
+			mark = ""
 		}
-		_ = n
+		t.Logf("  notice code %d: %d%s", code, noticeCodes[code], mark)
 	}
-	_ = unphrased
-	t.Logf("  notice codes seen: %v", noticeCodes)
 
 	if len(unknown) > 0 {
 		// Not a failure: an unrecognised code is carried through as unknown rather

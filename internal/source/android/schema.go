@@ -41,6 +41,10 @@ type schema struct {
 	layout  layout
 	columns map[string]map[string]struct{}
 	indexes map[string]struct{}
+	// keys names each table's single-column primary key, which SQLite indexes for
+	// free. Knowing them is what stops this program building indexes that already
+	// exist under another name.
+	keys map[string]string
 }
 
 // introspect reads the shape of the database.
@@ -48,6 +52,7 @@ func introspect(ctx context.Context, db *sql.DB) (schema, error) {
 	s := schema{
 		columns: make(map[string]map[string]struct{}),
 		indexes: make(map[string]struct{}),
+		keys:    make(map[string]string),
 	}
 
 	// Virtual tables are skipped. A real database carries several full-text search
@@ -84,7 +89,10 @@ func introspect(ctx context.Context, db *sql.DB) (schema, error) {
 	}
 
 	for _, table := range tables {
-		cols, err := columnsOf(ctx, db, table)
+		cols, key, err := columnsOf(ctx, db, table)
+		if key != "" {
+			s.keys[table] = key
+		}
 		if err != nil {
 			// One table we cannot describe is one table we cannot use, not a reason
 			// to refuse the whole archive. Real databases accumulate tables that
@@ -133,16 +141,19 @@ func (s schema) hasIndex(name string) bool {
 }
 
 // columnsOf reads one table's column names.
-func columnsOf(ctx context.Context, db *sql.DB, table string) (map[string]struct{}, error) {
+func columnsOf(ctx context.Context, db *sql.DB, table string) (columns map[string]struct{}, primary string, err error) {
 	// The table name comes from sqlite_master, not from a caller, so interpolating
 	// it is safe; PRAGMA does not accept a bound parameter here.
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("PRAGMA table_info(%q)", table))
 	if err != nil {
-		return nil, fmt.Errorf("reading the columns of %s: %w", table, err)
+		return nil, "", fmt.Errorf("reading the columns of %s: %w", table, err)
 	}
 	defer rows.Close()
 
-	cols := make(map[string]struct{})
+	var (
+		cols = make(map[string]struct{})
+		keys []string
+	)
 	for rows.Next() {
 		var (
 			cid        int
@@ -153,14 +164,22 @@ func columnsOf(ctx context.Context, db *sql.DB, table string) (map[string]struct
 			primaryKey int
 		)
 		if err := rows.Scan(&cid, &name, &declType, &notNull, &defaultVal, &primaryKey); err != nil {
-			return nil, fmt.Errorf("reading a column of %s: %w", table, err)
+			return nil, "", fmt.Errorf("reading a column of %s: %w", table, err)
 		}
 		cols[name] = struct{}{}
+		if primaryKey > 0 {
+			keys = append(keys, name)
+		}
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("reading the columns of %s: %w", table, err)
+		return nil, "", fmt.Errorf("reading the columns of %s: %w", table, err)
 	}
-	return cols, nil
+	// Only a single-column key is useful here: a compound one is not an index on
+	// the column this program would otherwise build one for.
+	if len(keys) == 1 {
+		return cols, keys[0], nil
+	}
+	return cols, "", nil
 }
 
 // has reports whether the database contains a table.
@@ -189,6 +208,12 @@ func (s schema) pick(table string, candidates ...string) string {
 		}
 	}
 	return ""
+}
+
+// keyedBy reports whether a table's primary key is that column, which means SQLite
+// already indexes it and building another would be waste.
+func (s schema) keyedBy(table, column string) bool {
+	return s.keys[table] == column
 }
 
 // columnOrNull returns the column name when it exists and the SQL literal NULL

@@ -37,7 +37,7 @@ func (r *Reader) Messages(ctx context.Context, chat model.Chat) iter.Seq2[model.
 			if len(page) == 0 {
 				return
 			}
-			if err := r.enrich(ctx, chat, page); err != nil {
+			if err := r.enrich(ctx, page); err != nil {
 				yield(model.Message{}, err)
 				return
 			}
@@ -75,7 +75,7 @@ func (r *Reader) Page(ctx context.Context, chat model.Chat, before model.Cursor,
 	if len(page) == 0 {
 		return nil, model.Cursor{}, nil
 	}
-	if err := r.enrich(ctx, chat, page); err != nil {
+	if err := r.enrich(ctx, page); err != nil {
 		return nil, model.Cursor{}, err
 	}
 
@@ -202,7 +202,7 @@ func (r *Reader) senderOf(senderRow sql.NullInt64, chat model.Chat) model.JID {
 // enrich attaches details to a page of messages. Each kind of detail is one query
 // over the whole page, because joining them onto the main query would multiply rows
 // and silently duplicate messages that carry several reactions.
-func (r *Reader) enrich(ctx context.Context, chat model.Chat, page []model.Message) error {
+func (r *Reader) enrich(ctx context.Context, page []model.Message) error {
 	ids := make([]int64, len(page))
 	index := make(map[int64]int, len(page))
 	for i, m := range page {
@@ -237,7 +237,6 @@ func (r *Reader) enrich(ctx context.Context, chat model.Chat, page []model.Messa
 			return err
 		}
 	}
-	_ = chat
 	return nil
 }
 
@@ -251,7 +250,13 @@ func (r *Reader) attachMedia(ctx context.Context, ids []int64, index map[int64]i
 		r.schema.columnOrNull("message_media", "media_name"),
 		r.schema.columnOrNull("message_media", "media_caption"),
 		r.schema.columnOrNull("message_media", "media_duration"),
-		r.schema.columnOrNull("message_media", "file_size"),
+		// Two columns hold the same thing and neither is always filled in. On a real
+		// archive 20,429 of 99,041 media rows record a length and no size, so reading
+		// only the first reports a fifth of every attachment as being zero bytes.
+		coalesce(
+			r.schema.columnOrNull("message_media", "file_size"),
+			r.schema.columnOrNull("message_media", "file_length"),
+		),
 		r.schema.columnOrNull("message_media", "width"),
 		r.schema.columnOrNull("message_media", "height"),
 	}
@@ -479,4 +484,26 @@ func asArgs(ids []int64) []any {
 		args[i] = id
 	}
 	return args
+}
+
+// coalesce picks the first of several columns that holds anything, for the places
+// where WhatsApp records the same fact under more than one name.
+//
+// A zero counts as nothing here, because that is how the unfilled column presents
+// itself: a media row with no size holds 0 rather than null.
+func coalesce(columns ...string) string {
+	var present []string
+	for _, c := range columns {
+		if c != "NULL" {
+			present = append(present, c)
+		}
+	}
+	switch len(present) {
+	case 0:
+		return "NULL"
+	case 1:
+		return present[0]
+	default:
+		return "COALESCE(NULLIF(" + strings.Join(present, ", 0), NULLIF(") + ", 0))"
+	}
 }

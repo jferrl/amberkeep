@@ -71,6 +71,8 @@ CREATE TABLE message_media (
 	media_caption TEXT,
 	media_duration INTEGER,
 	file_size INTEGER,
+	file_length INTEGER,
+	file_hash TEXT,
 	width INTEGER,
 	height INTEGER,
 	file_path TEXT
@@ -113,6 +115,7 @@ CREATE TABLE message_mentions (
 	display_name TEXT
 );
 CREATE TABLE message_thumbnail (message_row_id INTEGER PRIMARY KEY, thumbnail BLOB);
+CREATE TABLE media_hash_thumbnail (media_hash TEXT PRIMARY KEY, thumbnail BLOB);
 CREATE TABLE message_location (
 	message_row_id INTEGER PRIMARY KEY,
 	chat_row_id INTEGER,
@@ -378,6 +381,19 @@ func buildFixture(t *testing.T) string {
 	exec(`INSERT INTO message_album (message_row_id, image_count, video_count) VALUES (28, 3, 1)`)
 	// A picture whose file is gone but whose preview survives in the database.
 	exec(`INSERT INTO message_thumbnail (message_row_id, thumbnail) VALUES (29, ?)`, fakeJPEG())
+
+	// A picture whose preview WhatsApp filed under the hash of the file rather than
+	// against the message. On a real archive this is where two thirds of the
+	// surviving pictures are, and no message that has one here has one above.
+	msg(53, chatAlice, false, jidAlice, 53, typeImage, "", 0)
+	exec(`INSERT INTO message_media (message_row_id, mime_type, file_hash, file_length)
+		VALUES (53, 'image/jpeg', 'aGFzaC1vZi10aGUtZmlsZQ==', 61234)`)
+	exec(`INSERT INTO media_hash_thumbnail (media_hash, thumbnail) VALUES ('aGFzaC1vZi10aGUtZmlsZQ==', ?)`, fakeJPEG())
+
+	// A file whose size is recorded in the other of the two columns that hold it.
+	msg(54, chatAlice, true, nil, 54, typeDocument, "", 0)
+	exec(`INSERT INTO message_media (message_row_id, mime_type, media_name, file_length)
+		VALUES (54, 'application/pdf', 'plan.pdf', 88000)`)
 	exec(`INSERT INTO message_forwarded (message_row_id, forward_score) VALUES (30, 7)`)
 	exec(`INSERT INTO message_revoked (message_row_id, admin_jid_row_id, revoke_timestamp)
 		VALUES (31, ?, ?)`, jidAlice, tsBase+50*tsStep)
@@ -403,7 +419,7 @@ func buildFixture(t *testing.T) string {
 	notice(44, 44, 57) // linked devices changed
 	exec(`INSERT INTO message_system_device_change (message_row_id, device_added_count, device_removed_count) VALUES (44, 2, 1)`)
 	notice(45, 45, 67)  // the encryption banner
-	notice(46, 46, 165) // a code no source identifies
+	notice(46, 46, 111) // a code no source identifies
 	notice(47, 47, 10)  // a contact changed their phone number
 	exec(`INSERT INTO message_system_number_change (message_row_id, old_jid_row_id, new_jid_row_id)
 		VALUES (47, ?, ?)`, jidAlice, jidCarol)
@@ -414,7 +430,7 @@ func buildFixture(t *testing.T) string {
 	exec(`INSERT INTO message_system_block_contact (message_row_id, is_blocked) VALUES (49, 1)`)
 	notice(50, 50, 110) // a community change
 	exec(`INSERT INTO message_system_with_group_nodes (message_row_id, group_subject) VALUES (50, 'Neighbours')`)
-	notice(51, 51, 165) // an unidentified code that still carried a username change
+	notice(51, 51, 165) // the code the data names as a username change
 	exec(`INSERT INTO message_system_username_change (message_row_id, old_username, new_username)
 		VALUES (51, 'oldname', 'newname')`)
 

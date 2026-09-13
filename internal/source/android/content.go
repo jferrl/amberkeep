@@ -40,13 +40,29 @@ func (r *Reader) perMessage(ctx context.Context, what, query string, ids []int64
 	return nil
 }
 
-// attachPreviews recovers the small copy of each picture and video that WhatsApp
-// keeps inside the database.
+// attachPreviews recovers the small copies of pictures that WhatsApp keeps inside
+// the database.
 //
-// This is the single most valuable recovery in the whole reader. The original
-// files are gone from most old archives, and without this a decade of photographs
-// becomes a decade of the words "image omitted".
+// This is the most valuable recovery in the whole reader. The original files are
+// gone from most old archives, and without it a decade of photographs becomes a
+// decade of the words "image omitted".
+//
+// They are kept in two places that do not overlap at all. One table holds a preview
+// against the message it belongs to, and on a real archive of 1.12 million messages
+// that reaches 3,787 of them, almost all link previews and shared places rather than
+// photographs. The other is keyed by the hash of the file instead, so one copy
+// serves every message that carried the same picture, and it reaches 8,802 more with
+// not a single message in common. Reading only the first recovers a third of what
+// survived.
 func (r *Reader) attachPreviews(ctx context.Context, ids []int64, index map[int64]int, page []model.Message) error {
+	if err := r.attachPreviewsByMessage(ctx, ids, index, page); err != nil {
+		return err
+	}
+	return r.attachPreviewsByHash(ctx, ids, index, page)
+}
+
+// attachPreviewsByMessage reads the previews stored against a message.
+func (r *Reader) attachPreviewsByMessage(ctx context.Context, ids []int64, index map[int64]int, page []model.Message) error {
 	if !r.schema.hasColumn("message_thumbnail", "thumbnail") {
 		return nil
 	}
@@ -69,6 +85,46 @@ func (r *Reader) attachPreviews(ctx context.Context, ids []int64, index map[int6
 		// rather than assumed to exist already.
 		if page[i].Attachment == nil {
 			page[i].Attachment = &model.Attachment{}
+		}
+		page[i].Attachment.Preview = model.Thumbnail{Data: data}
+		return nil
+	})
+}
+
+// attachPreviewsByHash reads the previews WhatsApp stores once per picture rather
+// than once per message, joined back through the file's hash.
+//
+// A preview found here is never overwritten over one found against the message
+// itself: the two tables hold different pictures, and where both somehow had one the
+// message's own is the more specific.
+func (r *Reader) attachPreviewsByHash(ctx context.Context, ids []int64, index map[int64]int, page []model.Message) error {
+	if !r.schema.hasColumn("media_hash_thumbnail", "thumbnail") ||
+		!r.schema.hasColumn("message_media", "file_hash") {
+		return nil
+	}
+
+	query := fmt.Sprintf(
+		`SELECT message_media.message_row_id, media_hash_thumbnail.thumbnail
+		 FROM message_media
+		 JOIN media_hash_thumbnail ON media_hash_thumbnail.media_hash = message_media.file_hash
+		 WHERE message_media.message_row_id IN (%s)
+		   AND media_hash_thumbnail.thumbnail IS NOT NULL`, placeholders(len(ids)))
+
+	return r.perMessage(ctx, "picture previews by hash", query, ids, func(rows *sql.Rows) error {
+		var id int64
+		var data []byte
+		if err := rows.Scan(&id, &data); err != nil {
+			return err
+		}
+		i, ok := index[id]
+		if !ok || len(data) == 0 {
+			return nil
+		}
+		if page[i].Attachment == nil {
+			page[i].Attachment = &model.Attachment{}
+		}
+		if page[i].Attachment.HasPreview() {
+			return nil
 		}
 		page[i].Attachment.Preview = model.Thumbnail{Data: data}
 		return nil

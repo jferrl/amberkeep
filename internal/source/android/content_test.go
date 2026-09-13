@@ -360,8 +360,8 @@ func TestRecoversSystemNotices(t *testing.T) {
 			// Guessing here would mislabel real messages, so the archive says what it
 			// recovered and admits the rest.
 			id:     46,
-			action: 165,
-			want:   "Unrecognised notice from +34600111222, code 165",
+			action: 111,
+			want:   "Unrecognised notice from +34600111222, code 111",
 		},
 	}
 
@@ -562,4 +562,115 @@ func TestRemainingNoticeDetails(t *testing.T) {
 			t.Errorf("Sender = %v, want none for a group message with no sender column", m.Sender)
 		}
 	})
+}
+
+// TestPreviewsComeFromBothTables is the recovery that trebled the pictures an
+// archive keeps.
+//
+// WhatsApp files a preview in two places that do not overlap. One is keyed by the
+// message, and on a real archive of 1.12 million messages that reaches 3,787 of
+// them, almost all link previews and shared places. The other is keyed by the hash
+// of the file, so one copy serves every message that carried the same picture, and
+// it reaches 8,802 more with not one message in common. Reading only the first
+// recovered a third of what had survived.
+func TestPreviewsComeFromBothTables(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r := openFixture(t)
+
+	chats, err := r.Chats(ctx)
+	if err != nil {
+		t.Fatalf("Chats() failed: %v", err)
+	}
+
+	found := make(map[int64]model.Message)
+	for _, chat := range chats {
+		for m, err := range r.Messages(ctx, chat) {
+			if err != nil {
+				t.Fatalf("Messages() failed: %v", err)
+			}
+			found[m.ID] = m
+		}
+	}
+
+	tests := []struct {
+		name string
+		id   int64
+	}{
+		{name: "filed against the message", id: 29},
+		{name: "filed under the hash of the file", id: 53},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, ok := found[tt.id]
+			if !ok {
+				t.Fatalf("message %d was not read at all", tt.id)
+			}
+			if m.Attachment == nil || !m.Attachment.HasPreview() {
+				t.Fatalf("the picture was lost: %+v", m.Attachment)
+			}
+		})
+	}
+}
+
+// TestFileSizeComesFromEitherColumn: WhatsApp records the same fact under two names
+// and neither is always filled in. On a real archive 20,429 of 99,041 media rows
+// hold a length and no size, so reading only the first reported a fifth of every
+// attachment as being zero bytes.
+func TestFileSizeComesFromEitherColumn(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	r := openFixture(t)
+
+	chats, err := r.Chats(ctx)
+	if err != nil {
+		t.Fatalf("Chats() failed: %v", err)
+	}
+
+	sizes := make(map[int64]int64)
+	for _, chat := range chats {
+		for m, err := range r.Messages(ctx, chat) {
+			if err != nil {
+				t.Fatalf("Messages() failed: %v", err)
+			}
+			if m.Attachment != nil {
+				sizes[m.ID] = m.Attachment.Size
+			}
+		}
+	}
+
+	if got := sizes[54]; got != 88000 {
+		t.Errorf("a file whose size is in the other column reports %d bytes, want 88000", got)
+	}
+}
+
+func TestCoalesce(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		columns []string
+		want    string
+	}{
+		{name: "neither column exists", columns: []string{"NULL", "NULL"}, want: "NULL"},
+		{name: "only one", columns: []string{"t.a", "NULL"}, want: "t.a"},
+		{name: "only the second", columns: []string{"NULL", "t.b"}, want: "t.b"},
+		{
+			name:    "both, and a zero counts as nothing",
+			columns: []string{"t.a", "t.b"},
+			want:    "COALESCE(NULLIF(t.a, 0), NULLIF(t.b, 0))",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := coalesce(tt.columns...); got != tt.want {
+				t.Errorf("coalesce(%v) = %q, want %q", tt.columns, got, tt.want)
+			}
+		})
+	}
 }

@@ -234,8 +234,8 @@ func TestUnidentifiedNoticesAreDescribedNotInvented(t *testing.T) {
 	}{
 		{
 			name:   "nothing but a code",
-			notice: model.Notice{Action: 165},
-			want:   "Unrecognised notice, code 165",
+			notice: model.Notice{Action: 111},
+			want:   "Unrecognised notice, code 111",
 		},
 		{
 			name:   "a code with somebody behind it",
@@ -286,6 +286,55 @@ func TestUnidentifiedNoticesAreDescribedNotInvented(t *testing.T) {
 	}
 }
 
+// TestTheUsernameNoticeIsPhrasedFromEvidence records why one code moved out of the
+// unidentified list. No published table names 165. On a real archive every one of
+// its 26 notices has a row in message_system_username_change and that table holds
+// notices of no other code, which is containment in both directions and about as
+// close to a specification as an undocumented code gets. The reader was already
+// recovering the two usernames and then printing "unrecognised".
+func TestTheUsernameNoticeIsPhrasedFromEvidence(t *testing.T) {
+	t.Parallel()
+
+	dir := model.NewDirectory()
+	dir.Add(model.Contact{JID: alice, Name: "Ana Lopez"})
+
+	tests := []struct {
+		name   string
+		notice model.Notice
+		want   string
+	}{
+		{
+			name:   "both names known",
+			notice: model.Notice{Action: actionUsernameChanged, Actor: alice, Old: "ana", New: "analopez"},
+			want:   `Ana Lopez changed their username from "ana" to "analopez"`,
+		},
+		{
+			name:   "only the new one",
+			notice: model.Notice{Action: actionUsernameChanged, Actor: alice, New: "analopez"},
+			want:   `Ana Lopez changed their username to "analopez"`,
+		},
+		{
+			name:   "neither, and nobody named",
+			notice: model.Notice{Action: actionUsernameChanged},
+			want:   "A username changed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := phraseNotice(tt.notice, dir)
+			if got != tt.want {
+				t.Errorf("phraseNotice() =\n  %q\nwant\n  %q", got, tt.want)
+			}
+			if strings.HasPrefix(got, "Unrecognised") {
+				t.Error("a code the data names is still being described rather than phrased")
+			}
+		})
+	}
+}
+
 func TestIsIdentifiedNotice(t *testing.T) {
 	t.Parallel()
 
@@ -296,7 +345,7 @@ func TestIsIdentifiedNotice(t *testing.T) {
 	}{
 		{name: "a code with a confirmed meaning", action: actionSecurityCode, want: true},
 		{name: "another confirmed code", action: actionSubjectChanged, want: true},
-		{name: "a code only one weak source names", action: 165, want: false},
+		{name: "a code the data names, though no published table does", action: actionUsernameChanged, want: true},
 		{name: "a community code nobody names", action: 109, want: false},
 		{name: "a code nobody has ever seen", action: 9999, want: false},
 	}
