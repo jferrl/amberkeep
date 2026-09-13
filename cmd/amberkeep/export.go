@@ -11,6 +11,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/contacts"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/model"
+	"github.com/jferrl/amberkeep/internal/source"
 	"github.com/jferrl/amberkeep/internal/source/android"
 )
 
@@ -47,13 +48,13 @@ func runExport(ctx context.Context, args []string) error {
 		return err
 	}
 
-	reader, err := android.Open(ctx, *db)
+	reader, err := source.Open(ctx, *db)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	names, err := loadNames(ctx, reader, *bookPath, *waPath, *country)
+	names, err := loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
 	if err != nil {
 		return err
 	}
@@ -78,7 +79,7 @@ func runExport(ctx context.Context, args []string) error {
 		Me:               *me,
 		IncludeNotices:   *notices,
 		Overwrite:        *force,
-		NoticeIdentified: android.IsIdentifiedNotice,
+		NoticeIdentified: noticeIdentifier(reader),
 	}
 
 	var (
@@ -233,9 +234,7 @@ func parseZone(name string) (*time.Location, error) {
 // A conversation labelled with a phone number is the single most noticeable way
 // an archive can disappoint, so this reports its results rather than working
 // quietly.
-func loadNames(ctx context.Context, reader *android.Reader, bookPath, waPath, country string) (*model.Directory, error) {
-	names := reader.Directory()
-
+func loadNames(ctx context.Context, names *model.Directory, bookPath, waPath, country string) (*model.Directory, error) {
 	book := contacts.New(country)
 	if waPath != "" {
 		read, err := book.ReadWhatsAppContacts(ctx, waPath)
@@ -262,4 +261,18 @@ func loadNames(ctx context.Context, reader *android.Reader, bookPath, waPath, co
 		fmt.Fprintf(os.Stderr, "matched %d of them to this archive\n", applied)
 	}
 	return names, nil
+}
+
+// noticeIdentifier answers whether a notice code is one the reader that produced
+// the archive can phrase, so an export can admit what it could not put into words
+// instead of leaving a consumer to guess.
+//
+// Only the Android reader has a verified table of these. An iPhone store records
+// its own codes and no reliable public source says what they mean, so nothing is
+// claimed for them rather than sentences being invented.
+func noticeIdentifier(reader source.Archive) func(int) bool {
+	if reader.Platform() == "android" {
+		return android.IsIdentifiedNotice
+	}
+	return func(int) bool { return false }
 }

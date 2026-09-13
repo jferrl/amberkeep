@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/model"
-	"github.com/jferrl/amberkeep/internal/source/android"
+	"github.com/jferrl/amberkeep/internal/source"
 )
 
 // runInspect reports what an archive holds without writing anything.
@@ -33,13 +33,13 @@ func runInspect(ctx context.Context, args []string) error {
 		return fmt.Errorf("--db is needed")
 	}
 
-	reader, err := android.Open(ctx, *db)
+	reader, err := source.Open(ctx, *db)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	if _, err := loadNames(ctx, reader, *contacts, "", *country); err != nil {
+	if _, err := loadNames(ctx, reader.Directory(), *contacts, "", *country); err != nil {
 		return err
 	}
 
@@ -64,12 +64,13 @@ func runInspect(ctx context.Context, args []string) error {
 func report(
 	ctx context.Context,
 	out *tabwriter.Writer,
-	reader *android.Reader,
+	reader source.Archive,
 	chats []model.Chat,
 	db string,
 	full bool,
 ) error {
 	fmt.Fprintf(out, "Archive\t%s\n", abbreviate(db))
+	fmt.Fprintf(out, "From\t%s\n", reader.Platform())
 	fmt.Fprintf(out, "Layout\t%s\n", reader.Layout())
 
 	summary := summarise(chats)
@@ -196,7 +197,7 @@ type contentSurvey struct {
 }
 
 // surveyContent reads every message and counts what was recovered.
-func surveyContent(ctx context.Context, reader *android.Reader, chats []model.Chat) (contentSurvey, error) {
+func surveyContent(ctx context.Context, reader source.Archive, chats []model.Chat) (contentSurvey, error) {
 	found := contentSurvey{unrecognised: make(map[int]int)}
 
 	for _, c := range chats {

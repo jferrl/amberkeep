@@ -6,7 +6,9 @@ import (
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/search"
+	"github.com/jferrl/amberkeep/internal/source"
 	"github.com/jferrl/amberkeep/internal/source/android"
+	"github.com/jferrl/amberkeep/internal/source/ios"
 )
 
 // Every failure a person can do something about carries an identifier from the
@@ -95,6 +97,33 @@ archive depends on it, so the fix is to build it again:
 If that keeps happening, check there is room on the disk: an index is
 roughly a third the size of the archive.`,
 
+	ios.GuidanceNotAMessageStore: `This is a database, but not the one an iPhone keeps messages in.
+
+The file you want is called ChatStorage.sqlite. It lives inside an iPhone
+backup, under the group container for WhatsApp, and comes with two files
+beside it whose names end in -wal and -shm. All three are needed: the one
+ending -wal holds whatever had not yet been written into the main file.`,
+
+	ios.GuidanceEncryptedBackup: `This file is still encrypted, which is what an encrypted iPhone backup
+holds instead of a database.
+
+Turn backup encryption off in Finder, iTunes or the Apple Devices app and
+make a fresh backup. Turning it off asks for the password that was set.
+
+Your chats are not affected by the change, but Health and saved passwords
+are left out of an unencrypted backup, so turn encryption back on
+afterwards.`,
+
+	ios.GuidanceUnreadable: `The iPhone message store could not be read. Check that the path is right,
+that the file finished copying, and that the two files ending -wal and -shm
+were copied with it.`,
+
+	source.GuidanceUnrecognised: `This is a database, but not one this version recognises.
+
+Two files can be opened here: an Android msgstore.db, after decrypting, and
+an iPhone ChatStorage.sqlite taken from a backup. The other databases that
+sit beside them hold contacts and settings rather than messages.`,
+
 	android.GuidanceUnreadable: `The file could not be opened at all. Check that the path is right, that the
 file finished copying, and that you have permission to read it.`,
 }
@@ -115,6 +144,16 @@ func adviseOn(err error) string {
 	var searching *search.Error
 	if errors.As(err, &searching) {
 		return advice[searching.Guidance]
+	}
+
+	var iphone *ios.Error
+	if errors.As(err, &iphone) {
+		return advice[iphone.Guidance]
+	}
+
+	var unrecognised *source.Error
+	if errors.As(err, &unrecognised) {
+		return advice[unrecognised.Guidance]
 	}
 
 	if errors.Is(err, export.ErrExists) {

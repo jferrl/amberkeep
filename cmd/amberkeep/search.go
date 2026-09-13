@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/search"
-	"github.com/jferrl/amberkeep/internal/source/android"
+	"github.com/jferrl/amberkeep/internal/source"
 )
 
 // runSearch finds messages across the whole archive.
@@ -148,13 +148,13 @@ func openIndex(ctx context.Context, db, at string, settings indexSettings) (*sea
 		}
 	}
 
-	reader, err := android.Open(ctx, db)
+	reader, err := source.Open(ctx, db)
 	if err != nil {
 		return nil, err
 	}
 	defer reader.Close()
 
-	names, err := loadNames(ctx, reader, settings.book, settings.whatsApp, settings.country)
+	names, err := loadNames(ctx, reader.Directory(), settings.book, settings.whatsApp, settings.country)
 	if err != nil {
 		return nil, err
 	}

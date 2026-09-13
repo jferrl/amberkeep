@@ -17,6 +17,12 @@ const (
 	ServerHidden     Server = "lid"            // an individual behind a hidden identifier
 	ServerBroadcast  Server = "broadcast"      // a broadcast list, or status@broadcast
 	ServerNewsletter Server = "newsletter"     // a channel
+	// ServerStatus and ServerHiddenStatus are how an iPhone addresses one person's
+	// status feed. Android keeps a single feed at status@broadcast; iOS keeps one
+	// pseudo-conversation per person whose status was seen, which is why an iPhone
+	// store can hold hundreds of them and why they are excluded by the same rule.
+	ServerStatus       Server = "status"
+	ServerHiddenStatus Server = "lid.status"
 )
 
 // JID is a WhatsApp address, such as "34600111222@s.whatsapp.net" for a person or
@@ -65,6 +71,9 @@ func (j JID) IsHidden() bool { return j.Server == ServerHidden }
 // IsStatus reports whether the address is the status feed, which is a pseudo-chat
 // most archives exclude by default.
 func (j JID) IsStatus() bool {
+	if j.Server == ServerStatus || j.Server == ServerHiddenStatus {
+		return true
+	}
 	return j.Server == ServerBroadcast && j.User == "status"
 }
 

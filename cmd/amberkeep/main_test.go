@@ -19,7 +19,9 @@ import (
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/search"
+	"github.com/jferrl/amberkeep/internal/source"
 	"github.com/jferrl/amberkeep/internal/source/android"
+	"github.com/jferrl/amberkeep/internal/source/ios"
 )
 
 func TestParseFormats(t *testing.T) {
@@ -210,6 +212,10 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		search.ErrEmptyQuery,
 		search.ErrNoFullText,
 		search.ErrUnreadable,
+		ios.ErrNotAMessageStore,
+		ios.ErrLocked,
+		ios.ErrUnreadable,
+		source.ErrUnrecognised,
 	}
 
 	for _, err := range failures {

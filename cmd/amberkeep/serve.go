@@ -15,7 +15,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/search"
-	"github.com/jferrl/amberkeep/internal/source/android"
+	"github.com/jferrl/amberkeep/internal/source"
 )
 
 // runServe opens the archive in a browser, on this machine only.
@@ -50,13 +50,13 @@ func runServe(ctx context.Context, args []string) error {
 		return err
 	}
 
-	reader, err := android.Open(ctx, *db)
+	reader, err := source.Open(ctx, *db)
 	if err != nil {
 		return err
 	}
 	defer reader.Close()
 
-	names, err := loadNames(ctx, reader, *bookPath, *waPath, *country)
+	names, err := loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
 	if err != nil {
 		return err
 	}

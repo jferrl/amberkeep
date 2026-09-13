@@ -18,11 +18,12 @@ search and export. The iPhone side and the desktop application are being built.
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
+| iPhone message reader | working, including replies no other tool recovers |
 | Export: web pages, text, JSON | working |
 | Full-text search | working, accent-insensitive |
 | Local viewer (`serve`) | working |
 | Command-line tool | working |
-| iPhone reader and backup access | next |
+| iPhone backup access | next |
 | Desktop application | planned |
 | Android to iPhone migration | planned |
 
@@ -35,6 +36,14 @@ Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a
 | build the search index | 5 min |
 | a search across the whole archive | under 10 ms |
 | open a 92,180-message conversation in the viewer | 0.12 s |
+
+And on a real iPhone store of 554 conversations and 161,026 messages:
+
+| Step | Time |
+|---|---|
+| read every message | 0.9 s |
+| export every conversation as web pages | 3 s |
+| page backwards through a 32,935-message conversation | 0.19 s |
 
 ## Using it
 
