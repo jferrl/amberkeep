@@ -276,6 +276,13 @@ func TestAttachmentAndMessageRecovery(t *testing.T) {
 			wantShown: false,
 		},
 		{
+			// Hiding this would make the loss invisible; reporting it invites the gap
+			// to be closed.
+			name:      "a kind this build does not recognise is still shown",
+			message:   Message{Kind: KindUnknown, SourceType: 250},
+			wantShown: true,
+		},
+		{
 			name:      "an album container with nothing of its own",
 			message:   Message{Kind: KindAlbum},
 			wantShown: false,

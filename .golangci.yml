@@ -38,6 +38,15 @@ linters:
         - (*database/sql.DB).Close
         - (*database/sql.Stmt).Close
         - (*os.File).Close
+        # A buffered writer records the first failure and reports it from Flush,
+        # which every writer here checks. Testing each individual write would add
+        # noise without catching anything the Flush does not.
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - (*bufio.Writer).WriteString
+        # Removing a temporary file on a path that is already returning an error.
+        # There is nothing further to report and nothing a caller could do.
+        - os.Remove
     exhaustive:
       default-signifies-exhaustive: true
     gocritic:
@@ -52,6 +61,11 @@ linters:
       excludes:
         - G401  # MD5 appears as the format's own integrity marker, never as a control
         - G501
+        # Unchecked errors are errcheck's job, and it is configured far more
+        # strictly than this check: it flags blank assignments too, and every
+        # exemption is listed above with its reason. Two linters disagreeing about
+        # the same rule only teaches people to ignore both.
+        - G104
     revive:
       rules:
         - name: exported

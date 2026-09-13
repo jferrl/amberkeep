@@ -397,9 +397,11 @@ func TestMessagePredicates(t *testing.T) {
 			wantAttached: true,
 		},
 		{
+			// A call belongs to the conversation's history in a way that a renewed
+			// security code does not, so it is not treated as housekeeping.
 			name:       "a call",
 			message:    Message{Kind: KindCall},
-			wantNotice: true,
+			wantNotice: false,
 		},
 	}
 

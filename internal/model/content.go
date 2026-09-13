@@ -32,6 +32,15 @@ func (p Place) HasCoordinates() bool {
 	return p.Latitude != 0 || p.Longitude != 0
 }
 
+// Coordinates renders the position with enough precision to find a building and
+// no more. It returns an empty string when no position was recorded.
+func (p Place) Coordinates() string {
+	if !p.HasCoordinates() {
+		return ""
+	}
+	return formatCoordinates(p.Latitude, p.Longitude)
+}
+
 // Label is the best short description of the place: its name, then its address,
 // then its coordinates. It never returns an empty string.
 func (p Place) Label() string {

@@ -109,18 +109,22 @@ func (k Kind) HasAttachment() bool {
 	}
 }
 
-// IsNotice reports whether the kind describes something WhatsApp did rather than
-// something a person wrote: a security-code change, a business notice, someone
-// joining a group, a call that was placed. Exports leave these out by default
-// because they add noise to a conversation without adding anybody's words.
+// IsNotice reports whether the kind describes housekeeping WhatsApp did rather
+// than anything that passed between people: a security code changing, a business
+// notice, somebody joining a group. Exports leave these out by default because
+// they add noise without adding anybody's words.
+//
+// A call is deliberately not one of these. "We spoke for two minutes" and "you
+// missed my call" are part of a conversation's history in a way that a renewed
+// security code is not, and there are few enough of them to keep.
 func (k Kind) IsNotice() bool {
 	switch k {
-	case KindSystem, KindCall:
+	case KindSystem:
 		return true
 	case KindUnknown, KindText, KindImage, KindVideo, KindAudio, KindVoice,
 		KindDocument, KindSticker, KindGIF, KindContact, KindLocation, KindPoll,
 		KindEvent, KindDeleted, KindViewOnce, KindPayment, KindAlbum, KindInvite,
-		KindInteractive, KindIgnored:
+		KindInteractive, KindIgnored, KindCall:
 		return false
 	default:
 		return false
@@ -288,9 +292,13 @@ func (m Message) HasRecoveredContent() bool {
 
 // Displayable reports whether the message should appear in a conversation at all.
 //
-// Two kinds of row are not content: those WhatsApp itself never shows, and the
-// container it writes when several pictures were sent together, whose pictures are
-// separate messages that would otherwise be counted twice.
+// Only two kinds of row are not content: those WhatsApp itself never shows, and
+// the container it writes when several pictures were sent together, whose pictures
+// are separate messages that would otherwise be counted twice.
+//
+// A message of a kind this build does not recognise is displayable. It is almost
+// certainly something somebody sent, and reporting it with its type number invites
+// the gap to be closed, where hiding it would make the loss invisible.
 func (m Message) Displayable() bool {
 	switch m.Kind {
 	case KindIgnored:
@@ -298,6 +306,6 @@ func (m Message) Displayable() bool {
 	case KindAlbum:
 		return m.HasText()
 	default:
-		return m.HasText() || m.Attachment != nil || m.Kind != KindUnknown
+		return true
 	}
 }
