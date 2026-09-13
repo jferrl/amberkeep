@@ -70,6 +70,54 @@ jobs:
       # untrusted files. Long campaigns run separately.
       - run: go test ./internal/crypt15/ -run=XXX -fuzz=FuzzDecrypt -fuzztime=60s
 
+  web:
+    name: Web
+    # The frontend build is the same bytes on every platform, so one runner
+    # settles it; the matrix above is there for the parts that touch a filesystem.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        # A rule that only warns is not a gate. Where an upstream warning fires on
+        # something legitimate, exempt it in eslint.config.js with a written
+        # reason, the way .golangci.yml does, rather than letting warnings through.
+        run: npm run lint -- --max-warnings=0
+      - name: Test with coverage
+        # The reporter list belongs to vite.config.ts. Naming json-summary here
+        # keeps the gate below working whatever that file prints for a developer.
+        run: npm run test -- --coverage --coverage.reporter=text --coverage.reporter=json-summary
+      - name: Enforce coverage gate
+        run: |
+          total=$(node -p "require('./coverage/coverage-summary.json').total.lines.pct")
+          echo "total coverage: ${total}%"
+          awk -v t="$total" 'BEGIN { if (t + 0 < 85) { print "coverage " t "% is below the 85% gate"; exit 1 } }'
+      - name: Build
+        run: npm run build
+      - name: React Doctor
+        # react-doctor has no minimum-score flag. Its own gate is --blocking, which
+        # fires on the severity of what it finds, and that is what is used here.
+        #
+        # The score exists and is deliberately not used. It is computed by
+        # react.doctor's API, --no-telemetry is an alias for --no-score, and so
+        # there is no way to have the number without the request. What would leave
+        # the machine is rule names and counts rather than code, and it would leave
+        # from CI rather than from anybody's computer. It is still a request to
+        # somebody else's server made by a project whose whole claim is that it
+        # makes none, and the severity gate blocks on the same findings anyway.
+        run: npm run doctor
+
   no-private-data:
     name: No private data
     runs-on: ubuntu-latest

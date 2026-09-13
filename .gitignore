@@ -26,7 +26,8 @@ key.txt
 
 # Frontend
 /web/node_modules/
-/web/dist/
+# The built viewer is committed on purpose, at internal/viewer/dist, so that this
+# program can be built with nothing but a Go toolchain. See docs/adr/0003.
 
 # Editors
 .DS_Store

@@ -276,10 +276,6 @@ func ChatValue(c model.Chat, opts Options) any {
 	return jsonChat(c, newRenderer(opts.Names, opts))
 }
 
-// Stylesheet is the archive's own stylesheet, so an archive being looked at over
-// HTTP and one written to disk look like the same thing.
-func Stylesheet() string { return pageCSS }
-
 // jsonChat converts a conversation.
 func jsonChat(c model.Chat, r renderer) chatJSON {
 	out := chatJSON{

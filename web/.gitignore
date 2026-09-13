@@ -1,0 +1,19 @@
+# Reinstalled from package-lock.json; none of it is ours.
+node_modules/
+
+coverage/
+
+# Vite's convention for machine-local overrides, including .env.local, which is
+# where a developer's own paths end up.
+*.local
+
+# Editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# There is no dist/ here to ignore: the build writes to internal/viewer/dist, inside
+# the Go tree, and that output is committed so that `go build` produces a working
+# binary for somebody who has never installed Node.
+# See docs/adr/0003-frontend-toolchain.md.

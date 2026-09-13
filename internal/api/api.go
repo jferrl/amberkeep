@@ -18,25 +18,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"io/fs"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
-
-	_ "embed"
 
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
+	"github.com/jferrl/amberkeep/internal/viewer"
 )
 
-//go:embed assets/app.js
-var appJS string
-
-//go:embed assets/app.html
-var appHTML string
+// viewer is the built frontend, compiled into the binary by the web package.
+//
+// It is read once at startup rather than per request, and a binary built without it
+// is a build mistake rather than a runtime condition, so that failure is reported
+// when the server starts and not as a blank page later.
+var builtViewer = sync.OnceValues(viewer.Assets)
 
 // Archive is the part of a reader this package needs.
 //
@@ -92,6 +93,9 @@ type server struct {
 	archive Archive
 	opts    Options
 
+	// assets is the built viewer.
+	assets fs.FS
+
 	// chats is the conversation list, held because it is small, needed on every
 	// request, and expensive to rebuild.
 	chats  []model.Chat
@@ -138,8 +142,19 @@ func New(ctx context.Context, archive Archive, opts Options) (http.Handler, erro
 	mux.HandleFunc("GET /api/chats", s.handleChats)
 	mux.HandleFunc("GET /api/chats/{jid}/messages", s.handleMessages)
 	mux.HandleFunc("GET /api/search", s.handleSearch)
-	mux.HandleFunc("GET /app.js", serveText("text/javascript; charset=utf-8", appJS))
-	mux.HandleFunc("GET /app.css", serveText("text/css; charset=utf-8", export.Stylesheet()))
+	assets, err := builtViewer()
+	if err != nil {
+		return nil, fmt.Errorf("this binary was built without the viewer: %w", err)
+	}
+	if _, err := fs.Stat(assets, "index.html"); err != nil {
+		return nil, fmt.Errorf("this binary was built without the viewer: %w", err)
+	}
+	s.assets = assets
+
+	// The built page names its stylesheet and script with a hash, so they are served
+	// as a tree rather than one by one. Nothing outside it is reachable: the file
+	// system is the embedded one and holds only what the build produced.
+	mux.Handle("GET /assets/", s.immutable(http.FileServerFS(assets)))
 	mux.HandleFunc("GET /{$}", s.handlePage)
 
 	return s.authenticated(mux), nil
@@ -339,14 +354,17 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 	results := make([]any, 0, len(hits))
 	for _, hit := range hits {
+		// The conversation is named the same way here as it is everywhere else in
+		// this API. It used to be "chat" and "chat_jid" only in a search result,
+		// which meant a caller had to know two vocabularies for one thing.
 		results = append(results, map[string]any{
-			"chat":     hit.Chat,
-			"chat_jid": hit.ChatJID,
-			"sender":   hit.Sender,
-			"from_me":  hit.FromMe,
-			"sent_at":  hit.SentAt,
-			"kind":     hit.Kind,
-			"snippet":  hit.Snippet,
+			"chat_name":    hit.Chat,
+			"chat_address": hit.ChatJID,
+			"sender":       hit.Sender,
+			"from_me":      hit.FromMe,
+			"sent_at":      hit.SentAt,
+			"kind":         hit.Kind,
+			"snippet":      hit.Snippet,
 		})
 	}
 	write(w, r, map[string]any{"total": total, "hits": results})
@@ -354,29 +372,34 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
 
 // handlePage serves the viewer itself.
 func (s *server) handlePage(w http.ResponseWriter, r *http.Request) {
+	page, err := fs.ReadFile(s.assets, "index.html")
+	if err != nil {
+		fail(w, r, fmt.Errorf("the viewer is missing from this binary: %w", err))
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// The page loads nothing but itself. Said here as well as meant, so a mistake
-	// in the page cannot quietly start fetching from somewhere else.
+	// The page loads nothing but itself. Said here as well as meant, so a mistake in
+	// the page cannot quietly start fetching from somewhere else. The pictures are
+	// data URIs carried in the messages, which is why images allow that and nothing
+	// else does.
 	w.Header().Set("Content-Security-Policy",
 		"default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'")
-	send(w, appHTML)
-}
-
-// serveText serves one of the page's own files.
-func serveText(mediaType, body string) http.HandlerFunc {
-	return func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", mediaType)
-		send(w, body)
+	if _, err := w.Write(page); err != nil {
+		return
 	}
 }
 
-// send writes a response whose status has already gone out.
+// immutable marks the built files as never changing.
 //
-// A failure here means the reader closed the page or the connection dropped. The
-// status line is already sent, so there is no way to report it and nobody left to
-// report it to.
-func send(w http.ResponseWriter, body string) {
-	_, _ = io.WriteString(w, body)
+// Their names carry a hash of their contents, so a browser that has one has the
+// right one for as long as this binary is the one serving it. The no-store rule
+// applied to everything else stays where it belongs, on the archive's own contents.
+func (s *server) immutable(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+		next.ServeHTTP(w, r)
+	})
 }
 
 // sortedByRecency orders conversations the way somebody looks for one.
