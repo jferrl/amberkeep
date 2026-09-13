@@ -386,7 +386,7 @@ still complete — so a miss here is swallowed deliberately.
 
 ### The fourth source: the phone's address book
 
-Not in the database at all. `wa_contacts` is empty in a backup ([§2](#2-wadb-will-disappoint-you)),
+Not in the database at all. `wa_contacts` is empty in a backup ([§2](#wadb-will-disappoint-you)),
 so the only saved names available are the ones on the phone, reachable through
 Android's contacts provider with a read-only `adb content query` and exported as
 vCard. Amberkeep takes that file with `--contacts` and matches on normalised phone
@@ -984,7 +984,7 @@ before it arrived.
 double-arrow — rather than a literal count. **BEST GUESS**, though the gap between 4 and
 127 with nothing in between makes it hard to read any other way.
 
-The relationship with `origination_flags` bit 0 is in [§6](#originationflags): every row
+The relationship with `origination_flags` bit 0 is in [§6](#origination_flags): every row
 here has the bit set.
 
 ### 8.16 Revocations — `message_revoked`
@@ -1281,9 +1281,12 @@ becomes a range scan of exactly the rows it returns and the temporary B-tree dis
 This is a finding, not a description of intent, and it comes from reading the query
 plans against the real schema.
 
-**24 of the 28 side tables in the list declare `message_row_id INTEGER PRIMARY KEY`,
-which in SQLite makes that column an alias for the rowid.** A lookup by rowid is already
-a direct B-tree seek; an index on it is a second copy of a key SQLite already has.
+**23 of the 28 side tables in the written list already have `message_row_id` as their
+primary key.** In 22 of them it is declared `INTEGER PRIMARY KEY`, which in SQLite makes
+the column an alias for the rowid; in the twenty-third,
+`message_system_with_group_nodes`, it is the first column of a composite primary key,
+which gets an automatic index. Either way the lookup is already a direct B-tree seek, and
+an index on it is a second copy of a key SQLite already has.
 
 ```
 sqlite> EXPLAIN QUERY PLAN SELECT ... FROM message_media WHERE message_row_id IN (...);
@@ -1378,7 +1381,7 @@ rows that have one), not the bytes. The files live in
 copied separately, and on an old archive most of them are long gone.
 
 What survives inside the database is the description — name, type, size, duration,
-dimensions — plus the thumbnails in [§8.2](#82-thumbnails--messagethumbnail), which in
+dimensions — plus the thumbnails in [§8.2](#82-thumbnails--message_thumbnail), which in
 this archive are link previews and map snapshots rather than photographs.
 
 **CONFIRMED.**
@@ -1412,7 +1415,7 @@ per-option totals. A gap, not an impossibility.
 
 ### Contacts
 
-`wa.db` is empty of contacts in a backup ([§2](#2-wadb-will-disappoint-you)). Names come
+`wa.db` is empty of contacts in a backup ([§2](#wadb-will-disappoint-you)). Names come
 from the phone's address book or from the push names inside `msgstore.db`, and nowhere
 else.
 
