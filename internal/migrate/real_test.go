@@ -175,3 +175,59 @@ func TestARealMigrationAddsUp(t *testing.T) {
 		t.Error("planning changed the store it was only supposed to read")
 	}
 }
+
+// TestTheOraclesOwnOutputPasses runs the checks against a migration that really
+// happened.
+//
+// The Python prototype produced this store and it was restored onto a phone that is
+// still being used. It is the only artefact in existence known to be right, so if a
+// check here fails on it, the check is what to doubt.
+//
+//	AMBERKEEP_REAL_ORIGINAL_STORE  the pristine ChatStorage.sqlite it started from
+//	AMBERKEEP_REAL_MIGRATED_STORE  what the Python prototype produced from it
+func TestTheOraclesOwnOutputPasses(t *testing.T) {
+	original := os.Getenv("AMBERKEEP_REAL_ORIGINAL_STORE")
+	migrated := os.Getenv("AMBERKEEP_REAL_MIGRATED_STORE")
+	if original == "" || migrated == "" {
+		t.Skip("set AMBERKEEP_REAL_ORIGINAL_STORE and AMBERKEEP_REAL_MIGRATED_STORE to run this")
+	}
+
+	// Which conversations the oracle merged into, so the checks know where reordering
+	// was allowed. Without the reports every merge looks like a conversation this had
+	// no business touching.
+	var plan Plan
+	if reports := os.Getenv("AMBERKEEP_ORACLE_REPORT"); reports != "" {
+		for _, path := range strings.Split(reports, ",") {
+			var report struct {
+				Chats []struct {
+					Mode    string `json:"mode"`
+					Session int64  `json:"session_pk"`
+				} `json:"chats"`
+			}
+			raw, err := os.ReadFile(strings.TrimSpace(path)) // #nosec G304 -- operator-supplied
+			if err != nil {
+				t.Fatalf("reading the oracle's report: %v", err)
+			}
+			if err := json.Unmarshal(raw, &report); err != nil {
+				t.Fatalf("reading the oracle's report: %v", err)
+			}
+			for _, c := range report.Chats {
+				if c.Mode == "merged" {
+					plan.Conversations = append(plan.Conversations, Conversation{
+						Address: "merged", Into: "merged", Session: c.Session, Adding: 1,
+					})
+				}
+			}
+		}
+	}
+
+	report, err := Verify(t.Context(), original, migrated, plan)
+	if err != nil {
+		t.Fatalf("Verify() failed: %v", err)
+	}
+
+	t.Logf("%s; added %v", report.Summary(), report.Added)
+	for _, c := range report.Failures() {
+		t.Errorf("a migration that was restored to a real phone fails %q: %s", c.Name, c.Detail)
+	}
+}

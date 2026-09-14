@@ -92,7 +92,23 @@ difference that makes somebody doubt both.
   column, because that is a detail it cannot show; the writer refuses, because a store
   whose shape has moved is a store where a guess ends up on somebody's phone. The two
   therefore have different ideas of what an acceptable store is, deliberately.
-- Still to come, in this order: applying a plan to a copy, the invariants that check
-  the result against the original, putting the result back into a copy of a backup,
-  and the guided flow that hands the restore to Finder. Nothing here touches a device
-  and nothing later will either.
+- The checks that verify a result came next, before the thing that produces one. A
+  checker written after the writer can only be tested by running the writer and
+  watching it pass, which shows the two agree and nothing about whether a fault would
+  be noticed. Written first, each of the twenty-odd checks is tested by damaging a
+  store in exactly that way and insisting it fails. Two of them earned their keep
+  immediately: "nothing was removed" compared row totals, so a deletion hid behind the
+  insertions, and it now looks for each original row by its own identifier; and
+  checking a store created a `-shm` beside it, so the second run of the checks failed
+  the first check on a store the first run had called sound.
+- Those checks pass on the migration the prototype actually performed and that was
+  restored onto a phone still in use — all thirty-one of them. One had to be relaxed
+  to get there, and the reasoning is worth keeping: the prototype's own validator
+  demanded the message counter be strictly above the highest position in a
+  conversation, and the store it produced and restored has them equal. Direct evidence
+  that equality is safe beats an inference about what the field means, and a check
+  that blocks work already known to be good is worse than no check, because it teaches
+  people to ignore the report.
+- Still to come, in this order: applying a plan to a copy, putting the result back
+  into a copy of a backup, and the guided flow that hands the restore to Finder.
+  Nothing here touches a device and nothing later will either.
