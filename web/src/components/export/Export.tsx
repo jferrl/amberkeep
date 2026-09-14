@@ -5,6 +5,7 @@ import { forgetExport, writeArchive } from "@/api/client";
 import { useExport, useExportStep } from "@/api/queries";
 import type { Export as State, Format } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
@@ -25,7 +26,13 @@ import { count } from "@/lib/format";
  * migration it needs no typed word, and it may be asked for as often as somebody
  * likes.
  */
-export function Export({ language, onLeave }: { language: Language; onLeave: () => void }) {
+export function Export({
+  language,
+  onLeave,
+}: {
+  language: Language;
+  onLeave: () => void;
+}) {
   const now = useExport();
   const step = useExportStep();
 
@@ -35,7 +42,8 @@ export function Export({ language, onLeave }: { language: Language; onLeave: () 
 
   const state: State = now.data ?? { stage: "idle" };
 
-  if (now.isPending) return <Working state={{ stage: "working", workspace: "" }} />;
+  if (now.isPending)
+    return <Working state={{ stage: "working", workspace: "" }} />;
 
   switch (state.stage) {
     case "writing":
@@ -76,7 +84,9 @@ export function Export({ language, onLeave }: { language: Language; onLeave: () 
           refused={step.refused}
           onBack={onLeave}
           onWrite={() => {
-            step.start(() => writeArchive({ into: into.trim(), formats, notices }));
+            step.start(() =>
+              writeArchive({ into: into.trim(), formats, notices }),
+            );
           }}
         />
       );
@@ -138,7 +148,11 @@ function Choices({
       step={1}
       heading={t("exportTitle")}
       lead={t("exportHelp")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       {refused !== undefined && (
@@ -149,7 +163,9 @@ function Choices({
 
       <form className="flex flex-col gap-5" onSubmit={send}>
         <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
-          <legend className="mb-1 p-0 text-sm font-medium">{t("exportFormats")}</legend>
+          <legend className="mb-1 p-0 text-sm font-medium">
+            {t("exportFormats")}
+          </legend>
           {offered.map(({ format, title, help }) => (
             <Pick
               key={format}
@@ -162,7 +178,10 @@ function Choices({
             />
           ))}
           {wrong !== undefined && (
-            <p role="alert" className="m-0 text-[0.8125rem] font-medium text-[var(--color-alarm)]">
+            <p
+              role="alert"
+              className="m-0 text-[0.8125rem] font-medium text-[var(--color-alarm)]"
+            >
               {wrong}
             </p>
           )}
@@ -210,21 +229,26 @@ function Pick({
 
   return (
     <div className="flex items-start gap-3 py-1">
-      <input
+      <Checkbox
         id={box}
-        type="checkbox"
         checked={on}
         aria-describedby={note}
-        className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
-        onChange={(event) => {
-          onChange(event.target.checked);
+        className="mt-0.5"
+        onCheckedChange={(state) => {
+          onChange(state === true);
         }}
       />
       <div>
-        <label htmlFor={box} className="block cursor-pointer text-sm font-medium">
+        <label
+          htmlFor={box}
+          className="block cursor-pointer text-sm font-medium"
+        >
           {label}
         </label>
-        <p id={note} className="m-0 mt-0.5 text-[0.8125rem] text-[var(--color-muted)]">
+        <p
+          id={note}
+          className="m-0 mt-0.5 text-[0.8125rem] text-[var(--color-muted)]"
+        >
           {hint}
         </p>
       </div>
@@ -262,14 +286,18 @@ function Written({
                 <dt className="text-right text-sm font-medium tabular-nums">
                   {count(n, language)}
                 </dt>
-                <dd className="m-0 text-sm text-[var(--color-muted)]">{said}</dd>
+                <dd className="m-0 text-sm text-[var(--color-muted)]">
+                  {said}
+                </dd>
               </div>
             ))}
           </dl>
 
           <p className="m-0 text-sm">
             <span className="font-medium">{t("exportDoneWhere")} </span>
-            <span className="break-all text-[var(--color-muted)]">{result.into}</span>
+            <span className="break-all text-[var(--color-muted)]">
+              {result.into}
+            </span>
           </p>
         </div>
       )}

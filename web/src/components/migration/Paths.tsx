@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { useOfferedBackups } from "@/api/queries";
 import type { Migration } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ChooseBackup } from "@/components/migration/ChooseBackup";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
@@ -169,14 +170,13 @@ function Choice({
 
   return (
     <div className="flex items-start gap-3 py-1">
-      <input
+      <Checkbox
         id={box}
-        type="checkbox"
         checked={on}
         aria-describedby={note}
-        className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
-        onChange={(event) => {
-          onChange(event.target.checked);
+        className="mt-0.5"
+        onCheckedChange={(state) => {
+          onChange(state === true);
         }}
       />
       <div>

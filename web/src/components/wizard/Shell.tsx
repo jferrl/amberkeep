@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useT } from "@/i18n";
 
 /**
@@ -67,7 +68,7 @@ export function Shell({
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-7 px-5 py-10">
       <div className="flex flex-col gap-3">
-        {wayOn && <Progress step={step} total={total} />}
+        {wayOn && <Steps step={step} total={total} />}
         <div className="flex flex-col gap-2">
           <h1
             ref={title}
@@ -111,7 +112,7 @@ export function Shell({
  * The first screen has no total, because it genuinely is not known yet: an iPhone
  * backup takes two screens and an Android phone takes six.
  */
-function Progress({
+function Steps({
   step,
   total,
 }: {
@@ -125,24 +126,7 @@ function Progress({
   return (
     <div className="flex items-center gap-3">
       {total !== undefined && (
-        <div
-          className="flex h-1 w-24 gap-0.5 overflow-hidden rounded-full"
-          // One element, one label. Twenty divs each announcing themselves is how a
-          // progress bar becomes unreadable to everything except eyes.
-          role="img"
-          aria-label={said}
-        >
-          {Array.from({ length: total }, (_, at) => (
-            <span
-              key={at}
-              className={`h-full flex-1 rounded-full ${
-                at < step
-                  ? "bg-[var(--color-accent)]"
-                  : "bg-[var(--color-line)]"
-              }`}
-            />
-          ))}
-        </div>
+        <Progress value={step} max={total} aria-label={said} />
       )}
       <p
         aria-hidden={total !== undefined}
