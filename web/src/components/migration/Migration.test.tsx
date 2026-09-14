@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { Finding, Guide, Migration as State, MigrationPlan } from "@/api/types";
+import type { BackupList, Finding, Guide, Migration as State, MigrationPlan } from "@/api/types";
 import { Migration } from "@/components/migration/Migration";
 import { fetchTarget } from "@/test/fetchTarget";
 import { render } from "@/test/render";
@@ -30,6 +30,8 @@ const androidPath = "/tmp/msgstore.db";
 let fetching: ReturnType<typeof vi.fn<typeof fetch>>;
 let posted: Posted[];
 let now: State;
+/** The backups the computer has made, in the shape the server really sends. */
+let backups: BackupList;
 /** What each address replies with next, if it should not reply with the state. */
 let replies: Partial<Record<string, () => Response>>;
 let left: number;
@@ -119,6 +121,7 @@ const guide: Guide = {
 beforeEach(() => {
   posted = [];
   now = { stage: "idle" };
+  backups = { backups: [] };
   replies = {};
   left = 0;
 
@@ -134,6 +137,7 @@ beforeEach(() => {
       return Promise.resolve(answer(now));
     }
 
+    if (at.startsWith("/api/backups")) return Promise.resolve(answer(backups));
     if (at.startsWith("/api/migration/guide")) return Promise.resolve(answer(guide));
     if (at.startsWith("/api/migration")) return Promise.resolve(answer(now));
 
@@ -420,5 +424,108 @@ describe("leaving", () => {
     expect(sentTo("/api/migration/forget")).toEqual({});
     expect(left).toBe(0);
     expect(await screen.findByLabelText("The iPhone backup folder")).toBeInTheDocument();
+  });
+});
+
+describe("choosing a backup rather than typing one", () => {
+  /** Two backups as the server lists them: one usable, one locked. */
+  function onThisComputer(): BackupList {
+    return {
+      backups: [
+        {
+          path: backupPath,
+          device_name: "Ana's iPhone",
+          ios_version: "17.4",
+          last_backup: "2024-03-02T21:04:00Z",
+          encrypted: false,
+        },
+        {
+          path: "/Backups/00008110-bbb",
+          device_name: "The old one",
+          ios_version: "16.1",
+          last_backup: "2023-01-09T08:00:00Z",
+          encrypted: true,
+        },
+      ],
+    };
+  }
+
+  it("offers the ones this computer has, so nobody has to go and find a folder", async () => {
+    backups = onThisComputer();
+
+    show();
+    expect(await screen.findByText("Ana's iPhone")).toBeInTheDocument();
+    // Enough to tell two apart without opening either.
+    expect(screen.getByText(/iOS 17.4/)).toBeInTheDocument();
+  });
+
+  it("fills the field when one is picked, so the two ways agree", async () => {
+    const user = userEvent.setup();
+    backups = onThisComputer();
+
+    show();
+    await user.click(await screen.findByRole("button", { name: "Use this backup" }));
+
+    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(backupPath);
+    // And it says which one, rather than leaving somebody to compare paths.
+    expect(screen.getAllByText("Chosen").length).toBeGreaterThan(0);
+  });
+
+  it("sends the picked path when the backup is looked at", async () => {
+    const user = userEvent.setup();
+    backups = onThisComputer();
+    replies["/api/migration/check"] = () =>
+      answer({ stage: "checked", checks: { findings: [finding()] } });
+
+    show();
+    await user.click(await screen.findByRole("button", { name: "Use this backup" }));
+    await user.type(screen.getByLabelText("The decrypted Android database"), androidPath);
+    await user.click(screen.getByRole("button", { name: "Look at the backup" }));
+
+    expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
+  });
+
+  /**
+   * An encrypted backup is listed rather than hidden. Somebody who cannot see the
+   * backup they know exists concludes the program is broken, or that the backup is.
+   */
+  it("shows a locked backup and says why it cannot be used, with no button to press", async () => {
+    backups = onThisComputer();
+
+    show();
+    const locked = (await screen.findByText("The old one")).closest("li");
+    expect(locked).not.toBeNull();
+
+    const inside = within(locked as HTMLElement);
+    expect(inside.getByText("Encrypted, so it cannot be opened")).toBeInTheDocument();
+    expect(inside.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  /**
+   * The list is a convenience, not the only way in. A backup on an external disk is
+   * not in it, and on macOS the folder is often unreadable until somebody grants a
+   * permission — neither is a reason to be unable to go on.
+   */
+  const withoutAList: { name: string; list: () => BackupList | undefined; says: RegExp }[] = [
+    {
+      name: "when the folder could not be read",
+      list: () => ({ backups: [], problem: "Amberkeep may not read that folder." }),
+      says: /may not read that folder/,
+    },
+    { name: "when there are none", list: () => ({ backups: [] }), says: /No iPhone backup was found/ },
+  ];
+
+  it.each(withoutAList)("$name, the path can still be typed", async ({ list, says }) => {
+    const user = userEvent.setup();
+    const answered = list();
+    if (answered !== undefined) backups = answered;
+    replies["/api/migration/check"] = () =>
+      answer({ stage: "checked", checks: { findings: [finding()] } });
+
+    show();
+    expect(await screen.findByText(says)).toBeInTheDocument();
+
+    await fillIn(user);
+    expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
   });
 });

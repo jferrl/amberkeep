@@ -156,6 +156,7 @@ export function Migration({ language, onLeave }: { language: Language; onLeave: 
           {step.refused !== undefined && <Refused detail={step.refused} />}
           <MigrationPaths
             paths={paths}
+            language={language}
             onPaths={type}
             busy={step.busy}
             failure={failure}

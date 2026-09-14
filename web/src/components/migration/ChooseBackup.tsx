@@ -1,0 +1,186 @@
+import { isMissingImporter, useBackups } from "@/api/queries";
+import type { Backup } from "@/api/types";
+import { Button } from "@/components/ui/button";
+import { Aside, Say } from "@/components/wizard/Shell";
+import { useT } from "@/i18n";
+import type { Language } from "@/i18n";
+import { describe, nameOf, situationOf, type Situation } from "@/lib/backups";
+
+/**
+ * The backups this computer has already made, offered rather than described.
+ *
+ * The screen used to ask somebody to type "the folder named after a long string of
+ * letters and numbers, inside the place Finder keeps backups". The program already
+ * knows where every one of them is — the import wizard has listed them since the
+ * beginning — so asking was never a limitation, only an oversight, and it was the
+ * worst sentence in the product.
+ *
+ * Picking rather than typing also moves two of the checks forward. Whether a backup
+ * is encrypted and when it was last made are both visible here, before anybody has
+ * committed to one, instead of arriving as a finding after they have.
+ *
+ * Typing stays possible underneath: a backup on an external disk, or a copy somebody
+ * made for safety, is not in the list and is still perfectly good.
+ */
+export function ChooseBackup({
+  chosen,
+  onChoose,
+  language,
+  busy,
+}: {
+  /** The path in the field, so the one already picked can say so. */
+  chosen: string;
+  onChoose: (path: string) => void;
+  language: Language;
+  busy: boolean;
+}) {
+  const t = useT();
+  const backups = useBackups();
+
+  // A refusal by the server and a folder it was not allowed to read are the same
+  // thing to the person reading this: something stopped it looking.
+  const problem = backups.data?.problem ?? backups.error?.message;
+  const found = backups.data?.backups ?? [];
+  const situation = situationOf(
+    isMissingImporter(backups.error),
+    problem,
+    backups.isPending,
+    found.length,
+  );
+
+  if (situation !== "some") return <Nothing situation={situation} said={problem ?? ""} />;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="m-0 text-sm font-semibold">{t("migrateBackupFound")}</h2>
+
+      <ul className="m-0 flex list-none flex-col gap-3 p-0">
+        {found.map((backup) => (
+          <li
+            key={backup.path}
+            className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4"
+          >
+            <One
+              backup={backup}
+              chosen={backup.path === chosen}
+              busy={busy}
+              language={language}
+              onChoose={onChoose}
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** One backup, and either the way to pick it or the reason it cannot be picked. */
+function One({
+  backup,
+  chosen,
+  busy,
+  language,
+  onChoose,
+}: {
+  backup: Backup;
+  chosen: boolean;
+  busy: boolean;
+  language: Language;
+  onChoose: (path: string) => void;
+}) {
+  const t = useT();
+
+  return (
+    <>
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <h3 className="m-0 text-base font-semibold">{nameOf(backup, t)}</h3>
+        {chosen && (
+          <span className="text-sm font-medium text-[var(--color-accent)]">
+            {t("migrateBackupChosen")}
+          </span>
+        )}
+      </div>
+      <p className="m-0 mt-0.5 text-sm text-[var(--color-muted)]">
+        {describe(backup, t, language)}
+      </p>
+      <p className="m-0 mt-0.5 text-xs break-all text-[var(--color-muted)]">{backup.path}</p>
+
+      {backup.encrypted ? (
+        // No button at all rather than one that is dimmed. A control somebody can
+        // reach and not use is a promise this screen cannot keep, and the four
+        // sentences are more use than a tooltip nobody on a keyboard will find.
+        <div className="mt-3 flex flex-col gap-2 border-t border-[var(--color-line)] pt-3 text-sm">
+          <p className="m-0 font-semibold">{t("backupEncrypted")}</p>
+          <Say>{t("backupEncryptedWhy")}</Say>
+          <Say>{t("backupEncryptedFix")}</Say>
+          <Say>{t("backupEncryptedWarn")}</Say>
+        </div>
+      ) : (
+        <div className="mt-3">
+          <Button
+            variant={chosen ? "quiet" : "default"}
+            disabled={busy || chosen}
+            onClick={() => {
+              onChoose(backup.path);
+            }}
+          >
+            {chosen ? t("migrateBackupChosen") : t("backupUse")}
+          </Button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * Whichever of the four nothings.
+ *
+ * None of them is a dead end here, because typing a path is still open underneath,
+ * so each says what it is and stops rather than sending somebody away.
+ */
+function Nothing({ situation, said }: { situation: Situation; said: string }) {
+  const t = useT();
+
+  switch (situation) {
+    case "looking":
+      return <Say>{t("backupsReading")}</Say>;
+
+    case "problem": {
+      // What comes back is a sentence, a blank line, then several lines of what to
+      // do with the exact folder in them. Only the server knows where it was
+      // refused, so its own words are kept and split where it split them.
+      const [sentence, ...rest] = said.split(/\n{2,}/);
+      const advice = rest.join("\n\n").trim();
+      return (
+        <Aside heading={t("backupsProblem")}>
+          <p role="alert" className="m-0 font-medium">
+            {sentence ?? said}
+          </p>
+          {advice === "" ? (
+            <Say>{t("backupsFullDisk")}</Say>
+          ) : (
+            <pre className="m-0 overflow-x-auto bg-[var(--color-paper)] p-3 font-sans text-sm whitespace-pre-wrap">
+              {advice}
+            </pre>
+          )}
+        </Aside>
+      );
+    }
+
+    case "none":
+      return (
+        <Aside heading={t("backupsNone")}>
+          <Say>{t("backupsNoneHelp")}</Say>
+        </Aside>
+      );
+
+    // A build without the part that reads backups cannot migrate at all, so this
+    // screen is unreachable in one. Said rather than left blank all the same.
+    default:
+      return (
+        <Aside heading={t("noImporter")}>
+          <Say>{t("noImporterHelp")}</Say>
+        </Aside>
+      );
+  }
+}

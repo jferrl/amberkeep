@@ -119,6 +119,29 @@ test("lets somebody go back and change what they named", async ({ page }) => {
   }
 });
 
+/**
+ * The screen asks the program what backups it already has, rather than asking the
+ * person to go and find one.
+ *
+ * What comes back depends on the machine — a developer's Mac has real backups, a CI
+ * runner has none and may not even be allowed to look — so what is asserted is that
+ * it asked, and that typing a path stays possible whatever the answer was.
+ */
+test("asks the program for the backups it has already made", async ({ page }) => {
+  const asked: string[] = [];
+  page.on("request", (request) => {
+    const { pathname } = new URL(request.url());
+    if (pathname.startsWith("/api/")) asked.push(pathname);
+  });
+
+  await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
+  await expect.poll(() => asked).toContain("/api/backups");
+
+  // Whatever it found, the path can still be typed: an external disk or a copy
+  // somebody made is not in that list and is perfectly good.
+  await expect(page.getByLabel(/The iPhone backup folder/)).toBeEditable();
+});
+
 test("will not look at a backup nobody has named", async ({ page }) => {
   await page.getByRole("button", { name: "Look at the backup" }).click();
 

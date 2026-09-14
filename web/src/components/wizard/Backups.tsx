@@ -5,20 +5,8 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Where } from "@/components/wizard/Where";
 import { useT } from "@/i18n";
-import type { Language, Translate } from "@/i18n";
-import { shortDate, timeOfDay } from "@/lib/format";
-
-/**
- * What this screen is actually showing, which is one of five things.
- *
- * Three of them are a kind of nothing and they are said differently on purpose. A
- * build without an importer has nothing to look with; a folder that could not be
- * read is a permission somebody can grant, and on macOS that is almost always what
- * this is; an empty folder means there really is no backup and one has to be made.
- * Collapsing the three into an empty list is how somebody concludes their history
- * is gone.
- */
-type Situation = "noImporter" | "problem" | "looking" | "none" | "some";
+import type { Language } from "@/i18n";
+import { describe, nameOf, situationOf, type Situation } from "@/lib/backups";
 
 /**
  * The iPhone backups this computer has already made.
@@ -59,7 +47,12 @@ export function Backups({
   // thing to the person reading this screen: something stopped it looking.
   const problem = backups.data?.problem ?? backups.error?.message;
   const found = backups.data?.backups ?? [];
-  const situation = situationOf(backups.error, problem, backups.isPending, found.length);
+  const situation = situationOf(
+    isMissingImporter(backups.error),
+    problem,
+    backups.isPending,
+    found.length,
+  );
 
   return (
     <Shell
@@ -96,25 +89,6 @@ export function Backups({
       )}
     </Shell>
   );
-}
-
-/**
- * situationOf decides which of the five this screen is showing.
- *
- * Outside the component on purpose: what it decides is a fact about an answer from
- * the server, not about rendering, and it is the part that would otherwise be read
- * as four nested conditions in the middle of a screen.
- */
-function situationOf(
-  error: Error | null,
-  problem: string | undefined,
-  pending: boolean,
-  count: number,
-): Situation {
-  if (isMissingImporter(error)) return "noImporter";
-  if (problem !== undefined) return "problem";
-  if (pending) return "looking";
-  return count === 0 ? "none" : "some";
 }
 
 /** Whichever of the three nothings, or the moment before the answer arrives. */
@@ -250,34 +224,3 @@ function NoBackups() {
   );
 }
 
-/** nameOf is what the phone called itself, or the plainest thing that is still true. */
-function nameOf(backup: Backup, t: Translate): string {
-  const named = backup.device_name ?? "";
-  if (named !== "") return named;
-  const model = backup.product_type ?? "";
-  return model === "" ? t("backupUnnamedDevice") : model;
-}
-
-/**
- * describe is the line that tells two backups apart: which iOS, and when.
- *
- * Each piece is left out when the backup's own index did not record it, rather than
- * shown as an empty gap, because an old backup written by an old iTunes is missing
- * about half of them. The date arrives as an instant in universal time and becomes
- * words here, through the same formatters every date in the viewer goes through, so
- * that a backup made last night says so in the reader's own zone.
- */
-function describe(backup: Backup, t: Translate, language: Language): string {
-  const pieces: string[] = [];
-
-  const version = backup.ios_version ?? "";
-  if (version !== "") pieces.push(t("backupOS", { version }));
-
-  const at = backup.last_backup;
-  if (at !== undefined) {
-    const day = shortDate(at, language);
-    if (day !== "") pieces.push(t("backupWhen", { when: `${day}, ${timeOfDay(at, language)}` }));
-  }
-
-  return pieces.join(" · ");
-}

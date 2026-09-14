@@ -3,10 +3,12 @@ import { useId, useState } from "react";
 
 import type { Migration } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { ChooseBackup } from "@/components/migration/ChooseBackup";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
+import type { Language } from "@/i18n";
 
 /** What somebody types before anything is looked at. */
 export interface Paths {
@@ -32,6 +34,7 @@ export function MigrationPaths({
   onBack,
   busy,
   failure,
+  language,
 }: {
   paths: Paths;
   onPaths: (change: Partial<Paths>) => void;
@@ -39,6 +42,7 @@ export function MigrationPaths({
   onBack: () => void;
   busy: boolean;
   failure: Migration | undefined;
+  language: Language;
 }) {
   const t = useT();
   const [wrong, setWrong] = useState<{ backup?: string; android?: string }>({});
@@ -65,6 +69,16 @@ export function MigrationPaths({
       <Aside heading={t("migrateUnproven")}>
         <Say>{t("migrateUnprovenHelp")}</Say>
       </Aside>
+
+      <ChooseBackup
+        chosen={paths.backup}
+        busy={busy}
+        language={language}
+        onChoose={(backup) => {
+          setWrong({});
+          onPaths({ backup });
+        }}
+      />
 
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field

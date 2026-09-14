@@ -6,6 +6,9 @@ coverage/
 # TypeScript's incremental build state. Machine-local and regenerated on demand.
 *.tsbuildinfo
 
+# Vitest's output when it is asked for a machine-readable report.
+.vitest/
+
 # Playwright's own output: installed browsers, traces from a failed run, reports.
 test-results/
 playwright-report/
