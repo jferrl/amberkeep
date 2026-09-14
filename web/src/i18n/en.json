@@ -223,5 +223,18 @@
   "workingIndexedSoFar": "Indexed {conversations} conversations and {messages} messages so far.",
   "kindGroup": "group",
   "kindBroadcast": "broadcast list",
-  "kindStatus": "status"
+  "kindStatus": "status",
+  "phoneFound": "Your phone is plugged in",
+  "phoneUse": "Use this backup",
+  "phoneChosen": "Chosen",
+  "phoneLooking": "Looking on {name}…",
+  "phoneNotReady": "{name} is plugged in, but will not answer yet",
+  "phoneUnauthorized": "Unlock the phone and tap Allow on the prompt about trusting this computer. If there is no prompt, unplug the cable and plug it in again.",
+  "phoneOffline": "The phone is not responding. Unlock it, and try a different cable or socket — many charging cables carry no data at all.",
+  "phoneNoBackup": "No backup on {name} yet",
+  "phoneNoBackupHelp": "Make the encrypted backup on the phone first, with the steps below. It will appear here when it is done.",
+  "phoneFragments": "There are also part-files from a later backup on the phone. They are not offered: they are useless on their own.",
+  "phoneTakeIt": "Take it off the phone",
+  "phoneTakeItHelp": "Amberkeep copies the backup across and unlocks it. The phone is only read from; nothing on it is changed.",
+  "phoneOrCopy": "Or copy the file across yourself"
 }

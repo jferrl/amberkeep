@@ -51,12 +51,7 @@ export type Base64 = string;
  * switching on one wants a branch for the rest.
  */
 export type ChatKind =
-  | "direct"
-  | "group"
-  | "broadcast"
-  | "status"
-  | "newsletter"
-  | "unknown";
+  "direct" | "group" | "broadcast" | "status" | "newsletter" | "unknown";
 
 /** What a message was: words, a file that is no longer here, or something that happened. */
 export type MessageKind =
@@ -84,7 +79,8 @@ export type MessageKind =
   | "unknown";
 
 /** How a call ended. */
-export type CallOutcome = "connected" | "missed" | "declined" | "failed" | "unknown";
+export type CallOutcome =
+  "connected" | "missed" | "declined" | "failed" | "unknown";
 
 /** Somebody who belongs to a group. */
 export interface Participant {
@@ -645,3 +641,38 @@ export interface Export {
 
 /** The ways an archive can be written out. */
 export type Format = "html" | "text" | "json";
+
+/** A phone this computer can see. */
+export interface Phone {
+  serial: string;
+  name: string;
+  /**
+   * Whether it can be read yet.
+   *
+   * A phone that is plugged in but has not had the prompt accepted is visible and
+   * useless. Saying which it is, is the difference between somebody tapping "allow"
+   * and concluding the program does not work.
+   */
+  ready: boolean;
+  trouble?: string;
+}
+
+/** An encrypted message store on a phone. */
+export interface PhoneBackup {
+  path: string;
+  name: string;
+  size: number;
+  /**
+   * A fragment of a later backup: useless on its own, and sitting in the same folder
+   * looking almost identical to the one that is not. The guide spends a paragraph
+   * warning about these; naming them is cheaper.
+   */
+  partial: boolean;
+}
+
+/** What this computer can see, and why it can see nothing when it cannot. */
+export interface Phones {
+  phones: readonly Phone[];
+  /** Why there is no list rather than an empty one — usually no Android tools. */
+  trouble?: string;
+}

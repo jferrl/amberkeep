@@ -5,11 +5,12 @@ import type { Setup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
+import { Plugged } from "@/components/phone/Plugged";
 import { Aside, Expect, Say, Shell } from "@/components/wizard/Shell";
 import { Where } from "@/components/wizard/Where";
 import type { Typed } from "@/components/wizard/route";
 import { useT } from "@/i18n";
-import type { Phrase } from "@/i18n";
+import type { Language, Phrase } from "@/i18n";
 
 /**
  * The four screens that happen on the phone, one instruction each.
@@ -89,6 +90,8 @@ export function Android({
   typed,
   onTyped,
   onDecrypt,
+  onFetch,
+  language,
   onBack,
   busy,
   failure,
@@ -100,6 +103,9 @@ export function Android({
   typed: Typed;
   onTyped: (change: Partial<Typed>) => void;
   onDecrypt: (file: string, key: string) => void;
+  /** Take it off the phone instead, when one is plugged in and will answer. */
+  onFetch: (serial: string, path: string, key: string) => void;
+  language: Language;
   onBack: () => void;
   busy: boolean;
   failure: Setup | undefined;
@@ -108,6 +114,10 @@ export function Android({
   const { at, file } = typed;
   // The key alone is not kept anywhere but here, and not for long; see Typed.
   const [key, setKey] = useState("");
+  // A backup chosen off the phone, which replaces typing a path entirely.
+  const [fromPhone, setFromPhone] = useState<
+    { serial: string; path: string } | undefined
+  >(undefined);
   const [wrong, setWrong] = useState<Wrong>({});
 
   const back = () => {
@@ -209,6 +219,60 @@ export function Android({
       {/* No action and no method: this form is handled here and submitted nowhere.
           A form that fell back to the browser would put the key in the address bar,
           which is the one place it must never reach. */}
+      {/*
+        The phone first, when there is one. Everything below this is the way in for
+        a computer with no Android tools, no cable, or a file already copied across
+        — which is most of them, and none of which is a failure.
+      */}
+      <Plugged
+        language={language}
+        busy={busy}
+        chosen={fromPhone?.path ?? ""}
+        onChoose={(phone, backup) => {
+          setWrong({});
+          setFromPhone({ serial: phone.serial, path: backup.path });
+        }}
+      />
+
+      {fromPhone !== undefined && (
+        <Aside heading={t("phoneTakeIt")} tone="note">
+          <Say>{t("phoneTakeItHelp")}</Say>
+          <Field
+            label={t("androidKeyLabel")}
+            hint={t("androidKeyStays")}
+            value={key}
+            wrong={wrong.key}
+            secret
+            autoComplete="off"
+            onChange={(next) => {
+              setWrong({});
+              setKey(next);
+            }}
+          />
+          <div>
+            <Button
+              variant="primary"
+              disabled={busy}
+              onClick={() => {
+                const digits = key.replace(/\s+/g, "");
+                if (!looksLikeAKey.test(digits)) {
+                  setWrong({
+                    key: digits === "" ? t("keyNeeded") : t("keyNotAKey"),
+                  });
+                  return;
+                }
+                onFetch(fromPhone.serial, fromPhone.path, digits);
+                setKey("");
+              }}
+            >
+              {t("phoneTakeIt")}
+            </Button>
+          </div>
+        </Aside>
+      )}
+
+      <h2 className="m-0 text-sm font-semibold">{t("phoneOrCopy")}</h2>
+
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("androidFileLabel")}

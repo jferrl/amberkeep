@@ -107,6 +107,7 @@ func runServe(ctx context.Context, args []string) error {
 		Token:     token,
 		Index:     index,
 		Importer:  bring,
+		Phones:    app.Phones{Workspace: *work},
 		Migrator:  move,
 		Workspace: *work,
 		Advise:    app.AdviseOn,

@@ -24,7 +24,8 @@ import { shortDate, timeOfDay } from "@/lib/format";
  * an empty list is how somebody concludes their history is gone — or is told to
  * open Finder on a machine that has never had one.
  */
-export type Situation = "noImporter" | "problem" | "looking" | "nowhere" | "none" | "some";
+export type Situation =
+  "noImporter" | "problem" | "looking" | "nowhere" | "none" | "some";
 
 /**
  * situationOf decides which of the five a screen is showing.
@@ -67,7 +68,11 @@ export function nameOf(backup: Backup, t: Translate): string {
  * words here, through the same formatters every date in the viewer goes through, so
  * that a backup made last night says so in the reader's own zone.
  */
-export function describe(backup: Backup, t: Translate, language: Language): string {
+export function describe(
+  backup: Backup,
+  t: Translate,
+  language: Language,
+): string {
   const pieces: string[] = [];
 
   const version = backup.ios_version ?? "";
@@ -76,7 +81,10 @@ export function describe(backup: Backup, t: Translate, language: Language): stri
   const at = backup.last_backup;
   if (at !== undefined) {
     const day = shortDate(at, language);
-    if (day !== "") pieces.push(t("backupWhen", { when: `${day}, ${timeOfDay(at, language)}` }));
+    if (day !== "")
+      pieces.push(
+        t("backupWhen", { when: `${day}, ${timeOfDay(at, language)}` }),
+      );
   }
 
   return pieces.join(" · ");

@@ -81,6 +81,11 @@ type Options struct {
 	// archive it was given and nothing else, which is what the command line does.
 	Importer Importer
 
+	// Phones reads a backup off an Android phone over adb, and only reads it.
+	// Without one the wizard asks somebody to find the file themselves, which is
+	// what it did before and still works.
+	Phones Reader
+
 	// Migrator moves a history onto a phone. Without one those endpoints answer 501
 	// and the page leaves the whole thing off, which is what a build that only reads
 	// archives should do.
@@ -150,6 +155,7 @@ type server struct {
 	// state it did not ask for.
 	migration *migration
 	migrator  Migrator
+	phones    Reader
 	exports   *exporting
 
 	// background outlives the request that began a piece of work, so closing the tab
@@ -198,7 +204,7 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	opts = opts.withDefaults()
 
 	s := &server{
-		opts: opts, importer: opts.Importer, migrator: opts.Migrator,
+		opts: opts, importer: opts.Importer, migrator: opts.Migrator, phones: opts.Phones,
 		exports:   newExporting(),
 		migration: newMigration(), background: ctx,
 	}
@@ -239,6 +245,12 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	mux.HandleFunc("POST /api/open", s.handleOpen)
 	mux.HandleFunc("POST /api/extract", s.handleExtract)
 	mux.HandleFunc("POST /api/decrypt", s.handleDecrypt)
+
+	// The phone, read-only. Every one of these reads; there is no endpoint here that
+	// could write to a device, because the package underneath has no way to.
+	mux.HandleFunc("GET /api/phones", s.handlePhones)
+	mux.HandleFunc("GET /api/phones/{serial}/backups", s.handlePhoneBackups)
+	mux.HandleFunc("POST /api/phones/fetch", s.handleFetch)
 	mux.HandleFunc("POST /api/close", s.handleClose)
 
 	// Moving a history onto a phone. Nothing here moves from one stage to the next

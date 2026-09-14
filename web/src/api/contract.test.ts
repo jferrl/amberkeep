@@ -68,14 +68,13 @@ type Unexpected<Expected, Actual> = Actual extends readonly (infer Element)[]
     : never
   : Actual extends object
     ? Expected extends object
-      ?
-          | Exclude<keyof Actual, keyof Expected>
-          | {
-              [K in Extract<keyof Actual, keyof Expected>]: Unexpected<
-                NonNullable<Expected[K]>,
-                NonNullable<Actual[K]>
-              >;
-            }[Extract<keyof Actual, keyof Expected>]
+      ? | Exclude<keyof Actual, keyof Expected>
+        | {
+            [K in Extract<keyof Actual, keyof Expected>]: Unexpected<
+              NonNullable<Expected[K]>,
+              NonNullable<Actual[K]>
+            >;
+          }[Extract<keyof Actual, keyof Expected>]
       : never
     : never;
 
@@ -161,7 +160,10 @@ describe("the replies this page is written against", () => {
       "edited_at",
     ] as const;
     for (const field of declared) {
-      expect(message, `${field} is declared but appears in no recording`).toHaveProperty(field);
+      expect(
+        message,
+        `${field} is declared but appears in no recording`,
+      ).toHaveProperty(field);
     }
   });
 
@@ -264,7 +266,9 @@ describe("the migration", () => {
 
     // The one that matters most can never pass, because nothing on this computer can
     // see whether somebody made a safety backup. It is raised anyway, every time.
-    const safety = checked.checks?.findings.find((f) => f.step === "safety-backup");
+    const safety = checked.checks?.findings.find(
+      (f) => f.step === "safety-backup",
+    );
     expect(safety).toBeDefined();
     expect(safety?.passed).toBe(false);
     expect(safety?.blocking).toBe(false);

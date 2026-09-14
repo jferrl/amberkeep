@@ -32,6 +32,8 @@ import {
   getGuide,
   getMessages,
   getMigration,
+  getPhoneBackups,
+  getPhones,
   getState,
   isArchiveError,
   search,
@@ -93,6 +95,7 @@ const noImporter = 501;
  */
 export const queryKeys = {
   exporting: ["export"] as const,
+  phones: ["phones"] as const,
   state: ["state"] as const,
   backups: ["backups"] as const,
   migration: ["migration"] as const,
@@ -113,7 +116,10 @@ export const queryKeys = {
  */
 export async function allChats(
   q: string,
-  { limit = chatsPerRequest, signal }: Cancellable & { limit?: number | undefined } = {},
+  {
+    limit = chatsPerRequest,
+    signal,
+  }: Cancellable & { limit?: number | undefined } = {},
 ): Promise<ChatList> {
   const chats: Chat[] = [];
   let total = 0;
@@ -224,7 +230,8 @@ export function setupQuery() {
     queryFn: ({ signal }) => getState({ signal }),
     staleTime: 0,
     gcTime: 0,
-    refetchInterval: (query) => (query.state.data?.stage === "working" ? pollEvery : false),
+    refetchInterval: (query) =>
+      query.state.data?.stage === "working" ? pollEvery : false,
   });
 }
 
@@ -265,7 +272,10 @@ export function useBackups(enabled = true) {
  * pick one. Both call this; the query is cached under one key, so it is one question
  * asked once rather than two requests.
  */
-export function useOfferedBackups(): { situation: Situation; problem: string | undefined } {
+export function useOfferedBackups(): {
+  situation: Situation;
+  problem: string | undefined;
+} {
   const backups = useBackups();
 
   // A refusal by the server and a folder it was not allowed to read are the same
@@ -403,7 +413,8 @@ export function migrationQuery() {
     queryFn: ({ signal }) => getMigration({ signal }),
     staleTime: 0,
     gcTime: 0,
-    refetchInterval: (query) => (isRunning(query.state.data?.stage) ? pollEvery : false),
+    refetchInterval: (query) =>
+      isRunning(query.state.data?.stage) ? pollEvery : false,
   });
 }
 
@@ -481,7 +492,8 @@ export function exportQuery() {
     queryFn: ({ signal }) => getExport({ signal }),
     staleTime: 0,
     gcTime: 0,
-    refetchInterval: (query) => (query.state.data?.stage === "writing" ? pollEvery : false),
+    refetchInterval: (query) =>
+      query.state.data?.stage === "writing" ? pollEvery : false,
   });
 }
 
@@ -520,4 +532,43 @@ export function useExportStep(): Action<Export> {
   );
 
   return { busy, refused, start };
+}
+
+/**
+ * The phones plugged into this computer.
+ *
+ * Polled while the Android screens are open, because the answer changes when
+ * somebody plugs a cable in or taps "allow" on the phone — and the whole point is
+ * that they do not have to come back and press something to be noticed.
+ */
+export function phonesQuery(enabled: boolean) {
+  return queryOptions({
+    queryKey: queryKeys.phones,
+    queryFn: ({ signal }) => getPhones({ signal }),
+    enabled,
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: enabled ? pollEvery * 4 : false,
+  });
+}
+
+/** usePhones is what this computer can see. */
+export function usePhones(enabled = true) {
+  return useQuery(phonesQuery(enabled));
+}
+
+/** The message stores on one phone, asked for only once one is chosen. */
+export function phoneBackupsQuery(serial: string) {
+  return queryOptions({
+    queryKey: [...queryKeys.phones, serial, "backups"] as const,
+    queryFn: ({ signal }) => getPhoneBackups(serial, { signal }),
+    enabled: serial !== "",
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
+/** usePhoneBackups lists what is on one phone. */
+export function usePhoneBackups(serial: string) {
+  return useQuery(phoneBackupsQuery(serial));
 }

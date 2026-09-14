@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -260,6 +261,19 @@ func (s *server) advise(err error) string {
 		return ""
 	}
 	return s.opts.Advise(err)
+}
+
+// Workspace is where this program writes when nobody says otherwise.
+//
+// Exported because the parts that write are not all inside this package: reading a
+// backup off a phone puts it somewhere, and a second copy of this rule would be two
+// programs disagreeing about where somebody's files went.
+func Workspace() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return defaultWorkspace(home)
 }
 
 // defaultWorkspace is where things are written when nobody says otherwise.

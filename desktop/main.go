@@ -49,6 +49,7 @@ func run() error {
 		Location: time.Local,
 		Me:       me,
 		Importer: app.Importer{Me: me},
+		Phones:   app.Phones{},
 		Migrator: app.Migrator{Me: me},
 		Advise:   app.AdviseOn,
 

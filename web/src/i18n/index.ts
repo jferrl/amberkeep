@@ -28,7 +28,10 @@ export function languageOf(preferred: readonly string[]): Language {
 }
 
 /** Translate turns a phrase into words, filling in whatever it names. */
-export type Translate = (phrase: Phrase, values?: Record<string, string | number>) => string;
+export type Translate = (
+  phrase: Phrase,
+  values?: Record<string, string | number>,
+) => string;
 
 /**
  * translator returns the function components use.

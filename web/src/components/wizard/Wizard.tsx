@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import type { Extras } from "@/api/client";
-import { decrypt, extract, openFile } from "@/api/client";
+import { decrypt, fetchFromPhone, extract, openFile } from "@/api/client";
 import {
   isMissingImporter,
   useBackups,
@@ -246,8 +246,16 @@ function Screen({
           onContacts={onContacts}
           onTyped={onTyped}
           onBack={onBack}
+          language={language}
           onDecrypt={(file, key) => {
             onStart(() => decrypt({ file, key, ...extras(true) }));
+          }}
+          // Off the phone and unlocked in one go: a file somebody cannot open is
+          // not what they came for.
+          onFetch={(serial, path, key) => {
+            onStart(() =>
+              fetchFromPhone(serial, path, key, extras(true).into ?? ""),
+            );
           }}
         />
       );

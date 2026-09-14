@@ -22,6 +22,8 @@ import type {
   Guide,
   MessagePage,
   Migration,
+  PhoneBackup,
+  Phones,
   SearchPage,
   Setup,
 } from "./types";
@@ -77,7 +79,9 @@ export function launchSecretIn(search: string): string {
  * to an address without it. The case that matters is development, where Vite serves
  * the page and only the requests are proxied, so no redirect ever happens.
  */
-let launchSecret = launchSecretIn(typeof window === "undefined" ? "" : window.location.search);
+let launchSecret = launchSecretIn(
+  typeof window === "undefined" ? "" : window.location.search,
+);
 
 /** What every request accepts, so a page leaving can stop asking. */
 export interface Cancellable {
@@ -92,7 +96,9 @@ export interface Cancellable {
  * address of a conversation's most recent page identical every time it is opened,
  * which is worth having in a cache key and in a network panel.
  */
-function narrow(values: Record<string, string | number | undefined>): URLSearchParams {
+function narrow(
+  values: Record<string, string | number | undefined>,
+): URLSearchParams {
   const params = new URLSearchParams();
   for (const [name, value] of Object.entries(values)) {
     if (value === undefined || value === "") continue;
@@ -127,13 +133,20 @@ async function answer<T>(response: Response, options: Cancellable): Promise<T> {
     // A reader who has left is not a broken archive, and must stay a cancellation
     // rather than becoming an error a page would show somebody.
     if (options.signal?.aborted === true) throw cause;
-    throw new ArchiveError(response.status, "the archive sent a reply this page could not read");
+    throw new ArchiveError(
+      response.status,
+      "the archive sent a reply this page could not read",
+    );
   }
   return body as T;
 }
 
 /** ask reads something the server already knows. */
-async function ask<T>(path: string, params: URLSearchParams, options: Cancellable): Promise<T> {
+async function ask<T>(
+  path: string,
+  params: URLSearchParams,
+  options: Cancellable,
+): Promise<T> {
   const response = await fetch(addressOf(path, params), {
     credentials: "same-origin",
     headers: { Accept: "application/json" },
@@ -156,7 +169,11 @@ async function ask<T>(path: string, params: URLSearchParams, options: Cancellabl
  * parameter here, and keeping that true of all four is what stops the fifth one
  * being written the other way.
  */
-async function tell(path: string, body: unknown, options: Cancellable): Promise<Response> {
+async function tell(
+  path: string,
+  body: unknown,
+  options: Cancellable,
+): Promise<Response> {
   const response = await fetch(addressOf(path, new URLSearchParams()), {
     method: "POST",
     credentials: "same-origin",
@@ -189,8 +206,15 @@ export interface ChatsQuery extends Cancellable {
 }
 
 /** getChats lists conversations, most recently used first. */
-export function getChats({ q, limit, offset, signal }: ChatsQuery = {}): Promise<ChatList> {
-  return ask<ChatList>(`${api}/chats`, narrow({ q, limit, offset }), { signal });
+export function getChats({
+  q,
+  limit,
+  offset,
+  signal,
+}: ChatsQuery = {}): Promise<ChatList> {
+  return ask<ChatList>(`${api}/chats`, narrow({ q, limit, offset }), {
+    signal,
+  });
 }
 
 export interface MessagesQuery extends Cancellable {
@@ -221,8 +245,13 @@ export interface SearchQuery extends Cancellable {
 }
 
 /** search finds messages anywhere in the archive. */
-export function search(q: string, { chat, limit, offset, signal }: SearchQuery = {}): Promise<SearchPage> {
-  return ask<SearchPage>(`${api}/search`, narrow({ q, chat, limit, offset }), { signal });
+export function search(
+  q: string,
+  { chat, limit, offset, signal }: SearchQuery = {},
+): Promise<SearchPage> {
+  return ask<SearchPage>(`${api}/search`, narrow({ q, chat, limit, offset }), {
+    signal,
+  });
 }
 
 /**
@@ -287,7 +316,10 @@ export async function openFile(
   extras: Extras = {},
   options: Cancellable = {},
 ): Promise<Setup> {
-  return answer<Setup>(await tell(`${api}/open`, { path, ...filled(extras) }, options), options);
+  return answer<Setup>(
+    await tell(`${api}/open`, { path, ...filled(extras) }, options),
+    options,
+  );
 }
 
 /** extract takes the messages out of an iPhone backup and puts them in a folder. */
@@ -367,8 +399,14 @@ export function getGuide(options: Cancellable = {}): Promise<Guide> {
 }
 
 /** checkBackup looks at a backup, and stops. */
-export async function checkBackup(backup: string, options: Cancellable = {}): Promise<Migration> {
-  return answer<Migration>(await tell(`${api}/migration/check`, { backup }, options), options);
+export async function checkBackup(
+  backup: string,
+  options: Cancellable = {},
+): Promise<Migration> {
+  return answer<Migration>(
+    await tell(`${api}/migration/check`, { backup }, options),
+    options,
+  );
 }
 
 /** What a migration needs to be told, beyond which backup and which archive. */
@@ -388,13 +426,19 @@ export async function planMigration(
   options: Cancellable = {},
 ): Promise<Migration> {
   const body: Record<string, unknown> = { backup, android };
-  if (extras.contacts !== undefined && extras.contacts !== "") body.contacts = extras.contacts;
-  if (extras.pairing !== undefined && extras.pairing !== "") body.pairing = extras.pairing;
+  if (extras.contacts !== undefined && extras.contacts !== "")
+    body.contacts = extras.contacts;
+  if (extras.pairing !== undefined && extras.pairing !== "")
+    body.pairing = extras.pairing;
   if (extras.groups === true) body.groups = true;
   if (extras.hidden === true) body.hidden = true;
-  if (extras.only !== undefined && extras.only.length > 0) body.only = extras.only;
+  if (extras.only !== undefined && extras.only.length > 0)
+    body.only = extras.only;
 
-  return answer<Migration>(await tell(`${api}/migration/plan`, body, options), options);
+  return answer<Migration>(
+    await tell(`${api}/migration/plan`, body, options),
+    options,
+  );
 }
 
 /**
@@ -412,12 +456,20 @@ export async function carryOut(
   const body: Record<string, unknown> = { confirm };
   if (into !== undefined && into !== "") body.into = into;
 
-  return answer<Migration>(await tell(`${api}/migration/carry-out`, body, options), options);
+  return answer<Migration>(
+    await tell(`${api}/migration/carry-out`, body, options),
+    options,
+  );
 }
 
 /** forgetMigration goes back to the beginning, keeping nothing. */
-export async function forgetMigration(options: Cancellable = {}): Promise<Migration> {
-  return answer<Migration>(await tell(`${api}/migration/forget`, {}, options), options);
+export async function forgetMigration(
+  options: Cancellable = {},
+): Promise<Migration> {
+  return answer<Migration>(
+    await tell(`${api}/migration/forget`, {}, options),
+    options,
+  );
 }
 
 /** getExport is how far along writing the archive out is. The only thing polled. */
@@ -436,7 +488,10 @@ export interface Writing {
 }
 
 /** writeArchive starts writing the archive out and stops. */
-export async function writeArchive(ask: Writing, options: Cancellable = {}): Promise<Export> {
+export async function writeArchive(
+  ask: Writing,
+  options: Cancellable = {},
+): Promise<Export> {
   const body: Record<string, unknown> = {
     formats: ask.formats,
     groups: ask.groups ?? true,
@@ -450,5 +505,48 @@ export async function writeArchive(ask: Writing, options: Cancellable = {}): Pro
 
 /** forgetExport clears a finished export so the screen can be used again. */
 export async function forgetExport(options: Cancellable = {}): Promise<Export> {
-  return answer<Export>(await tell(`${api}/export/forget`, {}, options), options);
+  return answer<Export>(
+    await tell(`${api}/export/forget`, {}, options),
+    options,
+  );
+}
+
+/** getPhones lists the Android phones plugged into this computer. */
+export function getPhones(options: Cancellable = {}): Promise<Phones> {
+  return ask<Phones>(`${api}/phones`, narrow({}), options);
+}
+
+/** getPhoneBackups lists the message stores on one phone. Reads it, never writes. */
+export function getPhoneBackups(
+  serial: string,
+  options: Cancellable = {},
+): Promise<{ backups: readonly PhoneBackup[] }> {
+  return ask<{ backups: readonly PhoneBackup[] }>(
+    `${api}/phones/${encodeURIComponent(serial)}/backups`,
+    narrow({}),
+    options,
+  );
+}
+
+/**
+ * fetchFromPhone copies a backup off the phone and unlocks it.
+ *
+ * The key goes with it, because a backup on its own is a file nobody can open, and
+ * somebody who asked for their messages did not ask for that. It is sent once, in a
+ * body, over a loopback connection, and is never put in a URL.
+ */
+export async function fetchFromPhone(
+  serial: string,
+  path: string,
+  key: string,
+  into: string,
+  options: Cancellable = {},
+): Promise<Setup> {
+  const body: Record<string, unknown> = { serial, path, key };
+  if (into !== "") body.into = into;
+
+  return answer<Setup>(
+    await tell(`${api}/phones/fetch`, body, options),
+    options,
+  );
 }

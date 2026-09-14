@@ -45,6 +45,8 @@ const (
 	StepOpening    Step = "opening"
 	// StepWriting is producing files from an archive that is already open.
 	StepWriting Step = "writing"
+	// StepFetching is copying a backup off a phone that is plugged in.
+	StepFetching Step = "fetching"
 )
 
 // Progress is how work already running says what it is doing.

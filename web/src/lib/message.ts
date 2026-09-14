@@ -10,6 +10,7 @@ import type { Message } from "@/api/types";
  * repeating itself.
  */
 export function describes(message: Message): string | undefined {
-  if (message.rendered === "" || message.rendered === message.text) return undefined;
+  if (message.rendered === "" || message.rendered === message.text)
+    return undefined;
   return message.rendered;
 }

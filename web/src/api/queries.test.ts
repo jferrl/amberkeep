@@ -40,7 +40,8 @@ function reading<K extends readonly unknown[]>(queryKey: K, pageParam: string) {
  * have: a query without a function is a query nothing would ever fetch.
  */
 function present<T>(value: T | undefined): T {
-  if (value === undefined) throw new Error("these options were expected to carry a query function");
+  if (value === undefined)
+    throw new Error("these options were expected to carry a query function");
   return value;
 }
 
@@ -50,7 +51,9 @@ function conversation(address: string): Chat {
 
 function page(before?: string): MessagePage {
   const chat = conversation("34600123456@s.whatsapp.net");
-  return before === undefined ? { chat, messages: [] } : { chat, messages: [], before };
+  return before === undefined
+    ? { chat, messages: [] }
+    : { chat, messages: [], before };
 }
 
 /**
@@ -74,7 +77,9 @@ function asked(): number {
 
 beforeEach(() => {
   fetching.mockReset();
-  fetching.mockImplementation(() => Promise.resolve(answering({ total: 0, chats: [] })));
+  fetching.mockImplementation(() =>
+    Promise.resolve(answering({ total: 0, chats: [] })),
+  );
   vi.stubGlobal("fetch", fetching);
 });
 
@@ -82,7 +87,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const keys: { name: string; got: readonly unknown[]; want: readonly unknown[] }[] = [
+const keys: {
+  name: string;
+  got: readonly unknown[];
+  want: readonly unknown[];
+}[] = [
   {
     name: "the archive has one address, because there is one archive",
     got: queryKeys.archive,
@@ -135,9 +144,13 @@ describe("reading a conversation backwards", () => {
     const options = messagesQuery("34600123456@s.whatsapp.net");
 
     expect(options.initialPageParam).toBe("");
-    await present(options.queryFn)(reading(options.queryKey, options.initialPageParam));
+    await present(options.queryFn)(
+      reading(options.queryKey, options.initialPageParam),
+    );
 
-    expect(requested()).toBe("/api/chats/34600123456%40s.whatsapp.net/messages?limit=60");
+    expect(requested()).toBe(
+      "/api/chats/34600123456%40s.whatsapp.net/messages?limit=60",
+    );
   });
 
   it("continues from the position the server gave back", async () => {
@@ -158,7 +171,9 @@ describe("reading a conversation backwards", () => {
     const options = messagesQuery("34600123456@s.whatsapp.net");
     const first = page();
 
-    expect(options.getNextPageParam(first, [first], "1712345678901_42", [""])).toBeUndefined();
+    expect(
+      options.getNextPageParam(first, [first], "1712345678901_42", [""]),
+    ).toBeUndefined();
   });
 
   it("asks nothing until there is a conversation to ask about", () => {
@@ -169,19 +184,30 @@ describe("reading a conversation backwards", () => {
 
 describe("gathering the conversation list", () => {
   it("asks again until it holds as many as the server says there are", async () => {
-    const everyone = ["a", "b", "c", "d", "e"].map((name) => conversation(name));
+    const everyone = ["a", "b", "c", "d", "e"].map((name) =>
+      conversation(name),
+    );
     fetching.mockImplementation((input) => {
       const query = new URLSearchParams(fetchTarget(input).split("?")[1] ?? "");
       const from = Number(query.get("offset") ?? "0");
       return Promise.resolve(
-        answering({ total: everyone.length, chats: everyone.slice(from, from + 2) }),
+        answering({
+          total: everyone.length,
+          chats: everyone.slice(from, from + 2),
+        }),
       );
     });
 
     const list = await allChats("", { limit: 2 });
 
     expect(list.total).toBe(5);
-    expect(list.chats.map((chat) => chat.address)).toEqual(["a", "b", "c", "d", "e"]);
+    expect(list.chats.map((chat) => chat.address)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+      "e",
+    ]);
     expect(requested(0)).toBe("/api/chats?limit=2&offset=0");
     expect(requested(1)).toBe("/api/chats?limit=2&offset=2");
     expect(requested(2)).toBe("/api/chats?limit=2&offset=4");
@@ -211,7 +237,9 @@ describe("gathering the conversation list", () => {
   });
 
   it("stops when a server sends nothing at all", async () => {
-    fetching.mockImplementation(() => Promise.resolve(answering({ total: 10, chats: [] })));
+    fetching.mockImplementation(() =>
+      Promise.resolve(answering({ total: 10, chats: [] })),
+    );
 
     const list = await allChats("", { limit: 2 });
 
@@ -224,7 +252,9 @@ describe("searching", () => {
   it("answers an empty box without asking the server", async () => {
     const options = searchQuery("   ");
 
-    await expect(present(options.queryFn)(reading(options.queryKey, ""))).resolves.toEqual({
+    await expect(
+      present(options.queryFn)(reading(options.queryKey, "")),
+    ).resolves.toEqual({
       total: 0,
       hits: [],
     });
@@ -232,7 +262,9 @@ describe("searching", () => {
   });
 
   it("asks for the words and the conversation they are looked for in", async () => {
-    fetching.mockImplementation(() => Promise.resolve(answering({ total: 0, hits: [] })));
+    fetching.mockImplementation(() =>
+      Promise.resolve(answering({ total: 0, hits: [] })),
+    );
     const options = searchQuery("beach", "34600123456@s.whatsapp.net");
 
     await present(options.queryFn)(reading(options.queryKey, ""));

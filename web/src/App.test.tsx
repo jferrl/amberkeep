@@ -31,7 +31,9 @@ const conversations = [
     name: "Vermut del sabado",
     message_count: 1,
     last_message_at: "2019-06-15T12:00:00Z",
-    participants: [{ address: "34600111222@s.whatsapp.net", name: "Ana Lopez" }],
+    participants: [
+      { address: "34600111222@s.whatsapp.net", name: "Ana Lopez" },
+    ],
   },
   {
     id: 1,
@@ -110,7 +112,9 @@ beforeEach(() => {
       );
     }
     if (at.startsWith("/api/chats?")) {
-      return Promise.resolve(answer({ total: conversations.length, chats: conversations }));
+      return Promise.resolve(
+        answer({ total: conversations.length, chats: conversations }),
+      );
     }
     if (at.includes("/messages")) {
       return Promise.resolve(answer({ chat: conversations[1], messages }));
@@ -164,7 +168,9 @@ describe("opening an archive", () => {
 
   it("asks the reader to choose one", async () => {
     render(<App language="en" />);
-    expect(await screen.findByText(/Choose a conversation/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Choose a conversation/),
+    ).toBeInTheDocument();
   });
 
   it("speaks Spanish to a Spanish reader", async () => {
@@ -182,7 +188,9 @@ describe("reading a conversation", () => {
 
     // The name is now in the reading pane's heading as well as the list.
     await waitFor(() => {
-      expect(screen.getByRole("heading", { name: "Ana Lopez" })).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: "Ana Lopez" }),
+      ).toBeInTheDocument();
     });
     expect(screen.getByText(/2 messages/)).toBeInTheDocument();
   });
@@ -193,7 +201,9 @@ describe("searching", () => {
     const user = userEvent.setup();
     render(<App language="en" />);
 
-    const box = await screen.findByRole("searchbox", { name: /Search everything/ });
+    const box = await screen.findByRole("searchbox", {
+      name: /Search everything/,
+    });
     await user.type(box, "up");
 
     // The marks are two control characters, and what the reader sees is an element.
@@ -211,7 +221,9 @@ describe("searching", () => {
         return Promise.resolve(answer({ total: 0, hits: [] }));
       }
       if (at.startsWith("/api/archive")) {
-        return Promise.resolve(answer({ conversations: 0, messages: 0, searchable: true }));
+        return Promise.resolve(
+          answer({ conversations: 0, messages: 0, searchable: true }),
+        );
       }
       return Promise.resolve(answer({ total: 0, chats: [] }));
     });
@@ -248,14 +260,20 @@ describe("searching", () => {
       const open = alreadyOpen(at);
       if (open !== undefined) return Promise.resolve(open);
       if (at.startsWith("/api/archive")) {
-        return Promise.resolve(answer({ conversations: 2, messages: 3, searchable: false }));
+        return Promise.resolve(
+          answer({ conversations: 2, messages: 3, searchable: false }),
+        );
       }
-      return Promise.resolve(answer({ total: conversations.length, chats: conversations }));
+      return Promise.resolve(
+        answer({ total: conversations.length, chats: conversations }),
+      );
     });
 
     render(<App language="en" />);
     expect(
-      await screen.findByRole("searchbox", { name: /Search conversation names/ }),
+      await screen.findByRole("searchbox", {
+        name: /Search conversation names/,
+      }),
     ).toBeInTheDocument();
   });
 });
@@ -290,11 +308,13 @@ describe("what this program has to say about itself", () => {
   it("says it is nobody's official anything, and where its source is", async () => {
     render(<App language="en" />);
 
-    expect(await screen.findByText(/Not affiliated with, endorsed by, or connected to/)).toHaveTextContent(
-      /WhatsApp LLC or Meta Platforms/,
-    );
-    expect(screen.getByText(/free software under the AGPL-3.0/)).toHaveTextContent(
-      "github.com/jferrl/amberkeep",
-    );
+    expect(
+      await screen.findByText(
+        /Not affiliated with, endorsed by, or connected to/,
+      ),
+    ).toHaveTextContent(/WhatsApp LLC or Meta Platforms/);
+    expect(
+      screen.getByText(/free software under the AGPL-3.0/),
+    ).toHaveTextContent("github.com/jferrl/amberkeep");
   });
 });

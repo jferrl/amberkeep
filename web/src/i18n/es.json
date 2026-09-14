@@ -223,5 +223,18 @@
   "workingIndexedSoFar": "Indexadas {conversations} conversaciones y {messages} mensajes hasta ahora.",
   "kindGroup": "grupo",
   "kindBroadcast": "lista de difusión",
-  "kindStatus": "estados"
+  "kindStatus": "estados",
+  "phoneFound": "Tu teléfono está conectado",
+  "phoneUse": "Usar esta copia",
+  "phoneChosen": "Elegida",
+  "phoneLooking": "Buscando en {name}…",
+  "phoneNotReady": "{name} está conectado, pero todavía no responde",
+  "phoneUnauthorized": "Desbloquea el teléfono y pulsa Permitir en el aviso sobre confiar en este ordenador. Si no aparece, desconecta el cable y vuelve a conectarlo.",
+  "phoneOffline": "El teléfono no responde. Desbloquéalo y prueba con otro cable u otro puerto: muchos cables de carga no llevan datos.",
+  "phoneNoBackup": "Todavía no hay copia en {name}",
+  "phoneNoBackupHelp": "Haz primero la copia cifrada en el teléfono, con los pasos de abajo. Aparecerá aquí cuando termine.",
+  "phoneFragments": "En el teléfono también hay fragmentos de una copia posterior. No se ofrecen: por sí solos no sirven.",
+  "phoneTakeIt": "Sacarla del teléfono",
+  "phoneTakeItHelp": "Amberkeep copia la copia de seguridad y la descifra. Del teléfono solo se lee; no se cambia nada.",
+  "phoneOrCopy": "O copia tú el archivo"
 }

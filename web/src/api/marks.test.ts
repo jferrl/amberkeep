@@ -99,8 +99,14 @@ describe("splitSnippet", () => {
   });
 
   it.each(cases)("keeps every word of: $name", ({ snippet }) => {
-    const withoutMarks = snippet.replaceAll(markOpen, "").replaceAll(markClose, "");
-    expect(splitSnippet(snippet).map((piece) => piece.text).join("")).toBe(withoutMarks);
+    const withoutMarks = snippet
+      .replaceAll(markOpen, "")
+      .replaceAll(markClose, "");
+    expect(
+      splitSnippet(snippet)
+        .map((piece) => piece.text)
+        .join(""),
+    ).toBe(withoutMarks);
   });
 
   it.each(cases)("lets no mark reach a reader: $name", ({ snippet }) => {

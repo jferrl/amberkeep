@@ -89,7 +89,9 @@ beforeAll(() => {
   };
 
   // A modal dialog is not implemented in jsdom, and Preview opens one.
-  HTMLDialogElement.prototype.showModal = function showModal(this: HTMLDialogElement) {
+  HTMLDialogElement.prototype.showModal = function showModal(
+    this: HTMLDialogElement,
+  ) {
     this.open = true;
   };
   HTMLDialogElement.prototype.close = function close(this: HTMLDialogElement) {

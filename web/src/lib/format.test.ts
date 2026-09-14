@@ -42,13 +42,24 @@ describe("rendering a time", () => {
    * reject them and breaks a date that was fine.
    */
   const surprising = [
-    { name: "a year and a month with no day", input: "2019-06", contains: "2019" },
-    { name: "a day past the end of the month", input: "2019-02-31T00:00:00Z", contains: "2019" },
+    {
+      name: "a year and a month with no day",
+      input: "2019-06",
+      contains: "2019",
+    },
+    {
+      name: "a day past the end of the month",
+      input: "2019-02-31T00:00:00Z",
+      contains: "2019",
+    },
   ] as const;
 
-  it.each(surprising)("accepts $name, because JavaScript does", ({ input, contains }) => {
-    expect(dayOf(input, "en")).toContain(contains);
-  });
+  it.each(surprising)(
+    "accepts $name, because JavaScript does",
+    ({ input, contains }) => {
+      expect(dayOf(input, "en")).toContain(contains);
+    },
+  );
 
   describe("refusing what is not a date", () => {
     it.each(rubbish)("$name", ({ input }) => {

@@ -10,7 +10,11 @@ describe("choosing a language", () => {
     { name: "a Spanish region", preferred: ["es-ES"], want: "es" },
     { name: "Latin American Spanish", preferred: ["es-419", "en"], want: "es" },
     { name: "English", preferred: ["en-GB"], want: "en" },
-    { name: "the first one this build speaks", preferred: ["fr", "es", "en"], want: "es" },
+    {
+      name: "the first one this build speaks",
+      preferred: ["fr", "es", "en"],
+      want: "es",
+    },
     { name: "nothing this build speaks", preferred: ["fr", "de"], want: "en" },
     { name: "nothing at all", preferred: [], want: "en" },
     { name: "case does not matter", preferred: ["ES-es"], want: "es" },
@@ -41,7 +45,8 @@ describe("the catalogues", () => {
    * joining them fixes the English order everywhere.
    */
   it("uses the same placeholders in both languages", () => {
-    const placeholders = (text: string) => (text.match(/\{\w+\}/g) ?? []).sort();
+    const placeholders = (text: string) =>
+      (text.match(/\{\w+\}/g) ?? []).sort();
     for (const phrase of Object.keys(en) as (keyof typeof en)[]) {
       expect(placeholders(es[phrase])).toEqual(placeholders(en[phrase]));
     }
@@ -52,7 +57,12 @@ describe("filling in a phrase", () => {
   const t = translator("en");
 
   const cases = [
-    { name: "a plain phrase", phrase: "archive", values: undefined, want: "Archive" },
+    {
+      name: "a plain phrase",
+      phrase: "archive",
+      values: undefined,
+      want: "Archive",
+    },
     {
       name: "one that names a number",
       phrase: "matches",
