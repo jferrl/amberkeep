@@ -211,7 +211,8 @@ function Screen({
 }) {
   if (unreachable !== undefined)
     return <Unreachable said={unreachable} onRetry={onRetry} />;
-  if (state?.stage === "working") return <Working state={state} />;
+  if (state?.stage === "working")
+    return <Working state={state} language={language} />;
 
   switch (route) {
     case "backups":

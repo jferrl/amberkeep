@@ -106,9 +106,10 @@ func (o Options) withDefaults() Options {
 	if o.Names == nil {
 		o.Names = model.NewDirectory()
 	}
-	if o.Title == "" {
-		o.Title = "Archive"
-	}
+	// No default. "Archive" was being sent as the archive's name, so a Spanish
+	// reader's history was headed with an English word — and the page already has a
+	// translated one to fall back to, which an always-present title never let it
+	// reach. A caller that has a real name for the archive still sends it.
 	if o.Workspace == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -407,7 +408,6 @@ func (s *server) summarise(open *opened) map[string]any {
 
 	names := open.archive.Directory()
 	body := map[string]any{
-		"title":         s.opts.Title,
 		"layout":        open.archive.Layout(),
 		"conversations": len(open.chats),
 		"messages":      messages,
@@ -416,6 +416,11 @@ func (s *server) summarise(open *opened) map[string]any {
 		"named":         names.Identified(),
 		"searchable":    open.index != nil,
 		"time_zone":     s.opts.Location.String(),
+	}
+	// Left out when there is none, so a page can tell "this server has no name for
+	// the archive" from "it named it the empty string" — and reach its own word.
+	if s.opts.Title != "" {
+		body["title"] = s.opts.Title
 	}
 	if !earliest.IsZero() {
 		body["earliest"] = earliest.UTC()

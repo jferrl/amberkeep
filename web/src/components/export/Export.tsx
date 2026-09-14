@@ -43,7 +43,12 @@ export function Export({
   const state: State = now.data ?? { stage: "idle" };
 
   if (now.isPending)
-    return <Working state={{ stage: "working", workspace: "" }} />;
+    return (
+      <Working
+        state={{ stage: "working", workspace: "" }}
+        language={language}
+      />
+    );
 
   switch (state.stage) {
     case "writing":
@@ -55,6 +60,7 @@ export function Export({
             ...(state.step === undefined ? {} : { step: state.step }),
             ...(state.detail === undefined ? {} : { detail: state.detail }),
           }}
+          language={language}
         />
       );
 

@@ -1,9 +1,9 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 
-import type { Chat } from "@/api/types";
+import type { Chat, ChatKind } from "@/api/types";
 import { useT } from "@/i18n";
-import type { Language } from "@/i18n";
+import type { Language, Phrase } from "@/i18n";
 import { count, shortDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -14,6 +14,13 @@ import { cn } from "@/lib/utils";
  * four thousand conversations, and a list that long is slow to lay out even though
  * each row is small.
  */
+/** What each kind is called, for the kinds this build knows. */
+const kinds: Partial<Record<ChatKind, Phrase>> = {
+  group: "kindGroup",
+  broadcast: "kindBroadcast",
+  status: "kindStatus",
+};
+
 export function ConversationList({
   chats,
   selected,
@@ -92,8 +99,13 @@ function ConversationRow({
   onSelect: (chat: Chat) => void;
   language: Language;
 }) {
+  const t = useT();
   const about: string[] = [];
-  if (chat.kind !== "direct") about.push(chat.kind);
+  // A kind arrives as the server's own code. Untranslated it put the English word
+  // "group" under every group in a Spanish archive; unmapped it would put whatever
+  // a newer server invents, which is still better than nothing and is why the code
+  // itself is the fallback.
+  if (chat.kind !== "direct") about.push(t(kinds[chat.kind] ?? "kindGroup"));
   const when = shortDate(chat.last_message_at, language);
   if (when !== "") about.push(when);
 

@@ -22,8 +22,7 @@ export default {
     "named": 2,
     "people": 2,
     "searchable": false,
-    "time_zone": "UTC",
-    "title": "Archive"
+    "time_zone": "UTC"
   },
   "stage": "ready",
   "workspace": "/tmp/amberkeep-test"

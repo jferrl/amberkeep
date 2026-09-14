@@ -405,7 +405,7 @@ describe("when the backups cannot be looked at", () => {
 });
 
 describe("while the work is happening", () => {
-  it("says which part of it, and that nothing is being uploaded", async () => {
+  it("says which part of it is happening", async () => {
     states = [
       {
         stage: "working",
@@ -420,7 +420,6 @@ describe("while the work is happening", () => {
       await screen.findByText("Unlocking the backup."),
     ).toBeInTheDocument();
     expect(screen.getByText("Reading the header.")).toBeInTheDocument();
-    expect(screen.getByText(/Nothing is being uploaded/)).toBeInTheDocument();
   });
 
   /**
@@ -1174,13 +1173,19 @@ describe("what a form says is wrong", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.click(await screen.findByRole("button", { name: "Unlock the file" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Unlock the file" }),
+    );
 
     // Both blanks, from one press.
     const said = await screen.findAllByRole("alert");
     expect(said.length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Say where the file is before going on.")).toBeInTheDocument();
-    expect(screen.getByText("Type the key before going on.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Say where the file is before going on."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Type the key before going on."),
+    ).toBeInTheDocument();
   });
 
   it("does not send a key that is not one", async () => {
@@ -1197,7 +1202,9 @@ describe("what a form says is wrong", () => {
     await user.click(screen.getByRole("button", { name: "Unlock the file" }));
 
     expect(screen.getByText(/That is not a 64-digit key/)).toBeInTheDocument();
-    expect(posted.filter((one) => one.at.startsWith("/api/decrypt"))).toHaveLength(0);
+    expect(
+      posted.filter((one) => one.at.startsWith("/api/decrypt")),
+    ).toHaveLength(0);
   });
 });
 
@@ -1212,7 +1219,11 @@ describe("what a dead end says", () => {
     {
       name: "when it was refused permission to look",
       list: () => {
-        backups = { backups: [], looked: ["/somewhere"], problem: "Not allowed to read that." };
+        backups = {
+          backups: [],
+          looked: ["/somewhere"],
+          problem: "Not allowed to read that.",
+        };
       },
       says: /Not allowed to read that/,
     },
@@ -1225,15 +1236,18 @@ describe("what a dead end says", () => {
     },
   ];
 
-  it.each(ends)("$name, it does not claim to be part of the way through", async ({ list, says }) => {
-    const user = userEvent.setup();
-    list();
-    render(<App language="en" />);
+  it.each(ends)(
+    "$name, it does not claim to be part of the way through",
+    async ({ list, says }) => {
+      const user = userEvent.setup();
+      list();
+      render(<App language="en" />);
 
-    await chooseRoute(user, /My iPhone is backed up/);
-    expect(await screen.findByText(says)).toBeInTheDocument();
-    expect(screen.queryByText(/Step 2 of 2/)).not.toBeInTheDocument();
-  });
+      await chooseRoute(user, /My iPhone is backed up/);
+      expect(await screen.findByText(says)).toBeInTheDocument();
+      expect(screen.queryByText(/Step 2 of 2/)).not.toBeInTheDocument();
+    },
+  );
 
   it("still counts the steps when there is somewhere to go", async () => {
     const user = userEvent.setup();
@@ -1250,7 +1264,9 @@ describe("what a dead end says", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up/);
-    expect(await screen.findByRole("button", { name: "Use this backup" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Use this backup" }),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Step 2 of 2/)).toBeInTheDocument();
   });
 });

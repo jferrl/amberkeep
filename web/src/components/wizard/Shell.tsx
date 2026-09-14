@@ -112,13 +112,7 @@ export function Shell({
  * The first screen has no total, because it genuinely is not known yet: an iPhone
  * backup takes two screens and an Android phone takes six.
  */
-function Steps({
-  step,
-  total,
-}: {
-  step: number;
-  total?: number | undefined;
-}) {
+function Steps({ step, total }: { step: number; total?: number | undefined }) {
   const t = useT();
   const said =
     total === undefined ? t("step", { step }) : t("stepOf", { step, total });

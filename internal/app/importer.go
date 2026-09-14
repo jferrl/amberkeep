@@ -200,7 +200,7 @@ func (i Importer) index(ctx context.Context, path, book, whatsApp string, say ap
 
 	index, err := OpenIndex(ctx, path, IndexPath(path, ""), IndexSettings{
 		Notices: i.Notices, Me: i.Me, Book: book, WhatsApp: whatsApp, Country: i.Country,
-		Say: func(line string) { say(api.StepIndexing, line) },
+		Say: func(line string, counts ...api.Count) { say(api.StepIndexing, line, counts...) },
 	})
 	switch {
 	case err == nil:

@@ -48,7 +48,6 @@ func run() error {
 	server, err := api.New(ctx, nil, api.Options{
 		Location: time.Local,
 		Me:       me,
-		Title:    "Archive",
 		Importer: app.Importer{Me: me},
 		Migrator: app.Migrator{Me: me},
 		Advise:   app.AdviseOn,

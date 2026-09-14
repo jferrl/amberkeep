@@ -139,7 +139,7 @@ func (m *migration) begin(stage MigrationStage, step Step, detail string, ask Mi
 }
 
 // progress says what is happening now.
-func (m *migration) progress(step Step, detail string) {
+func (m *migration) progress(step Step, detail string, _ ...Count) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

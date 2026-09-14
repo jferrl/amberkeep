@@ -372,7 +372,7 @@ func TestAnArchiveLetsGoOfItsIndex(t *testing.T) {
 	db := filepath.Join(dir, "msgstore.db")
 	fixture.TinyArchive(t, db)
 
-	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, string) {})
+	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, string, ...api.Count) {})
 	if err != nil {
 		t.Fatalf("opening the archive: %v", err)
 	}

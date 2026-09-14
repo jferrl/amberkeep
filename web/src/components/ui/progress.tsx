@@ -25,7 +25,10 @@ export function Progress({
     <RadixProgress.Root
       value={value}
       max={max}
-      className={cn("flex h-1 w-24 gap-0.5 overflow-hidden rounded-full", className)}
+      className={cn(
+        "flex h-1 w-24 gap-0.5 overflow-hidden rounded-full",
+        className,
+      )}
       {...props}
     >
       {Array.from({ length: max }, (_, at) => (

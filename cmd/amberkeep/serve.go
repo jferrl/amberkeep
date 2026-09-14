@@ -104,7 +104,6 @@ func runServe(ctx context.Context, args []string) error {
 		Names:     names,
 		Location:  location,
 		Me:        *me,
-		Title:     "Archive",
 		Token:     token,
 		Index:     index,
 		Importer:  bring,

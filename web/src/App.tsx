@@ -10,7 +10,7 @@ import {
 } from "@/api/queries";
 import { Notices } from "@/components/Notices";
 import { Export } from "@/components/export/Export";
-import { asking } from "@/lib/desktop";
+import { asking, inAWindow } from "@/lib/desktop";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
 import { Button } from "@/components/ui/button";
@@ -137,15 +137,27 @@ function Browser({
           reading && "hidden md:flex",
         )}
       >
-        {/* The promise and the way out of this archive, in the same strip. Closing
-            is here rather than hidden in a menu because somebody who opened the
-            wrong file should not have to restart the program to open the right
-            one. */}
-        <div className="flex items-center justify-between gap-2 border-b border-[var(--color-line)] px-3.5 py-1.5">
+        {/*
+          The promise, and the two ways out of this archive.
+
+          Stacked rather than one row. The sidebar is twenty rem, and a sentence
+          beside two buttons in that width wrapped all three onto three lines each.
+
+          The top padding is for the window: its title bar is hidden and inset, so
+          the page begins at the very top of the frame and the close, minimise and
+          zoom buttons are drawn over whatever is there — which was this sentence.
+          In a browser there is nothing above to clear.
+        */}
+        <div
+          className={cn(
+            "flex flex-col gap-2 border-b border-[var(--color-line)] px-3.5 pb-2",
+            inAWindow() ? "pt-9" : "pt-2",
+          )}
+        >
           <span className="text-xs text-[var(--color-muted)]">
             {t("readOnly")}
           </span>
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap items-center gap-1.5">
             {/* The thing most people came for. It was reachable only from a
                 terminal, which is to say not reachable by anybody who needed it. */}
             <Button size="sm" onClick={onKeep}>

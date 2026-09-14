@@ -53,7 +53,24 @@ const (
 // watching a bar that does not move assumes the program has hung. The two long
 // operations therefore report as they go, and the only thing the page polls is the
 // state this writes into.
-type Progress func(step Step, detail string)
+type Progress func(step Step, detail string, counts ...Count)
+
+// Count is a number the work has reached, for a page to phrase itself.
+//
+// The sentence used to be built here and sent as prose, which made every progress
+// line English — and unformatted, so a Spanish reader watching an index build was
+// told about "595236 messages" rather than 595.236. The server knows the number and
+// the page knows the reader, so the number travels and the sentence is composed
+// where the language is.
+//
+// The prose is still sent beside it, because the command prints exactly that and a
+// page meeting a count it does not recognise should say something rather than
+// nothing.
+type Count struct {
+	// Of is what was counted: "conversations", "messages".
+	Of string `json:"of"`
+	N  int    `json:"n"`
+}
 
 // opened is an archive and everything derived from it that is needed on every
 // request.
@@ -93,6 +110,7 @@ type session struct {
 	step     Step
 	detail   string
 	guidance string
+	counts   []Count
 
 	// workspace is where anything this program writes will go. It is shown before
 	// anything is written, because somebody has to be able to find their archive
@@ -136,14 +154,14 @@ func (s *session) begin(step Step, detail string) bool {
 }
 
 // progress says what is happening now, without changing what stage it is in.
-func (s *session) progress(step Step, detail string) {
+func (s *session) progress(step Step, detail string, counts ...Count) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.stage != StageWorking {
 		return
 	}
-	s.step, s.detail = step, detail
+	s.step, s.detail, s.counts = step, detail, counts
 }
 
 // ready hands over a finished archive, and lets go of whatever was open before.
@@ -204,6 +222,9 @@ func (s *session) state() map[string]any {
 	}
 	if s.guidance != "" {
 		out["guidance"] = s.guidance
+	}
+	if len(s.counts) > 0 {
+		out["counts"] = s.counts
 	}
 	return out
 }

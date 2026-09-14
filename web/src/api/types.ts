@@ -281,7 +281,15 @@ export interface Message {
  * the message count.
  */
 export interface Archive {
-  title: string;
+  /**
+   * What this archive is called, when the server has a name for it.
+   *
+   * Usually absent. It used to arrive as the word "Archive" whatever the reader's
+   * language, because the server defaulted it; now a server that has a real name
+   * sends one and a server that does not says nothing, which lets this page use its
+   * own word.
+   */
+  title?: string;
   layout: string;
   conversations: number;
   messages: number;
@@ -368,6 +376,19 @@ export type SetupStep =
   | "writing";
 
 /**
+ * A number the work has reached, for this page to phrase.
+ *
+ * The sentence used to arrive from the server already written, which made every
+ * progress line English and every number unformatted: a Spanish reader watching an
+ * index build was told about "595236 messages" rather than 595.236. The server knows
+ * the number, this page knows the reader.
+ */
+export interface Count {
+  of: string;
+  n: number;
+}
+
+/**
  * What the server is doing, and where it will put what it makes.
  *
  * `workspace` is present at every stage, including before anything has been chosen,
@@ -378,6 +399,8 @@ export type SetupStep =
 export interface Setup {
   stage: Stage;
   workspace: string;
+  /** Numbers behind the detail, when the step has any, for this page to phrase. */
+  counts?: readonly Count[];
   step?: SetupStep;
   detail?: string;
   guidance?: string;

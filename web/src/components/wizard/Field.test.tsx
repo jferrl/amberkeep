@@ -291,7 +291,14 @@ describe("the one secret this program handles", () => {
    * and nobody types those correctly without being able to look.
    */
   it("starts hidden", async () => {
-    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+    render(
+      <Field
+        label="The 64-digit key"
+        value="abc"
+        onChange={() => undefined}
+        secret
+      />,
+    );
 
     const box = await screen.findByLabelText("The 64-digit key");
     expect(box).toHaveAttribute("type", "password");
@@ -299,18 +306,38 @@ describe("the one secret this program handles", () => {
 
   it("can be checked, and hidden again", async () => {
     const user = userEvent.setup();
-    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+    render(
+      <Field
+        label="The 64-digit key"
+        value="abc"
+        onChange={() => undefined}
+        secret
+      />,
+    );
 
     await user.click(await screen.findByRole("button", { name: "Show" }));
-    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute("type", "text");
+    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute(
+      "type",
+      "text",
+    );
 
     await user.click(screen.getByRole("button", { name: "Hide" }));
-    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute(
+      "type",
+      "password",
+    );
   });
 
   it("says which state it is in, for anybody not looking at the letters", async () => {
     const user = userEvent.setup();
-    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+    render(
+      <Field
+        label="The 64-digit key"
+        value="abc"
+        onChange={() => undefined}
+        secret
+      />,
+    );
 
     const button = await screen.findByRole("button");
     expect(button).toHaveAttribute("aria-pressed", "false");
@@ -320,9 +347,19 @@ describe("the one secret this program handles", () => {
 
   /** A field that is not a secret is not given a control that suggests it is. */
   it("is offered on nothing else", async () => {
-    render(<Field label="The full path to the file" value="" onChange={() => undefined} />);
+    render(
+      <Field
+        label="The full path to the file"
+        value=""
+        onChange={() => undefined}
+      />,
+    );
 
-    expect(await screen.findByLabelText("The full path to the file")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Show" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("The full path to the file"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Show" }),
+    ).not.toBeInTheDocument();
   });
 });

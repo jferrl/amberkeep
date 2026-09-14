@@ -36,7 +36,10 @@ function answer(body: unknown, status = 200): Response {
 
 /** A refusal in the shape the server really sends one: plain text, not JSON. */
 function refuses(said: string, status = 409): Response {
-  return new Response(said, { status, headers: { "Content-Type": "text/plain" } });
+  return new Response(said, {
+    status,
+    headers: { "Content-Type": "text/plain" },
+  });
 }
 
 beforeEach(() => {
@@ -48,7 +51,8 @@ beforeEach(() => {
   fetching = vi.fn<typeof fetch>((input, init) => {
     const at = fetchTarget(input);
     if (init?.method === "POST") {
-      const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : {};
+      const body: unknown =
+        typeof init.body === "string" ? JSON.parse(init.body) : {};
       posted.push({ at, body: body as Record<string, unknown> });
       const said = replies[at];
       return Promise.resolve(said === undefined ? answer(now) : said());
@@ -109,10 +113,15 @@ describe("choosing what to keep", () => {
     replies["/api/export"] = () => answer({ stage: "writing" }, 202);
 
     show();
-    await user.type(await screen.findByLabelText(/Where to put it/), "/Users/someone/Archive");
+    await user.type(
+      await screen.findByLabelText(/Where to put it/),
+      "/Users/someone/Archive",
+    );
     await user.click(screen.getByRole("button", { name: "Write it out" }));
 
-    expect(sentTo("/api/export")).toMatchObject({ into: "/Users/someone/Archive" });
+    expect(sentTo("/api/export")).toMatchObject({
+      into: "/Users/someone/Archive",
+    });
   });
 
   /** Asking for nothing is a mistake worth naming, not a button that does nothing. */
@@ -123,7 +132,9 @@ describe("choosing what to keep", () => {
     await user.click(await screen.findByLabelText("Web pages"));
     await user.click(screen.getByRole("button", { name: "Write it out" }));
 
-    expect(await screen.findByText("Choose at least one thing to write.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Choose at least one thing to write."),
+    ).toBeInTheDocument();
     // The poll uses the same address, so only a POST counts as writing.
     expect(posted.filter((one) => one.at === "/api/export")).toHaveLength(0);
   });
@@ -136,10 +147,16 @@ describe("choosing what to keep", () => {
 
 describe("while it is running", () => {
   it("shows what it is doing rather than a still screen", async () => {
-    now = { stage: "writing", step: "writing", detail: "25 of 60 conversations written." };
+    now = {
+      stage: "writing",
+      step: "writing",
+      detail: "25 of 60 conversations written.",
+    };
 
     show();
-    expect(await screen.findByText("25 of 60 conversations written.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("25 of 60 conversations written."),
+    ).toBeInTheDocument();
   });
 });
 
@@ -159,7 +176,9 @@ describe("when it is done", () => {
 
   it("says where the history is, which is the only thing that matters now", async () => {
     show();
-    expect(await screen.findByText("/Users/someone/Amberkeep/archive")).toBeInTheDocument();
+    expect(
+      await screen.findByText("/Users/someone/Amberkeep/archive"),
+    ).toBeInTheDocument();
     expect(screen.getByText(/1,121,482/)).toBeInTheDocument();
   });
 
@@ -174,7 +193,9 @@ describe("when it is done", () => {
     const user = userEvent.setup();
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Back to the archive" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Back to the archive" }),
+    );
     expect(left).toBe(1);
   });
 
@@ -183,7 +204,9 @@ describe("when it is done", () => {
     replies["/api/export/forget"] = () => answer({ stage: "idle" });
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Write another copy" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Write another copy" }),
+    );
     expect(sentTo("/api/export/forget")).toEqual({});
   });
 });
@@ -194,9 +217,13 @@ describe("when the server refuses", () => {
     replies["/api/export"] = () => refuses("an export is already running");
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Write it out" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Write it out" }),
+    );
 
-    expect(await screen.findByText(/an export is already running/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/an export is already running/),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Web pages")).toBeInTheDocument();
   });
 });

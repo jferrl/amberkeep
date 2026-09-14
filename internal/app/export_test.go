@@ -147,7 +147,7 @@ func TestWritingAnArchiveOut(t *testing.T) {
 
 			result, err := archive.Export(context.Background(), api.ExportRequest{
 				Into: into, Formats: tt.formats, Groups: true, Me: "You", Location: time.UTC,
-			}, func(api.Step, string) {})
+			}, func(api.Step, string, ...api.Count) {})
 			if err != nil {
 				t.Fatalf("Export() failed: %v", err)
 			}
@@ -192,7 +192,7 @@ func TestOnlyWritesTheConversationsAskedFor(t *testing.T) {
 	result, err := archive.Export(context.Background(), api.ExportRequest{
 		Into: into, Formats: []string{"text"}, Groups: true,
 		Only: []string{chats[0].JID.String()}, Me: "You", Location: time.UTC,
-	}, func(api.Step, string) {})
+	}, func(api.Step, string, ...api.Count) {})
 	if err != nil {
 		t.Fatalf("Export() failed: %v", err)
 	}
@@ -216,14 +216,14 @@ func TestGroupsCanBeLeftOut(t *testing.T) {
 
 	all, err := archive.Export(context.Background(), api.ExportRequest{
 		Into: with, Formats: []string{"text"}, Groups: true, Me: "You", Location: time.UTC,
-	}, func(api.Step, string) {})
+	}, func(api.Step, string, ...api.Count) {})
 	if err != nil {
 		t.Fatalf("Export() with groups failed: %v", err)
 	}
 
 	alone, err := archive.Export(context.Background(), api.ExportRequest{
 		Into: without, Formats: []string{"text"}, Groups: false, Me: "You", Location: time.UTC,
-	}, func(api.Step, string) {})
+	}, func(api.Step, string, ...api.Count) {})
 	if err != nil {
 		t.Fatalf("Export() without groups failed: %v", err)
 	}
@@ -251,7 +251,7 @@ func TestAFormatThisDoesNotWriteIsRefused(t *testing.T) {
 
 			_, err := archive.Export(context.Background(), api.ExportRequest{
 				Into: t.TempDir(), Formats: []string{tt.format}, Me: "You", Location: time.UTC,
-			}, func(api.Step, string) {})
+			}, func(api.Step, string, ...api.Count) {})
 			if err == nil {
 				t.Fatal("it accepted a format it cannot write")
 			}
@@ -269,7 +269,7 @@ func TestNoFormatsIsRefused(t *testing.T) {
 	archive := archiveFor(t)
 	if _, err := archive.Export(context.Background(), api.ExportRequest{
 		Into: t.TempDir(), Me: "You", Location: time.UTC,
-	}, func(api.Step, string) {}); err == nil {
+	}, func(api.Step, string, ...api.Count) {}); err == nil {
 		t.Fatal("it accepted a request naming no formats")
 	}
 }
@@ -284,7 +284,7 @@ func TestASayingNothingZoneIsTheMachineOwn(t *testing.T) {
 
 	if _, err := archive.Export(context.Background(), api.ExportRequest{
 		Into: into, Formats: []string{"text"}, Groups: true, Me: "You",
-	}, func(api.Step, string) {}); err != nil {
+	}, func(api.Step, string, ...api.Count) {}); err != nil {
 		t.Fatalf("Export() with no zone failed: %v", err)
 	}
 	if got := wrote(t, into)[".txt"]; got == 0 {

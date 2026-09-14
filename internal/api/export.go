@@ -113,7 +113,7 @@ func (e *exporting) begin() bool {
 	return true
 }
 
-func (e *exporting) progress(step Step, detail string) {
+func (e *exporting) progress(step Step, detail string, _ ...Count) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.state.Stage != ExportWriting {

@@ -18,7 +18,10 @@ import { cn } from "@/lib/utils";
  * the label association that a styled div would have to reimplement and would get
  * subtly wrong.
  */
-export function Checkbox({ className, ...props }: ComponentProps<typeof RadixCheckbox.Root>) {
+export function Checkbox({
+  className,
+  ...props
+}: ComponentProps<typeof RadixCheckbox.Root>) {
   return (
     <RadixCheckbox.Root
       className={cn(

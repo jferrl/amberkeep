@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/contacts"
 	"github.com/jferrl/amberkeep/internal/crypt15"
@@ -325,7 +326,12 @@ type IndexSettings struct {
 	// Say is where to put the running commentary. Nothing means the terminal, which
 	// is where a command belongs; the wizard sets it so the same sentences reach
 	// somebody watching a browser instead.
-	Say func(string)
+	//
+	// The counts travel beside the sentence rather than inside it. A terminal prints
+	// the sentence; a page has a reader whose language and number formatting the
+	// server does not know, and cannot learn without being told something it has no
+	// business holding.
+	Say func(string, ...api.Count)
 }
 
 // PlanMigration opens both sides and works out what would happen.
@@ -405,7 +411,13 @@ func (s IndexSettings) announce(line string) {
 // scrolling past is noise. Anywhere else gets the sentence.
 func (s IndexSettings) counting(conversations, messages int) {
 	if s.Say != nil {
-		s.Say(fmt.Sprintf("Indexed %d conversations and %d messages so far.", conversations, messages))
+		// The numbers travel, and the page phrases them. The sentence is sent too,
+		// because the command prints exactly this.
+		s.Say(
+			fmt.Sprintf("Indexed %d conversations and %d messages so far.", conversations, messages),
+			api.Count{Of: "conversations", N: conversations},
+			api.Count{Of: "messages", N: messages},
+		)
 		return
 	}
 	fmt.Fprintf(os.Stderr, "\r%d conversations, %d messages...", conversations, messages)

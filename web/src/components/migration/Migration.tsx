@@ -100,14 +100,19 @@ export function Migration({
   };
 
   if (state.isPending || guide.isPending) {
-    return <Working state={{ stage: "working", workspace: "" }} />;
+    return (
+      <Working
+        state={{ stage: "working", workspace: "" }}
+        language={language}
+      />
+    );
   }
 
   switch (now.stage) {
     case "checking":
     case "planning":
     case "working":
-      return <Working state={progress(now)} />;
+      return <Working state={progress(now)} language={language} />;
 
     case "checked":
       return (

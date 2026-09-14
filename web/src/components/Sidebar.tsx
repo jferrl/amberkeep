@@ -72,14 +72,24 @@ export function Sidebar({
               onTerm(event.target.value);
             }}
           />
-          <Button
-            size="sm"
-            onClick={() => {
-              onTerm("");
-            }}
-          >
-            {t("clear")}
-          </Button>
+          {/*
+            Only when there is something to clear.
+
+            It sat there permanently, which made it a control somebody could press
+            for no effect, and — worse on a twenty-rem sidebar — it took a fifth of
+            the row from the box beside it, so the Spanish placeholder was cut off
+            mid-word before anybody had typed anything.
+          */}
+          {term !== "" && (
+            <Button
+              size="sm"
+              onClick={() => {
+                onTerm("");
+              }}
+            >
+              {t("clear")}
+            </Button>
+          )}
         </div>
 
         <p
