@@ -515,6 +515,52 @@ describe("choosing a backup rather than typing one", () => {
     { name: "when there are none", list: () => ({ backups: [] }), says: /No iPhone backup was found/ },
   ];
 
+  /**
+   * The hint under the field has to match what is actually above it. "Pick one
+   * above" with nothing above is the kind of small lie that makes somebody distrust
+   * the rest of the screen.
+   */
+  const hints: { name: string; list: BackupList; says: RegExp }[] = [
+    {
+      name: "when backups are offered, it says to pick one",
+      list: {
+        backups: [{ path: backupPath, device_name: "Ana's iPhone", encrypted: false }],
+      },
+      says: /Pick one above/,
+    },
+    {
+      name: "when none are offered, it does not point at a list that is not there",
+      list: { backups: [] },
+      says: /Where Finder keeps the backup/,
+    },
+  ];
+
+  it.each(hints)("$name", async ({ list, says }) => {
+    backups = list;
+
+    show();
+    // findByText rather than getByText: the field is drawn before the list has
+    // arrived, so the hint settles a moment after the screen does.
+    expect(await screen.findByText(says)).toBeInTheDocument();
+  });
+
+  /**
+   * The permission instructions are several paragraphs of System Settings
+   * navigation. On the wizard's own screen they are the only way forward and are
+   * shown; here the field below works, so they are folded away rather than put in
+   * front of the thing somebody can actually do.
+   */
+  it("folds the permission instructions away, since typing a path still works", async () => {
+    backups = { backups: [], problem: "Amberkeep may not read that folder.\n\nOpen System Settings." };
+
+    show();
+    expect(await screen.findByText(/may not read that folder/)).toBeInTheDocument();
+
+    const fold = screen.getByText("How to put that right").closest("details");
+    expect(fold).not.toBeNull();
+    expect(fold).not.toHaveAttribute("open");
+  });
+
   it.each(withoutAList)("$name, the path can still be typed", async ({ list, says }) => {
     const user = userEvent.setup();
     const answered = list();

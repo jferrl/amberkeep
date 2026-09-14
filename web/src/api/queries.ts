@@ -36,6 +36,7 @@ import {
   search,
 } from "./client";
 import type { Chat, ChatList, Migration, MigrationStage, SearchPage, Setup } from "./types";
+import { situationOf, type Situation } from "@/lib/backups";
 
 /** An answer that cannot go out of date while the server that gave it is running. */
 const neverStale = Number.POSITIVE_INFINITY;
@@ -244,6 +245,32 @@ export function useSetupState() {
 /** useBackups lists the iPhone backups this computer has already made. */
 export function useBackups(enabled = true) {
   return useQuery(backupsQuery(enabled));
+}
+
+/**
+ * What that list amounts to: one of five situations, and the reason if there is one.
+ *
+ * Two screens ask — the one that offers the backups and the form underneath it,
+ * which has to know whether there is anything to pick before it tells somebody to
+ * pick one. Both call this; the query is cached under one key, so it is one question
+ * asked once rather than two requests.
+ */
+export function useOfferedBackups(): { situation: Situation; problem: string | undefined } {
+  const backups = useBackups();
+
+  // A refusal by the server and a folder it was not allowed to read are the same
+  // thing to the person reading the screen: something stopped it looking.
+  const problem = backups.data?.problem ?? backups.error?.message;
+
+  return {
+    situation: situationOf(
+      isMissingImporter(backups.error),
+      problem,
+      backups.isPending,
+      backups.data?.backups.length ?? 0,
+    ),
+    problem,
+  };
 }
 
 /**

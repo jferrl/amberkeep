@@ -1,10 +1,10 @@
-import { isMissingImporter, useBackups } from "@/api/queries";
+import { useBackups, useOfferedBackups } from "@/api/queries";
 import type { Backup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Aside, Say } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
-import { describe, nameOf, situationOf, type Situation } from "@/lib/backups";
+import { describe, nameOf, type Situation } from "@/lib/backups";
 
 /**
  * The backups this computer has already made, offered rather than described.
@@ -36,17 +36,8 @@ export function ChooseBackup({
 }) {
   const t = useT();
   const backups = useBackups();
-
-  // A refusal by the server and a folder it was not allowed to read are the same
-  // thing to the person reading this: something stopped it looking.
-  const problem = backups.data?.problem ?? backups.error?.message;
+  const { situation, problem } = useOfferedBackups();
   const found = backups.data?.backups ?? [];
-  const situation = situationOf(
-    isMissingImporter(backups.error),
-    problem,
-    backups.isPending,
-    found.length,
-  );
 
   if (situation !== "some") return <Nothing situation={situation} said={problem ?? ""} />;
 
@@ -156,13 +147,27 @@ function Nothing({ situation, said }: { situation: Situation; said: string }) {
           <p role="alert" className="m-0 font-medium">
             {sentence ?? said}
           </p>
-          {advice === "" ? (
-            <Say>{t("backupsFullDisk")}</Say>
-          ) : (
-            <pre className="m-0 overflow-x-auto bg-[var(--color-paper)] p-3 font-sans text-sm whitespace-pre-wrap">
-              {advice}
-            </pre>
-          )}
+          {/*
+            Folded away rather than shown, which is the one thing this screen does
+            differently from the import wizard's. There, granting the permission is
+            the only way forward and the instructions are the screen. Here the field
+            below takes a typed path and works, so several paragraphs of System
+            Settings navigation would bury the thing somebody can actually do.
+          */}
+          <details>
+            <summary className="cursor-pointer text-sm font-medium">
+              {t("migrateBackupHowToFix")}
+            </summary>
+            {advice === "" ? (
+              <div className="mt-2">
+                <Say>{t("backupsFullDisk")}</Say>
+              </div>
+            ) : (
+              <pre className="m-0 mt-2 overflow-x-auto bg-[var(--color-paper)] p-3 font-sans text-sm whitespace-pre-wrap">
+                {advice}
+              </pre>
+            )}
+          </details>
         </Aside>
       );
     }

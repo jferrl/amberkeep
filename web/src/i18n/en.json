@@ -125,6 +125,8 @@
   "migrateBackupFound": "Backups this computer has already made",
   "migrateBackupChosen": "Chosen",
   "migrateBackupHint": "Pick one above. If the backup is somewhere else — an external disk, or a copy you made — type where it is.",
+  "migrateBackupHintAlone": "Where Finder keeps the backup, or wherever you copied it to.",
+  "migrateBackupHowToFix": "How to put that right",
   "migrateAndroidLabel": "The decrypted Android database",
   "migrateAndroidHint": "Usually msgstore.db. If you only have msgstore.db.crypt15, unlock it first from the first screen.",
   "migratePairingLabel": "WhatsApp's LID.sqlite from the same backup (optional)",

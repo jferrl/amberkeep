@@ -1,6 +1,7 @@
 import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
 
+import { useOfferedBackups } from "@/api/queries";
 import type { Migration } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { ChooseBackup } from "@/components/migration/ChooseBackup";
@@ -46,6 +47,8 @@ export function MigrationPaths({
 }) {
   const t = useT();
   const [wrong, setWrong] = useState<{ backup?: string; android?: string }>({});
+  // "Pick one above" is wrong when there is nothing above to pick.
+  const offered = useOfferedBackups().situation === "some";
 
   const send = (event: SyntheticEvent) => {
     event.preventDefault();
@@ -83,7 +86,7 @@ export function MigrationPaths({
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("migrateBackupLabel")}
-          hint={t("migrateBackupHint")}
+          hint={offered ? t("migrateBackupHint") : t("migrateBackupHintAlone")}
           value={paths.backup}
           wrong={wrong.backup}
           onChange={(backup) => {

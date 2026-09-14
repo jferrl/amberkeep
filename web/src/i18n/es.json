@@ -125,6 +125,8 @@
   "migrateBackupFound": "Copias que este ordenador ya ha hecho",
   "migrateBackupChosen": "Elegida",
   "migrateBackupHint": "Elige una de arriba. Si la copia está en otro sitio —un disco externo, o una copia que hiciste tú— escribe dónde está.",
+  "migrateBackupHintAlone": "Donde Finder guarda la copia, o donde la hayas copiado tú.",
+  "migrateBackupHowToFix": "Cómo solucionarlo",
   "migrateAndroidLabel": "La base de datos de Android descifrada",
   "migrateAndroidHint": "Normalmente msgstore.db. Si solo tienes msgstore.db.crypt15, descífralo primero desde la pantalla inicial.",
   "migratePairingLabel": "El LID.sqlite de WhatsApp de esa misma copia (opcional)",
