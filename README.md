@@ -1,3 +1,5 @@
+<img src="docs/brand/mark.svg" alt="" width="76" />
+
 # Amberkeep
 
 [![CI](https://github.com/jferrl/amberkeep/actions/workflows/ci.yml/badge.svg)](https://github.com/jferrl/amberkeep/actions/workflows/ci.yml)

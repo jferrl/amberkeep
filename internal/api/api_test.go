@@ -161,6 +161,27 @@ func ask(t *testing.T, handler http.Handler, path string) map[string]any {
 	return body
 }
 
+// TestTheMarkIsServed covers the one asset the page asks for by name rather than by
+// hash. A browser asking for it and getting the index page back instead is the kind
+// of thing nobody notices, because a missing favicon looks like a browser being slow.
+func TestTheMarkIsServed(t *testing.T) {
+	t.Parallel()
+
+	recorder := httptest.NewRecorder()
+	serve(t, fixture()).ServeHTTP(recorder,
+		httptest.NewRequest(http.MethodGet, "/favicon.svg", http.NoBody))
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("GET /favicon.svg returned %d", recorder.Code)
+	}
+	if got := recorder.Header().Get("Content-Type"); !strings.Contains(got, "image/svg+xml") {
+		t.Errorf("Content-Type = %q, want an SVG", got)
+	}
+	if body := recorder.Body.String(); !strings.Contains(body, "<svg") {
+		t.Errorf("what came back is not an SVG: %.60s", body)
+	}
+}
+
 func TestArchiveSummary(t *testing.T) {
 	t.Parallel()
 

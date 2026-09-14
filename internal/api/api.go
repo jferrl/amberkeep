@@ -227,6 +227,12 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	// as a tree rather than one by one. Nothing outside it is reachable: the file
 	// system is the embedded one and holds only what the build produced.
 	mux.Handle("GET /assets/", s.immutable(http.FileServerFS(assets)))
+
+	// The mark, served from the same binary as everything else. Not marked
+	// immutable: its name carries no hash, so a browser that cached it forever
+	// would keep an old one forever.
+	mux.Handle("GET /favicon.svg", http.FileServerFS(assets))
+
 	mux.HandleFunc("GET /{$}", s.handlePage)
 
 	return &Server{handler: s.authenticated(mux), session: s.session}, nil

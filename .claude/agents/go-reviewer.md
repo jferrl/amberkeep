@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 You review Go against this project's own standards, which are stricter than the language's.
 
-Read `docs/PRINCIPLES.md` and `CLAUDE.md` first. They are binding.
+Read `docs/PRINCIPLES.md` and `AGENTS.md` first. They are binding.
 
 ## What to check, in the order that matters
 
