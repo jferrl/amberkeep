@@ -219,5 +219,7 @@
   "exportAction": "Guardar una copia",
   "showKey": "Mostrar",
   "hideKey": "Ocultar",
-  "androidFileHint": "El archivo que copiaste del teléfono. Termina en .crypt15 y suele ocupar unos cientos de megabytes."
+  "androidFileHint": "El archivo que copiaste del teléfono. Termina en .crypt15 y suele ocupar unos cientos de megabytes.",
+  "workingTakesAMoment": "Esto suele tardar unos segundos. Puedes irte de esta ventana; sigue por su cuenta.",
+  "workingTakesMinutes": "Esto suele tardar unos minutos con un historial grande. Puedes irte de esta ventana; sigue por su cuenta, y no se pierde nada por esperar."
 }

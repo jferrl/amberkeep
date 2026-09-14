@@ -163,8 +163,10 @@ function Totals({
 }) {
   const t = useT();
 
-  const lines: [number, string][] = [
-    [plan.adding, t("migrateAdding")],
+  // One number is what somebody is agreeing to; the other six describe it. They were
+  // all set at the same size, on the screen that is entirely about magnitude, so
+  // "messages would be added" and "conversations not gone near" read as equals.
+  const rest: [number, string][] = [
     [plan.already_there, t("migrateAlready")],
     [plan.as_placeholders, t("migrateAsText")],
     [plan.untranslatable, t("migrateNotCarried")],
@@ -174,14 +176,23 @@ function Totals({
   ];
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
+      <p className="m-0 flex flex-wrap items-baseline gap-x-2">
+        <span className="text-3xl leading-none font-semibold tabular-nums">
+          {count(plan.adding, language)}
+        </span>
+        <span className="text-[0.9375rem]">{t("migrateAdding")}</span>
+      </p>
+
       <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
-        {lines.map(([n, said]) => (
+        {rest.map(([n, said]) => (
           <div key={said} className="contents">
-            <dt className="text-right text-sm font-medium tabular-nums">
+            <dt className="text-right text-[0.8125rem] font-medium tabular-nums">
               {count(n, language)}
             </dt>
-            <dd className="m-0 text-sm text-[var(--color-muted)]">{said}</dd>
+            <dd className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
+              {said}
+            </dd>
           </div>
         ))}
       </dl>

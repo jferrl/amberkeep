@@ -19,6 +19,26 @@ const sentences: Partial<Record<SetupStep, Phrase>> = {
 };
 
 /**
+ * Roughly how long each step takes, for the steps that take long enough to worry
+ * somebody.
+ *
+ * Not a countdown and not a bar — a sentence, said once, in the units a person
+ * thinks in. It is the honest half of the decision below: this program will not
+ * pretend to know how far through it is, but it does know from measurement that
+ * decrypting a 236 MB backup is seconds and building an index over a million
+ * messages is minutes, and saying so is the difference between waiting and
+ * wondering whether to kill it.
+ *
+ * Absent for the quick steps, because "about a second" on screen is noise.
+ */
+const takes: Partial<Record<SetupStep, Phrase>> = {
+  decrypting: "workingTakesAMoment",
+  indexing: "workingTakesMinutes",
+  writing: "workingTakesMinutes",
+  extracting: "workingTakesAMoment",
+};
+
+/**
  * Work in progress, reported rather than estimated.
  *
  * The server's own sentence is the big line and this page's is the small one
@@ -39,6 +59,7 @@ export function Working({ state }: { state: Setup }) {
   const t = useT();
   const step = state.step === undefined ? undefined : sentences[state.step];
   const doing = t(step ?? "workingSomething");
+  const howLong = state.step === undefined ? undefined : takes[state.step];
 
   return (
     <Shell step={1} heading={t("workingTitle")}>
@@ -54,6 +75,12 @@ export function Working({ state }: { state: Setup }) {
           )}
         </div>
       </div>
+
+      {howLong !== undefined && (
+        <p className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
+          {t(howLong)}
+        </p>
+      )}
 
       <p className="m-0 text-sm text-[var(--color-muted)]">
         {t("workingLocal")}
