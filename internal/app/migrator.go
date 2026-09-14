@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -18,27 +18,27 @@ import (
 // must not become two implementations: a browser and a terminal disagreeing about
 // what a migration does is the sort of difference nobody finds until it matters.
 
-// migrator moves a history onto a phone.
-type migrator struct {
-	// me and country are how the archive is read, the same as everywhere else.
-	me      string
-	country string
+// Migrator moves a history onto a phone.
+type Migrator struct {
+	// Me and Country are how the archive is read, the same as everywhere else.
+	Me      string
+	Country string
 }
 
 // Check looks at a backup before anything else happens.
-func (m migrator) Check(ctx context.Context, backup string) (migrate.Readiness, error) {
-	return migrate.Preflight(ctx, backup, whatsappDomain, chatStorage)
+func (m Migrator) Check(ctx context.Context, backup string) (migrate.Readiness, error) {
+	return migrate.Preflight(ctx, backup, WhatsAppDomain, ChatStorage)
 }
 
 // Plan works out what would move. It writes nothing.
-func (m migrator) Plan(ctx context.Context, ask api.MigrationRequest, say api.Progress) (migrate.Plan, error) {
+func (m Migrator) Plan(ctx context.Context, ask api.MigrationRequest, say api.Progress) (migrate.Plan, error) {
 	say(api.StepOpening, "Reading the archive and the phone's own messages.")
 
 	book, whatsApp := addressBook(ask.Contacts)
-	plan, _, from, err := planMigration(ctx, planning{
-		android: ask.Android, backup: ask.Backup, pairing: ask.Pairing,
-		book: book, whatsApp: whatsApp, country: m.country,
-		opts: migrate.Options{Groups: ask.Groups, Hidden: ask.Hidden, Only: ask.Only},
+	plan, _, from, err := PlanMigration(ctx, Planning{
+		Android: ask.Android, Backup: ask.Backup, Pairing: ask.Pairing,
+		Book: book, WhatsApp: whatsApp, Country: m.Country,
+		Opts: migrate.Options{Groups: ask.Groups, Hidden: ask.Hidden, Only: ask.Only},
 	})
 	if err != nil {
 		return migrate.Plan{}, err
@@ -51,16 +51,16 @@ func (m migrator) Plan(ctx context.Context, ask api.MigrationRequest, say api.Pr
 
 // Carry does it: into a copy of the store, checked against the original, then into a
 // copy of the backup. Nothing it touches is an original.
-func (m migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migrate.Plan,
+func (m Migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migrate.Plan,
 	say api.Progress,
 ) (api.Migrated, error) {
 	book, whatsApp := addressBook(ask.Contacts)
 
 	say(api.StepOpening, "Taking the phone's messages out of the backup.")
-	freshPlan, store, from, err := planMigration(ctx, planning{
-		android: ask.Android, backup: ask.Backup, pairing: ask.Pairing,
-		book: book, whatsApp: whatsApp, country: m.country,
-		opts: migrate.Options{Groups: ask.Groups, Hidden: ask.Hidden, Only: ask.Only},
+	freshPlan, store, from, err := PlanMigration(ctx, Planning{
+		Android: ask.Android, Backup: ask.Backup, Pairing: ask.Pairing,
+		Book: book, WhatsApp: whatsApp, Country: m.Country,
+		Opts: migrate.Options{Groups: ask.Groups, Hidden: ask.Hidden, Only: ask.Only},
 	})
 	if err != nil {
 		return api.Migrated{}, err
@@ -78,7 +78,7 @@ func (m migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migr
 	}
 
 	say(api.StepPreparing, fmt.Sprintf("Moving %s. Nothing is being uploaded.",
-		plural(plan.Adding, "message", "messages")))
+		Plural(plan.Adding, "message", "messages")))
 	merged := store + ".merged"
 	result, err := migrate.Apply(ctx, from, store, merged, freshPlan)
 	if err != nil {
@@ -100,7 +100,7 @@ func (m migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migr
 		into = besideTheBackup(ask.Backup)
 	}
 	patched, err := backupfs.Patch(ctx, ask.Backup, into, backupfs.Replacement{
-		Domain: whatsappDomain, RelativePath: chatStorage, With: merged,
+		Domain: WhatsAppDomain, RelativePath: ChatStorage, With: merged,
 	})
 	if err != nil {
 		return api.Migrated{}, err

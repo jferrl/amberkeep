@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -11,17 +11,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/fixture"
+
 	"github.com/jferrl/amberkeep/internal/api"
 )
 
 // The wizard, end to end: a person with a backup and no idea what is in it, and
 // the page that gets them from one to the other.
 //
-// The server's own tests prove the state machine with an importer that pretends.
+// The server's own tests prove the state machine with an Importer that pretends.
 // These prove the part that does not pretend: a real iPhone backup folder, a real
 // message store, the real search index, over the real HTTP API.
 
-// wizardOver returns a server with nothing open and the real importer behind it.
+// wizardOver returns a server with nothing open and the real Importer behind it.
 //
 // It lets go at the end of the test, which is not housekeeping: the archive it opens
 // is a file in the test's own temporary directory, and on Windows a file that is
@@ -33,8 +35,8 @@ func wizardOver(t *testing.T, workspace string) *api.Server {
 	handler, err := api.New(t.Context(), nil, api.Options{
 		Location:  time.UTC,
 		Workspace: workspace,
-		Importer:  importer{me: "You"},
-		Advise:    adviseOn,
+		Importer:  Importer{Me: "You"},
+		Advise:    AdviseOn,
 	})
 	if err != nil {
 		t.Fatalf("starting the wizard: %v", err)
@@ -94,7 +96,7 @@ func TestTheWizardBringsAnIPhoneBackupIn(t *testing.T) {
 	t.Parallel()
 
 	dir := t.TempDir()
-	backup := buildBackupWithAStore(t, dir)
+	backup := fixture.BackupWithAStore(t, dir)
 	workspace := filepath.Join(dir, "workspace")
 
 	handler := wizardOver(t, workspace)
@@ -123,13 +125,13 @@ func TestTheWizardBringsAnIPhoneBackupIn(t *testing.T) {
 	// The store holds only a path to a picture; without this step an iPhone archive
 	// shows a decade of the words "image omitted".
 	t.Run("the pictures came with it", func(t *testing.T) {
-		if _, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(thumbInStore))); err != nil {
+		if _, err := os.Stat(filepath.Join(workspace, filepath.FromSlash(fixture.ThumbInStore))); err != nil {
 			t.Errorf("the picture did not land beside the store: %v", err)
 		}
 	})
 
 	t.Run("and the store landed where somebody can find it", func(t *testing.T) {
-		if _, err := os.Stat(filepath.Join(workspace, chatStorage)); err != nil {
+		if _, err := os.Stat(filepath.Join(workspace, ChatStorage)); err != nil {
 			t.Errorf("the message store is not in the workspace: %v", err)
 		}
 	})
@@ -140,7 +142,7 @@ func TestTheWizardOpensSomethingAlreadyReadable(t *testing.T) {
 
 	dir := t.TempDir()
 	db := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, db)
+	fixture.TinyArchive(t, db)
 
 	book := filepath.Join(dir, "contacts.vcf")
 	if err := os.WriteFile(book,
@@ -190,7 +192,7 @@ func TestTheWizardSaysWhatToDoWhenItCannotOpenSomething(t *testing.T) {
 
 	dir := t.TempDir()
 	notAnArchive := filepath.Join(dir, "holiday.jpg")
-	if err := os.WriteFile(notAnArchive, onePixelJPEG, 0o600); err != nil {
+	if err := os.WriteFile(notAnArchive, fixture.OnePixelJPEG, 0o600); err != nil {
 		t.Fatalf("writing the fixture: %v", err)
 	}
 
@@ -341,7 +343,7 @@ func TestAddressBookIsRecognisedByItsName(t *testing.T) {
 func TestListingBackupsNeverReturnsNothingAtAll(t *testing.T) {
 	t.Parallel()
 
-	found, problem := importer{}.Backups()
+	found, problem := Importer{}.Backups()
 	if found == nil {
 		t.Error("the list came back as nothing rather than as an empty list")
 	}
@@ -368,9 +370,9 @@ func TestAnArchiveLetsGoOfItsIndex(t *testing.T) {
 
 	dir := t.TempDir()
 	db := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, db)
+	fixture.TinyArchive(t, db)
 
-	opened, err := importer{me: "You"}.Open(context.Background(), db, "", func(api.Step, string) {})
+	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, string) {})
 	if err != nil {
 		t.Fatalf("opening the archive: %v", err)
 	}

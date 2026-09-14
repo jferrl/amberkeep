@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"html"
@@ -12,10 +11,12 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
+
+	"github.com/jferrl/amberkeep/internal/fixture"
 
 	_ "modernc.org/sqlite"
 
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
@@ -111,8 +112,8 @@ func TestDefaultOutput(t *testing.T) {
 			// Written with slashes because that is how a path reads, and converted
 			// on both sides because that is not how Windows spells one.
 			in, want := filepath.FromSlash(tt.in), filepath.FromSlash(tt.want)
-			if got := defaultOutput(in); got != want {
-				t.Errorf("defaultOutput(%q) = %q, want %q", in, got, want)
+			if got := app.DefaultOutput(in); got != want {
+				t.Errorf("app.DefaultOutput(%q) = %q, want %q", in, got, want)
 			}
 		})
 	}
@@ -135,8 +136,8 @@ func TestHumanSize(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.want, func(t *testing.T) {
 			t.Parallel()
-			if got := humanSize(tt.n); got != tt.want {
-				t.Errorf("humanSize(%d) = %q, want %q", tt.n, got, tt.want)
+			if got := app.HumanSize(tt.n); got != tt.want {
+				t.Errorf("app.HumanSize(%d) = %q, want %q", tt.n, got, tt.want)
 			}
 		})
 	}
@@ -238,7 +239,7 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		t.Run(err.Error()[:min(40, len(err.Error()))], func(t *testing.T) {
 			t.Parallel()
 
-			got := adviseOn(err)
+			got := app.AdviseOn(err)
 			if got == "" {
 				t.Errorf("no advice for %q", err)
 			}
@@ -252,14 +253,14 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		t.Parallel()
 
 		wrapped := fmt.Errorf("exporting a conversation: %w", export.ErrExists)
-		if adviseOn(wrapped) == "" {
+		if app.AdviseOn(wrapped) == "" {
 			t.Error("wrapping an error lost its advice")
 		}
 	})
 
 	t.Run("a failure nobody anticipated gets none", func(t *testing.T) {
 		t.Parallel()
-		if adviseOn(errors.New("the disk caught fire")) != "" {
+		if app.AdviseOn(errors.New("the disk caught fire")) != "" {
 			t.Error("advice was invented for an unknown failure")
 		}
 	})
@@ -310,7 +311,7 @@ func TestEndToEnd(t *testing.T) {
 
 	dir := t.TempDir()
 	db := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, db)
+	fixture.TinyArchive(t, db)
 
 	book := filepath.Join(dir, "contacts.vcf")
 	if err := os.WriteFile(book,
@@ -377,7 +378,7 @@ func TestEndToEnd(t *testing.T) {
 		if !errors.Is(err, export.ErrExists) {
 			t.Errorf("the second export error = %v, want it to refuse", err)
 		}
-		if adviseOn(err) == "" {
+		if app.AdviseOn(err) == "" {
 			t.Error("the refusal carried no advice about --force")
 		}
 	})
@@ -457,7 +458,7 @@ func TestEndToEnd(t *testing.T) {
 		if !errors.Is(err, search.ErrEmptyQuery) {
 			t.Errorf("the search error = %v, want it to say there is nothing to search for", err)
 		}
-		if adviseOn(err) == "" {
+		if app.AdviseOn(err) == "" {
 			t.Error("the refusal carried no advice")
 		}
 	})
@@ -478,41 +479,4 @@ func TestEndToEnd(t *testing.T) {
 			t.Error("inspect changed the archive")
 		}
 	})
-}
-
-// buildTinyArchive writes the smallest database the reader will accept, with two
-// messages in one conversation.
-func buildTinyArchive(t *testing.T, path string) {
-	t.Helper()
-
-	db, err := sql.Open("sqlite", "file:"+path)
-	if err != nil {
-		t.Fatalf("creating the database: %v", err)
-	}
-	defer db.Close()
-
-	schema := `
-CREATE TABLE jid (_id INTEGER PRIMARY KEY, user TEXT, server TEXT, raw_string TEXT);
-CREATE TABLE chat (_id INTEGER PRIMARY KEY, jid_row_id INTEGER, subject TEXT);
-CREATE TABLE message (
-	_id INTEGER PRIMARY KEY, chat_row_id INTEGER, from_me INTEGER, key_id TEXT,
-	sender_jid_row_id INTEGER, timestamp INTEGER, message_type INTEGER, text_data TEXT);`
-	if _, err := db.Exec(schema); err != nil {
-		t.Fatalf("creating the schema: %v", err)
-	}
-
-	at := time.Date(2026, 9, 12, 18, 46, 9, 0, time.UTC).UnixMilli()
-	data := fmt.Sprintf(`
-INSERT INTO jid (_id, user, server, raw_string)
-	VALUES (1, '34600111222', 's.whatsapp.net', '34600111222@s.whatsapp.net');
-INSERT INTO chat (_id, jid_row_id) VALUES (1, 1);
-INSERT INTO message (_id, chat_row_id, from_me, key_id, sender_jid_row_id, timestamp, message_type, text_data)
-	VALUES (1, 1, 0, 'K1', 1, %d, 0, 'hello there'),
-	       (2, 1, 1, 'K2', NULL, %d, 0, 'hello back');`, at, at+60000)
-	if _, err := db.Exec(data); err != nil {
-		t.Fatalf("populating the database: %v", err)
-	}
-	if err := db.Close(); err != nil {
-		t.Fatalf("closing the database: %v", err)
-	}
 }

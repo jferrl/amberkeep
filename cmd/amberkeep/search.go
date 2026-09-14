@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/search"
-	"github.com/jferrl/amberkeep/internal/source"
 )
 
 // runSearch finds messages across the whole archive.
@@ -64,13 +63,13 @@ func runSearch(ctx context.Context, args []string) error {
 		to = to.AddDate(0, 0, 1).Add(-time.Nanosecond)
 	}
 
-	index, err := openIndex(ctx, *db, indexPath(*db, *indexAt), indexSettings{
-		rebuild:  *rebuild,
-		notices:  *notices,
-		me:       *me,
-		book:     *bookPath,
-		whatsApp: *waPath,
-		country:  *country,
+	index, err := app.OpenIndex(ctx, *db, app.IndexPath(*db, *indexAt), app.IndexSettings{
+		Rebuild:  *rebuild,
+		Notices:  *notices,
+		Me:       *me,
+		Book:     *bookPath,
+		WhatsApp: *waPath,
+		Country:  *country,
 	})
 	if err != nil {
 		return err
@@ -110,125 +109,9 @@ func runSearch(ctx context.Context, args []string) error {
 	case total > len(hits):
 		fmt.Printf("%d of %d matches. Pass --limit to see more.\n", len(hits), total)
 	default:
-		fmt.Printf("%s.\n", plural(total, "match", "matches"))
+		fmt.Printf("%s.\n", app.Plural(total, "match", "matches"))
 	}
 	return nil
-}
-
-// indexSettings are what building an index needs, gathered so the signature of
-// openIndex stays readable.
-type indexSettings struct {
-	rebuild  bool
-	notices  bool
-	me       string
-	book     string
-	whatsApp string
-	country  string
-
-	// say is where to put the running commentary. Nothing means the terminal, which
-	// is where a command belongs; the wizard sets it so the same sentences reach
-	// somebody watching a browser instead.
-	say func(string)
-}
-
-// announce reports one thing that has happened.
-func (s indexSettings) announce(line string) {
-	if s.say != nil {
-		s.say(line)
-		return
-	}
-	fmt.Fprintln(os.Stderr, line)
-}
-
-// counting reports how far the build has got.
-//
-// A terminal gets one line rewritten in place, because a few hundred of them
-// scrolling past is noise. Anywhere else gets the sentence.
-func (s indexSettings) counting(conversations, messages int) {
-	if s.say != nil {
-		s.say(fmt.Sprintf("Indexed %d conversations and %d messages so far.", conversations, messages))
-		return
-	}
-	fmt.Fprintf(os.Stderr, "\r%d conversations, %d messages...", conversations, messages)
-}
-
-// finished clears whatever counting left on the terminal.
-func (s indexSettings) finished() {
-	if s.say == nil {
-		fmt.Fprint(os.Stderr, "\r\033[K")
-	}
-}
-
-// openIndex returns a usable index, building one if there is none or the one there
-// no longer matches the archive.
-func openIndex(ctx context.Context, db, at string, settings indexSettings) (*search.Index, error) {
-	if !settings.rebuild {
-		index, err := search.Open(ctx, at)
-		if err == nil {
-			stats, err := index.Stats(ctx)
-			switch {
-			case err != nil:
-				_ = index.Close()
-			case !stats.MatchesSource(db):
-				_ = index.Close()
-				settings.announce("The archive has changed since the index was built; building it again.")
-			case stats.Notices != settings.notices:
-				_ = index.Close()
-				settings.announce("The index was built with different settings; building it again.")
-			default:
-				return index, nil
-			}
-		}
-	}
-
-	reader, err := source.Open(ctx, db)
-	if err != nil {
-		return nil, err
-	}
-	defer reader.Close()
-
-	mentionPreparation(reader, db)
-
-	names, err := loadNames(ctx, reader.Directory(), settings.book, settings.whatsApp, settings.country)
-	if err != nil {
-		return nil, err
-	}
-
-	settings.announce("Building the search index. This happens once and takes a few minutes.")
-	started := time.Now()
-
-	index, err := search.Build(ctx, reader, at, db, search.Options{
-		Names:          names,
-		Me:             settings.me,
-		IncludeNotices: settings.notices,
-		Progress: func(conversations, messages int) {
-			if conversations%100 == 0 {
-				settings.counting(conversations, messages)
-			}
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	settings.finished()
-
-	stats, err := index.Stats(ctx)
-	if err != nil {
-		_ = index.Close()
-		return nil, err
-	}
-	settings.announce(fmt.Sprintf("Indexed %d messages from %d conversations in %s.",
-		stats.Messages, stats.Conversations, time.Since(started).Round(time.Second)))
-	return index, nil
-}
-
-// indexPath is where the index lives. Beside the archive by default, so a second
-// search finds it without being told where it went.
-func indexPath(db, chosen string) string {
-	if chosen != "" {
-		return chosen
-	}
-	return filepath.Join(filepath.Dir(db), filepath.Base(db)+".amberkeep-index")
 }
 
 // marks are what wraps a matched word in the output.
@@ -273,12 +156,4 @@ func firstWord(s string) string {
 		return fields[0]
 	}
 	return s
-}
-
-// plural renders a count with the right form of its noun.
-func plural(n int, singular, many string) string {
-	if n == 1 {
-		return fmt.Sprintf("%d %s", n, singular)
-	}
-	return fmt.Sprintf("%d %s", n, many)
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/migrate"
@@ -74,7 +75,7 @@ func runMigrate(ctx context.Context, args []string) error {
 
 	fmt.Fprintf(told, "%s\n", unproven)
 
-	ready, err := migrate.Preflight(ctx, *backup, whatsappDomain, chatStorage)
+	ready, err := migrate.Preflight(ctx, *backup, app.WhatsAppDomain, app.ChatStorage)
 	if err != nil {
 		return err
 	}
@@ -83,10 +84,10 @@ func runMigrate(ctx context.Context, args []string) error {
 		return fmt.Errorf("the checks above have to pass before anything can be moved")
 	}
 
-	plan, target, from, err := planMigration(ctx, planning{
-		android: *android, backup: *backup, pairing: *pairing,
-		book: *bookPath, whatsApp: *waPath, country: *country,
-		opts: migrate.Options{Groups: *groups, Hidden: *hidden, Only: addresses(*only)},
+	plan, target, from, err := app.PlanMigration(ctx, app.Planning{
+		Android: *android, Backup: *backup, Pairing: *pairing,
+		Book: *bookPath, WhatsApp: *waPath, Country: *country,
+		Opts: migrate.Options{Groups: *groups, Hidden: *hidden, Only: addresses(*only)},
 	})
 	if err != nil {
 		return err
@@ -119,53 +120,6 @@ func runMigrate(ctx context.Context, args []string) error {
 	return carryOut(ctx, from, target, plan, *backup, into)
 }
 
-// planning is what working out a migration needs.
-type planning struct {
-	android, backup, pairing string
-	book, whatsApp, country  string
-	opts                     migrate.Options
-}
-
-// planMigration opens both sides and works out what would happen.
-func planMigration(ctx context.Context, p planning) (migrate.Plan, string, source.Archive, error) {
-	from, err := source.Open(ctx, p.android)
-	if err != nil {
-		return migrate.Plan{}, "", nil, err
-	}
-	if _, err := loadNames(ctx, from.Directory(), p.book, p.whatsApp, p.country); err != nil {
-		_ = from.Close()
-		return migrate.Plan{}, "", nil, err
-	}
-	mentionPreparation(from, p.android)
-
-	// The store is taken out of the backup into a place of its own. The backup is
-	// never opened for writing and never will be.
-	work, err := os.MkdirTemp("", "amberkeep-migrate-")
-	if err != nil {
-		_ = from.Close()
-		return migrate.Plan{}, "", nil, fmt.Errorf("making somewhere to work: %w", err)
-	}
-	store, err := takeStoreOut(ctx, p.backup, work)
-	if err != nil {
-		_ = from.Close()
-		return migrate.Plan{}, "", nil, err
-	}
-
-	to, err := migrate.OpenTarget(ctx, store, p.pairing)
-	if err != nil {
-		_ = from.Close()
-		return migrate.Plan{}, "", nil, err
-	}
-	defer func() { _ = to.Close() }()
-
-	plan, err := migrate.Build(ctx, from, to, p.opts)
-	if err != nil {
-		_ = from.Close()
-		return migrate.Plan{}, "", nil, err
-	}
-	return plan, store, from, nil
-}
-
 // carryOut does the writing, in the order that keeps it checkable: into a copy of
 // the store, checked against the original, then into a copy of the backup.
 func carryOut(ctx context.Context, from source.Archive, store string, plan migrate.Plan, backup, into string) error {
@@ -177,8 +131,8 @@ func carryOut(ctx context.Context, from source.Archive, store string, plan migra
 		return err
 	}
 	fmt.Fprintf(told, "  moved %s into %s in %s\n",
-		plural(result.Added, "message", "messages"),
-		plural(result.Merged+result.Created, "conversation", "conversations"),
+		app.Plural(result.Added, "message", "messages"),
+		app.Plural(result.Merged+result.Created, "conversation", "conversations"),
 		result.Took.Round(time.Second))
 
 	fmt.Fprintf(told, "\nChecking what was written.\n")
@@ -199,7 +153,7 @@ func carryOut(ctx context.Context, from source.Archive, store string, plan migra
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(told, "  wrote %s in %s\n", abbreviate(patched.Path), patched.Took.Round(time.Second))
+	fmt.Fprintf(told, "  wrote %s in %s\n", app.Abbreviate(patched.Path), patched.Took.Round(time.Second))
 	if patched.LogNeutralised {
 		fmt.Fprintf(told, "  emptied the write-ahead log the backup carried, which would have been replayed\n")
 	}
@@ -322,9 +276,9 @@ func reportPlan(w io.Writer, plan migrate.Plan) {
 			plan.Earliest.Format("2 January 2006"), plan.Latest.Format("2 January 2006"))
 	}
 	fmt.Fprintf(w, "  %s would be created, %s merged into, %s left alone\n",
-		plural(plan.Creating, "conversation", "conversations"),
-		plural(plan.Merging, "conversation", "conversations"),
-		plural(plan.Untouched, "conversation", "conversations"))
+		app.Plural(plan.Creating, "conversation", "conversations"),
+		app.Plural(plan.Merging, "conversation", "conversations"),
+		app.Plural(plan.Untouched, "conversation", "conversations"))
 
 	for _, warning := range plan.Warnings {
 		fmt.Fprintf(w, "\n  ! %s\n", wrap(warning, 68, "    "))
@@ -353,23 +307,11 @@ func detailOf(s string) string {
 	return " — " + s
 }
 
-// takeStoreOut copies WhatsApp's message store out of a backup, into a place of this
-// command's own. The backup is opened read-only and is never written to.
-func takeStoreOut(ctx context.Context, backup, work string) (string, error) {
-	archive, err := backupfs.Open(ctx, backup)
-	if err != nil {
-		return "", err
-	}
-	defer func() { _ = archive.Close() }()
-
-	return archive.ExtractDatabase(ctx, work, whatsappDomain, chatStorage)
-}
-
 // patchBackup puts a store into a copy of a backup.
 func patchBackup(ctx context.Context, backup, into, store string) (backupfs.Patched, error) {
 	return backupfs.Patch(ctx, backup, into, backupfs.Replacement{
-		Domain:       whatsappDomain,
-		RelativePath: chatStorage,
+		Domain:       app.WhatsAppDomain,
+		RelativePath: app.ChatStorage,
 		With:         store,
 	})
 }

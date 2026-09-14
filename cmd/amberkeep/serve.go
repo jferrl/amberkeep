@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/api"
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
@@ -53,8 +54,8 @@ func runServe(ctx context.Context, args []string) error {
 		return err
 	}
 
-	bring := importer{me: *me, country: *country, noSearch: *noSearch}
-	move := migrator{me: *me, country: *country}
+	bring := app.Importer{Me: *me, Country: *country, NoSearch: *noSearch}
+	move := app.Migrator{Me: *me, Country: *country}
 
 	// Without a database there is nothing to open yet, and the page starts at the
 	// beginning. Everything below this point is the same either way.
@@ -67,12 +68,12 @@ func runServe(ctx context.Context, args []string) error {
 		if reader, err = source.Open(ctx, *db); err != nil {
 			return err
 		}
-		if names, err = loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country); err != nil {
+		if names, err = app.LoadNames(ctx, reader.Directory(), *bookPath, *waPath, *country); err != nil {
 			return err
 		}
 		if !*noSearch {
-			index, err = openIndex(ctx, *db, indexPath(*db, *indexAt), indexSettings{
-				me: *me, book: *bookPath, whatsApp: *waPath, country: *country,
+			index, err = app.OpenIndex(ctx, *db, app.IndexPath(*db, *indexAt), app.IndexSettings{
+				Me: *me, Book: *bookPath, WhatsApp: *waPath, Country: *country,
 			})
 			if err != nil {
 				return err
@@ -107,7 +108,7 @@ func runServe(ctx context.Context, args []string) error {
 		Importer:  bring,
 		Migrator:  move,
 		Workspace: *work,
-		Advise:    adviseOn,
+		Advise:    app.AdviseOn,
 	})
 	if err != nil {
 		if reader != nil {

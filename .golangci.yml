@@ -116,6 +116,17 @@ linters:
           # nothing to cancel and threading a context through it adds noise.
           - noctx
 
+      # internal/fixture is the block above under a different filename. It builds the
+      # same deliberately malformed backups and throwaway databases, and exists as a
+      # package only because a Go test helper cannot cross a package boundary unless
+      # it does. Nothing in it is linked into the program; only tests import it.
+      - path: internal/fixture/
+        linters:
+          - gosec
+          - errcheck
+          - forcetypeassert
+          - noctx
+
       # Readers assemble their queries from the columns a database actually has,
       # because WhatsApp renames and removes them between releases. The interpolated
       # text always comes from sqlite_master or PRAGMA table_info on the file being

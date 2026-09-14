@@ -15,6 +15,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jferrl/amberkeep/internal/fixture"
+
+	"github.com/jferrl/amberkeep/internal/app"
 )
 
 // TestServeOpensTheArchiveOnThisMachineOnly runs the viewer the way somebody does
@@ -26,7 +30,7 @@ import (
 func TestServeOpensTheArchiveOnThisMachineOnly(t *testing.T) {
 	dir := t.TempDir()
 	db := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, db)
+	fixture.TinyArchive(t, db)
 
 	viewer, stop := startViewer(t, db)
 	defer stop()
@@ -315,8 +319,8 @@ func TestIndexPath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := indexPath(tt.db, tt.chosen); got != tt.want {
-				t.Errorf("indexPath(%q, %q) = %q, want %q", tt.db, tt.chosen, got, tt.want)
+			if got := app.IndexPath(tt.db, tt.chosen); got != tt.want {
+				t.Errorf("app.IndexPath(%q, %q) = %q, want %q", tt.db, tt.chosen, got, tt.want)
 			}
 		})
 	}
@@ -325,13 +329,13 @@ func TestIndexPath(t *testing.T) {
 func TestSmallHelpers(t *testing.T) {
 	t.Parallel()
 
-	t.Run("plural", func(t *testing.T) {
+	t.Run("app.Plural", func(t *testing.T) {
 		t.Parallel()
-		if got := plural(1, "match", "matches"); got != "1 match" {
-			t.Errorf("plural(1) = %q", got)
+		if got := app.Plural(1, "match", "matches"); got != "1 match" {
+			t.Errorf("app.Plural(1) = %q", got)
 		}
-		if got := plural(0, "match", "matches"); got != "0 matches" {
-			t.Errorf("plural(0) = %q", got)
+		if got := app.Plural(0, "match", "matches"); got != "0 matches" {
+			t.Errorf("app.Plural(0) = %q", got)
 		}
 	})
 

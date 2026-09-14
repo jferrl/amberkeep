@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jferrl/amberkeep/internal/contacts"
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source"
@@ -54,9 +54,9 @@ func runExport(ctx context.Context, args []string) error {
 	}
 	defer reader.Close()
 
-	mentionPreparation(reader, *db)
+	app.MentionPreparation(reader, *db)
 
-	names, err := loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
+	names, err := app.LoadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
 	if err != nil {
 		return err
 	}
@@ -156,8 +156,8 @@ func runExport(ctx context.Context, args []string) error {
 	}
 
 	fmt.Printf("wrote %d conversations and %d messages to %s\n",
-		total.Conversations, total.Messages, abbreviate(*out))
-	fmt.Printf("  %d files, %s\n", len(total.Files), humanSize(total.Bytes))
+		total.Conversations, total.Messages, app.Abbreviate(*out))
+	fmt.Printf("  %d files, %s\n", len(total.Files), app.HumanSize(total.Bytes))
 	if total.Skipped > 0 {
 		fmt.Printf("  %d housekeeping notices left out (pass --notices to keep them)\n", total.Skipped)
 	}
@@ -167,7 +167,7 @@ func runExport(ctx context.Context, args []string) error {
 	fmt.Printf("  took %s\n", time.Since(started).Round(time.Second))
 	if indexed {
 		fmt.Printf("\nopen %s to read the archive\n",
-			abbreviate(filepath.Join(*out, export.IndexName)))
+			app.Abbreviate(filepath.Join(*out, export.IndexName)))
 	}
 
 	if named := names.Identified(); named == 0 {
@@ -228,41 +228,6 @@ func parseZone(name string) (*time.Location, error) {
 		return nil, fmt.Errorf("there is no time zone called %q; use a name like Europe/Madrid: %w", name, err)
 	}
 	return loc, nil
-}
-
-// loadNames builds the address book from whatever the user has, and says what
-// each source contributed.
-//
-// A conversation labelled with a phone number is the single most noticeable way
-// an archive can disappoint, so this reports its results rather than working
-// quietly.
-func loadNames(ctx context.Context, names *model.Directory, bookPath, waPath, country string) (*model.Directory, error) {
-	book := contacts.New(country)
-	if waPath != "" {
-		read, err := book.ReadWhatsAppContacts(ctx, waPath)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "read %d names from %s\n", read, abbreviate(waPath))
-	}
-	if bookPath != "" {
-		read, err := book.ReadVCardFile(bookPath)
-		if err != nil {
-			return nil, err
-		}
-		fmt.Fprintf(os.Stderr, "read %d names from %s\n", read, abbreviate(bookPath))
-		if read == 0 {
-			fmt.Fprintf(os.Stderr,
-				"warning: that address book named nobody. Check it is a .vcf export,\n"+
-					"         and that --country is set if the numbers have no country code.\n")
-		}
-	}
-
-	if book.Len() > 0 {
-		applied := book.ApplyTo(names)
-		fmt.Fprintf(os.Stderr, "matched %d of them to this archive\n", applied)
-	}
-	return names, nil
 }
 
 // noticeIdentifier answers whether a notice code is one the reader that produced

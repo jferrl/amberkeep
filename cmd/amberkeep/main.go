@@ -16,7 +16,8 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"strings"
+
+	"github.com/jferrl/amberkeep/internal/app"
 )
 
 // version is stamped at build time. A person reporting a problem needs to be
@@ -65,7 +66,7 @@ func execute() int {
 		return 130
 	default:
 		fmt.Fprintf(os.Stderr, "\n%s\n", err)
-		if advice := adviseOn(err); advice != "" {
+		if advice := app.AdviseOn(err); advice != "" {
 			fmt.Fprintf(os.Stderr, "\n%s\n", advice)
 		}
 		return 1
@@ -171,17 +172,4 @@ func newFlagSet(name, description string) *flag.FlagSet {
 		fs.PrintDefaults()
 	}
 	return fs
-}
-
-// abbreviate shortens a path for display, so a summary stays readable when the
-// user is working somewhere deep in their home directory.
-func abbreviate(path string) string {
-	home, err := os.UserHomeDir()
-	if err != nil || home == "" {
-		return path
-	}
-	if after, found := strings.CutPrefix(path, home); found {
-		return "~" + after
-	}
-	return path
 }

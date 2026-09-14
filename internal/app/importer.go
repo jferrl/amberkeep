@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -24,17 +24,21 @@ import (
 // own helper, on purpose: the wizard must not become a second implementation that
 // can disagree with the command line about what a backup is.
 
-// importer does the work the wizard asks for.
-type importer struct {
-	// me is what to call the archive's owner in exports and search results.
-	me string
-	// country is the dialling code for numbers an address book saved without one.
-	country string
-	// notices says whether the search index covers system messages as well.
-	notices bool
-	// noSearch skips building the index, which is the long part of an import.
-	noSearch bool
+// Importer does the work the wizard asks for.
+type Importer struct {
+	// Me is what to call the archive's owner in exports and search results.
+	Me string
+	// Country is the dialling code for numbers an address book saved without one.
+	Country string
+	// Notices says whether the search index covers system messages as well.
+	Notices bool
+	// NoSearch skips building the index, which is the long part of an import.
+	NoSearch bool
 }
+
+// Locations reports where Apple's own software puts backups on this platform, which
+// is nowhere at all on the ones Apple ships nothing for.
+func (i Importer) Locations() []string { return backupfs.Locations() }
 
 // Backups lists the iPhone backups on this computer.
 //
@@ -43,11 +47,7 @@ type importer struct {
 // what was found in the other; on macOS a refusal is nearly always Full Disk Access,
 // which is a thing somebody can go and fix, so it is worth saying rather than
 // showing an empty list and letting them conclude their backup is gone.
-// Locations reports where Apple's own software puts backups on this platform, which
-// is nowhere at all on the ones Apple ships nothing for.
-func (i importer) Locations() []string { return backupfs.Locations() }
-
-func (i importer) Backups() (backups []api.Backup, problem string) {
+func (i Importer) Backups() (backups []api.Backup, problem string) {
 	found, err := backupfs.Backups()
 
 	list := make([]api.Backup, 0, len(found))
@@ -58,7 +58,7 @@ func (i importer) Backups() (backups []api.Backup, problem string) {
 		}
 		list = append(list, api.Backup{
 			Path:        b.Path,
-			DeviceName:  firstNonEmpty(b.DeviceName, b.UDID),
+			DeviceName:  FirstNonEmpty(b.DeviceName, b.UDID),
 			ProductType: b.ProductType,
 			IOSVersion:  b.IOSVersion,
 			LastBackup:  when,
@@ -70,7 +70,7 @@ func (i importer) Backups() (backups []api.Backup, problem string) {
 	}
 
 	problem = err.Error()
-	if help := adviseOn(err); help != "" {
+	if help := AdviseOn(err); help != "" {
 		problem += "\n\n" + help
 	}
 	return list, problem
@@ -78,7 +78,7 @@ func (i importer) Backups() (backups []api.Backup, problem string) {
 
 // Extract takes WhatsApp's message store out of an iPhone backup, with the small
 // copies of photographs that the store itself only holds the paths to.
-func (i importer) Extract(ctx context.Context, backup, into string, say api.Progress) (string, error) {
+func (i Importer) Extract(ctx context.Context, backup, into string, say api.Progress) (string, error) {
 	archive, err := backupfs.Open(ctx, backup)
 	if err != nil {
 		return "", err
@@ -86,10 +86,10 @@ func (i importer) Extract(ctx context.Context, backup, into string, say api.Prog
 	defer func() { _ = archive.Close() }()
 
 	say(api.StepExtracting, fmt.Sprintf("Reading the backup of %s, made %s.",
-		firstNonEmpty(archive.DeviceName, archive.UDID),
+		FirstNonEmpty(archive.DeviceName, archive.UDID),
 		archive.LastBackup.Local().Format(time.DateOnly)))
 
-	path, err := archive.ExtractDatabase(ctx, into, whatsappDomain, chatStorage)
+	path, err := archive.ExtractDatabase(ctx, into, WhatsAppDomain, ChatStorage)
 	if err != nil {
 		return "", err
 	}
@@ -98,7 +98,7 @@ func (i importer) Extract(ctx context.Context, backup, into string, say api.Prog
 	// A failure here is not a failure of the import: the messages are already out,
 	// and an archive with no photographs is worth far more than no archive.
 	say(api.StepExtracting, "Taking the pictures out as well.")
-	taken, bytes, err := extractPictures(ctx, archive, into)
+	taken, bytes, err := ExtractPictures(ctx, archive, into)
 	switch {
 	case err != nil && ctx.Err() != nil:
 		return "", err
@@ -106,7 +106,7 @@ func (i importer) Extract(ctx context.Context, backup, into string, say api.Prog
 		fmt.Fprintf(os.Stderr, "note: the pictures could not all be taken out (%v)\n", err)
 	case taken > 0:
 		say(api.StepExtracting, fmt.Sprintf("Took out %s (%s).",
-			plural(int(taken), "picture", "pictures"), humanSize(bytes)))
+			Plural(int(taken), "picture", "pictures"), HumanSize(bytes)))
 	}
 	return path, nil
 }
@@ -116,10 +116,10 @@ func (i importer) Extract(ctx context.Context, backup, into string, say api.Prog
 // The key is used and dropped. It is not written anywhere, not logged, and not put
 // into any error this returns, because an error is the thing most likely to be
 // pasted into a bug report.
-func (i importer) Decrypt(ctx context.Context, file, keySource, into string, say api.Progress) (string, error) {
+func (i Importer) Decrypt(ctx context.Context, file, keySource, into string, say api.Progress) (string, error) {
 	// Either spelling: WhatsApp shows the key on screen to be written down, and
 	// anybody sensible then saves it in a file.
-	key, _, err := loadKey(keySource)
+	key, _, err := LoadKey(keySource)
 	if err != nil {
 		return "", err
 	}
@@ -127,10 +127,10 @@ func (i importer) Decrypt(ctx context.Context, file, keySource, into string, say
 	if err := os.MkdirAll(into, 0o700); err != nil {
 		return "", fmt.Errorf("preparing somewhere to write: %w", err)
 	}
-	target := filepath.Join(into, filepath.Base(defaultOutput(file)))
+	target := filepath.Join(into, filepath.Base(DefaultOutput(file)))
 	if _, err := os.Stat(target); err == nil {
 		return "", fmt.Errorf("there is already a file at %s; move it somewhere else, "+
-			"or choose another folder to write into", abbreviate(target))
+			"or choose another folder to write into", Abbreviate(target))
 	}
 
 	// The encrypted file is held whole because the cipher authenticates all of it
@@ -144,12 +144,12 @@ func (i importer) Decrypt(ctx context.Context, file, keySource, into string, say
 	}
 	say(api.StepDecrypting, fmt.Sprintf(
 		"Decrypting %s. Nothing is being uploaded: this happens on this computer.",
-		humanSize(int64(len(encrypted)))))
+		HumanSize(int64(len(encrypted)))))
 
 	if err := ctx.Err(); err != nil {
 		return "", err
 	}
-	if _, err := writeDecrypted(key, encrypted, target); err != nil {
+	if _, err := WriteDecrypted(key, encrypted, target); err != nil {
 		return "", err
 	}
 
@@ -157,7 +157,7 @@ func (i importer) Decrypt(ctx context.Context, file, keySource, into string, say
 	// times slower than it needs to be. This file did not exist a moment ago and
 	// this program wrote it, so putting them back needs nobody's permission.
 	say(api.StepPreparing, "Adding the indexes the backup leaves out, so reading is quick.")
-	prepareOutput(ctx, target)
+	PrepareOutput(ctx, target)
 	return target, nil
 }
 
@@ -166,18 +166,18 @@ func (i importer) Decrypt(ctx context.Context, file, keySource, into string, say
 //
 // Which platform it came from is worked out from what the file contains rather than
 // from what it is called, because by this point it is whatever the user named it.
-func (i importer) Open(ctx context.Context, path, contacts string, say api.Progress) (api.Archive, error) {
+func (i Importer) Open(ctx context.Context, path, contacts string, say api.Progress) (api.Archive, error) {
 	reader, err := source.Open(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
 	book, whatsApp := addressBook(contacts)
-	if _, err := loadNames(ctx, reader.Directory(), book, whatsApp, i.country); err != nil {
+	if _, err := LoadNames(ctx, reader.Directory(), book, whatsApp, i.Country); err != nil {
 		_ = reader.Close()
 		return nil, err
 	}
-	mentionPreparation(reader, path)
+	MentionPreparation(reader, path)
 
 	index, err := i.index(ctx, path, book, whatsApp, say)
 	if err != nil {
@@ -193,14 +193,14 @@ func (i importer) Open(ctx context.Context, path, contacts string, say api.Progr
 // archive, and somebody may have put theirs somewhere that cannot be written to; an
 // archive that opens and cannot be searched is far better than one that refuses to
 // open at all. Being interrupted is the exception, because that was asked for.
-func (i importer) index(ctx context.Context, path, book, whatsApp string, say api.Progress) (*search.Index, error) {
-	if i.noSearch {
+func (i Importer) index(ctx context.Context, path, book, whatsApp string, say api.Progress) (*search.Index, error) {
+	if i.NoSearch {
 		return nil, nil
 	}
 
-	index, err := openIndex(ctx, path, indexPath(path, ""), indexSettings{
-		notices: i.notices, me: i.me, book: book, whatsApp: whatsApp, country: i.country,
-		say: func(line string) { say(api.StepIndexing, line) },
+	index, err := OpenIndex(ctx, path, IndexPath(path, ""), IndexSettings{
+		Notices: i.Notices, Me: i.Me, Book: book, WhatsApp: whatsApp, Country: i.Country,
+		Say: func(line string) { say(api.StepIndexing, line) },
 	})
 	switch {
 	case err == nil:

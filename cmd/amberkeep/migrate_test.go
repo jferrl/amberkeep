@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jferrl/amberkeep/internal/fixture"
+
 	"github.com/jferrl/amberkeep/internal/guide"
 )
 
@@ -146,10 +148,10 @@ func TestOnlyTakesAListOfAddresses(t *testing.T) {
 // checked before anybody is told to restore it.
 func TestTheWholeGuidedFlow(t *testing.T) {
 	dir := t.TempDir()
-	backup := buildBackupWithAStore(t, dir)
+	backup := fixture.BackupWithAStore(t, dir)
 
 	android := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, android)
+	fixture.TinyArchive(t, android)
 
 	// The command talks through these rather than the terminal.
 	var said bytes.Buffer
@@ -235,7 +237,7 @@ func TestTheWholeGuidedFlow(t *testing.T) {
 func TestItRefusesABackupItCannotUse(t *testing.T) {
 	dir := t.TempDir()
 	android := filepath.Join(dir, "msgstore.db")
-	buildTinyArchive(t, android)
+	fixture.TinyArchive(t, android)
 
 	var said bytes.Buffer
 	told = &said

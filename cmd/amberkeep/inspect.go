@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -39,9 +40,9 @@ func runInspect(ctx context.Context, args []string) error {
 	}
 	defer reader.Close()
 
-	mentionPreparation(reader, *db)
+	app.MentionPreparation(reader, *db)
 
-	if _, err := loadNames(ctx, reader.Directory(), *contacts, "", *country); err != nil {
+	if _, err := app.LoadNames(ctx, reader.Directory(), *contacts, "", *country); err != nil {
 		return err
 	}
 
@@ -71,7 +72,7 @@ func report(
 	db string,
 	full bool,
 ) error {
-	fmt.Fprintf(out, "Archive\t%s\n", abbreviate(db))
+	fmt.Fprintf(out, "Archive\t%s\n", app.Abbreviate(db))
 	fmt.Fprintf(out, "From\t%s\n", reader.Platform())
 	fmt.Fprintf(out, "Layout\t%s\n", reader.Layout())
 
@@ -113,7 +114,7 @@ func report(
 
 	fmt.Fprintf(out, "Recovered beyond plain text\t\n")
 	fmt.Fprintf(out, "  picture previews\t%d (%s of images whose files are gone)\n",
-		found.previews, humanSize(found.previewBytes))
+		found.previews, app.HumanSize(found.previewBytes))
 	fmt.Fprintf(out, "  system notices explained\t%d\n", found.notices)
 	fmt.Fprintf(out, "  link previews\t%d\n", found.links)
 	fmt.Fprintf(out, "  polls\t%d with %d answers\n", found.polls, found.pollOptions)

@@ -4,18 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 	"text/tabwriter"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/backupfs"
-)
-
-// Where WhatsApp keeps its message store inside an iPhone backup.
-const (
-	whatsappDomain = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
-	chatStorage    = "ChatStorage.sqlite"
 )
 
 // runBackups lists the iPhone backups on this computer.
@@ -57,14 +50,14 @@ func runBackups(ctx context.Context, args []string) error {
 			when = backup.LastBackup.Local().Format(time.DateOnly)
 		}
 		fmt.Fprintf(out, "%s\t%s\t%s\t%s\t%s\t%s\n",
-			firstNonEmpty(backup.DeviceName, backup.UDID), backup.ProductType,
-			backup.IOSVersion, when, encrypted, abbreviate(backup.Path))
+			app.FirstNonEmpty(backup.DeviceName, backup.UDID), backup.ProductType,
+			backup.IOSVersion, when, encrypted, app.Abbreviate(backup.Path))
 	}
 	if err := out.Flush(); err != nil {
 		return err
 	}
 
-	fmt.Printf("\nnext: amberkeep extract --backup %s --out .\n", abbreviate(found[0].Path))
+	fmt.Printf("\nnext: amberkeep extract --backup %s --out .\n", app.Abbreviate(found[0].Path))
 	return nil
 }
 
@@ -79,7 +72,7 @@ func runExtract(ctx context.Context, args []string) error {
 	var (
 		dir      = fs.String("backup", "", "the backup folder, named after the device identifier")
 		out      = fs.String("out", ".", "directory to write the message store into")
-		what     = fs.String("file", chatStorage, "which file to take out of WhatsApp's container")
+		what     = fs.String("file", app.ChatStorage, "which file to take out of WhatsApp's container")
 		pictures = fs.Bool("pictures", true, "also take out the small copies of photographs")
 	)
 	if err := fs.Parse(args); err != nil {
@@ -97,10 +90,10 @@ func runExtract(ctx context.Context, args []string) error {
 	defer func() { _ = archive.Close() }()
 
 	fmt.Fprintf(os.Stderr, "%s, %s, iOS %s, backed up %s\n",
-		firstNonEmpty(archive.DeviceName, archive.UDID), archive.ProductType,
+		app.FirstNonEmpty(archive.DeviceName, archive.UDID), archive.ProductType,
 		archive.IOSVersion, archive.LastBackup.Local().Format(time.DateOnly))
 
-	path, err := archive.ExtractDatabase(ctx, *out, whatsappDomain, *what)
+	path, err := archive.ExtractDatabase(ctx, *out, app.WhatsAppDomain, *what)
 	if err != nil {
 		return err
 	}
@@ -109,10 +102,10 @@ func runExtract(ctx context.Context, args []string) error {
 	if info, err := os.Stat(path); err == nil {
 		size = info.Size()
 	}
-	fmt.Printf("took %s out to %s (%s)\n", *what, abbreviate(path), humanSize(size))
+	fmt.Printf("took %s out to %s (%s)\n", *what, app.Abbreviate(path), app.HumanSize(size))
 
 	if *pictures {
-		taken, bytes, err := extractPictures(ctx, archive, *out)
+		taken, bytes, err := app.ExtractPictures(ctx, archive, *out)
 		switch {
 		case err != nil:
 			return err
@@ -120,80 +113,10 @@ func runExtract(ctx context.Context, args []string) error {
 			fmt.Printf("this backup holds no pictures\n")
 		default:
 			fmt.Printf("took out %s as well (%s)\n",
-				plural(int(taken), "picture", "pictures"), humanSize(bytes))
+				app.Plural(int(taken), "picture", "pictures"), app.HumanSize(bytes))
 		}
 	}
 
-	fmt.Printf("\nnext: amberkeep inspect --db %s\n", abbreviate(path))
+	fmt.Printf("\nnext: amberkeep inspect --db %s\n", app.Abbreviate(path))
 	return nil
-}
-
-// mediaPrefix is where a backup keeps what the store calls "Media/...".
-//
-// The store records a picture as `Media/<conversation>/5/e/<name>.thumb` and the
-// backup files it one directory further in. That offset is written down nowhere;
-// it was established by hashing the store's own paths against a real backup's index,
-// where 9,422 of 9,941 then resolved and every one of them was a JPEG.
-const mediaPrefix = "Message/"
-
-// thumbnailSuffix marks the small copies, which are the ones worth having.
-//
-// The full-size files are in the same place and are not taken: the same device
-// holds 5.7 GB of them against 13.9 MB of these, they are already in the phone's
-// own gallery, and copying gigabytes to say what is already said helps nobody.
-const thumbnailSuffix = ".thumb"
-
-// extractPictures copies out the small copies of photographs, and reports how many
-// it took and how much they came to.
-//
-// This is the difference between an iPhone archive that shows a decade of pictures
-// and one that shows a decade of the words "image omitted". An Android database
-// keeps them inside itself; an iPhone store keeps only the paths.
-//
-// What to say about the result belongs to the caller, because the two callers say
-// it in different places: one to a terminal, one to somebody watching a wizard.
-func extractPictures(ctx context.Context, archive *backupfs.Archive, out string) (taken, bytes int64, err error) {
-	files, err := archive.Domain(ctx, whatsappDomain)
-	if err != nil {
-		return 0, 0, err
-	}
-
-	for _, file := range files {
-		if err := ctx.Err(); err != nil {
-			return taken, bytes, err
-		}
-		if file.IsDir || !strings.HasSuffix(file.RelativePath, thumbnailSuffix) {
-			continue
-		}
-		where, ok := strings.CutPrefix(file.RelativePath, mediaPrefix)
-		if !ok {
-			continue
-		}
-
-		// Laid out as the store's own paths expect, so the folder is readable on its
-		// own once the backup it came from is gone.
-		destination := filepath.Join(out, filepath.FromSlash(where))
-		if err := os.MkdirAll(filepath.Dir(destination), 0o700); err != nil {
-			return taken, bytes, fmt.Errorf("preparing somewhere for the pictures: %w", err)
-		}
-		if err := archive.Extract(ctx, destination, file); err != nil {
-			// One picture that cannot be copied is one picture missing, not a reason
-			// to abandon the rest.
-			continue
-		}
-		taken++
-		bytes += file.Size
-	}
-
-	return taken, bytes, nil
-}
-
-// firstNonEmpty returns the first value with anything in it.
-func firstNonEmpty(values ...string) string {
-	for _, v := range values {
-		if v != "" {
-			return v
-		}
-	}
-	return ""
 }

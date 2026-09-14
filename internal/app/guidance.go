@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"errors"
@@ -185,9 +185,9 @@ sit beside them hold contacts and settings rather than messages.`,
 file finished copying, and that you have permission to read it.`,
 }
 
-// adviseOn returns what to tell somebody about a failure, or nothing when there
+// AdviseOn returns what to tell somebody about a failure, or nothing when there
 // is no advice worth giving beyond the message itself.
-func adviseOn(err error) string {
+func AdviseOn(err error) string {
 	var decryption *crypt15.Error
 	if errors.As(err, &decryption) {
 		return advice[decryption.Guidance]
