@@ -127,12 +127,19 @@ test("lets somebody go back and change what they named", async ({ page }) => {
  * runner has none and may not even be allowed to look — so what is asserted is that
  * it asked, and that typing a path stays possible whatever the answer was.
  */
-test("asks the program for the backups it has already made", async ({ page }) => {
+test("asks the program for the backups it has already made", async ({ page, wizard }) => {
+  // This one navigates itself rather than using the shared beforeEach. The listener
+  // has to be attached before the screen is reached, or the request it is watching
+  // for has already happened — which is how this passed on one machine and failed on
+  // a faster one.
   const asked: string[] = [];
   page.on("request", (request) => {
     const { pathname } = new URL(request.url());
     if (pathname.startsWith("/api/")) asked.push(pathname);
   });
+
+  await page.goto(wizard.opening);
+  await page.getByRole("button", { name: /move an Android history onto my iPhone/ }).click();
 
   await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
   await expect.poll(() => asked).toContain("/api/backups");
