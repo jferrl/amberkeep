@@ -47,6 +47,9 @@ linters:
         # Letting go of the archive a server holds. It reports nothing a caller could
         # act on, and it is called on the way out of a command that is ending anyway.
         - (*github.com/jferrl/amberkeep/internal/api.Server).Close
+        # Letting go of an iPhone store that was only ever read from. Same read-only
+        # handle as the rest of this list.
+        - (*github.com/jferrl/amberkeep/internal/migrate.Target).Close
         - (*github.com/jferrl/amberkeep/internal/backupfs.Archive).Close
         # Rolling back a transaction that already committed is how the deferred
         # cleanup is written; it reports ErrTxDone and means nothing went wrong.

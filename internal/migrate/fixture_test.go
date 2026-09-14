@@ -2,7 +2,9 @@ package migrate
 
 import (
 	"context"
+	"crypto/sha1"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"iter"
@@ -12,6 +14,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"howett.net/plist"
 
 	"github.com/jferrl/amberkeep/internal/model"
 )
@@ -377,4 +381,76 @@ func damage(t *testing.T, path, statement string) {
 	for _, side := range []string{"-wal", "-shm"} {
 		_ = os.Remove(path + side)
 	}
+}
+
+// backupHolding writes the smallest folder backupfs will agree is an iPhone backup,
+// recording one file in it. Enough for the checks that run before anything else.
+func backupHolding(t *testing.T, domain, relativePath string, size int64, when time.Time) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	plists := map[string]any{
+		"Manifest.plist": map[string]any{"IsEncrypted": false},
+		"Info.plist": map[string]any{
+			"Device Name": "A Test Phone", "Product Type": "iPhone14,2",
+			"Product Version": "26.0", "Last Backup Date": when,
+		},
+		"Status.plist": map[string]any{"IsFullBackup": true},
+	}
+	for name, body := range plists {
+		data, err := plist.Marshal(body, plist.BinaryFormat)
+		if err != nil {
+			t.Fatalf("building %s: %v", name, err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name), data, 0o600); err != nil {
+			t.Fatalf("writing %s: %v", name, err)
+		}
+	}
+
+	db, err := sql.Open("sqlite", "file:"+filepath.Join(dir, "Manifest.db"))
+	if err != nil {
+		t.Fatalf("creating the index: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if _, err := db.Exec(
+		`CREATE TABLE Files (fileID TEXT PRIMARY KEY, domain TEXT, relativePath TEXT, flags INTEGER, file BLOB)`,
+	); err != nil {
+		t.Fatalf("creating the Files table: %v", err)
+	}
+
+	sum := sha1.Sum([]byte(domain + "-" + relativePath)) // #nosec G401 -- Apple's own naming scheme
+	if _, err := db.Exec(
+		`INSERT INTO Files (fileID, domain, relativePath, flags, file) VALUES (?, ?, ?, 1, ?)`,
+		hex.EncodeToString(sum[:]), domain, relativePath, mbFile(t, size)); err != nil {
+		t.Fatalf("recording the file: %v", err)
+	}
+	if err := db.Close(); err != nil {
+		t.Fatalf("closing the index: %v", err)
+	}
+	return dir
+}
+
+// mbFile builds what Apple stores against a file: its metadata as a keyed archive.
+func mbFile(t *testing.T, size int64) []byte {
+	t.Helper()
+
+	data, err := plist.Marshal(map[string]any{
+		"$archiver": "NSKeyedArchiver",
+		"$version":  uint64(100000),
+		"$top":      map[string]any{"root": plist.UID(1)},
+		"$objects": []any{
+			"$null",
+			map[string]any{
+				"$class": plist.UID(2),
+				"Size":   uint64(size), //nolint:gosec // a fixture size is never negative
+				"Mode":   uint64(0o100644),
+			},
+			map[string]any{"$classname": "MBFile", "$classes": []any{"MBFile", "NSObject"}},
+		},
+	}, plist.BinaryFormat)
+	if err != nil {
+		t.Fatalf("building the file's metadata: %v", err)
+	}
+	return data
 }

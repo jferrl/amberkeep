@@ -105,6 +105,22 @@ Commits follow Conventional Commits and need a sign-off (`git commit -s`). A com
 message explains what was learned, not what was typed: the bug that was found, the
 measurement that settled an argument, the thing that turned out to be wrong.
 
+## The migration
+
+Four pieces, built in this order on purpose: plan, then the checks that verify a
+result, then the writer, then putting it into a backup. The checks came before the
+thing they check, because a checker written afterwards can only be tested by running
+the writer and watching it pass. Each check is tested by damaging a store in exactly
+that way.
+
+Nothing in it touches a device, and nothing in it ever will. It produces a backup
+folder; restoring that is Finder's job, and `internal/guide` is what tells somebody
+how. The guide is data so that somebody who is not a programmer can correct a
+sentence, and so the same words reach a terminal and a browser without drifting.
+
+`docs/adr/0006-planning-a-migration-separately-from-doing-it.md` has the reasoning,
+including four faults that only real data produced.
+
 ## The import wizard
 
 `amberkeep serve` starts with no archive. `internal/api` holds a session with four
@@ -157,6 +173,8 @@ is. The contract and the reasoning are in `docs/adr/0004-the-import-wizard.md`.
 | `internal/export` | text, structured data and web pages |
 | `internal/search` | the full-text index |
 | `internal/api` | the archive over HTTP, loopback only, and the import wizard |
+| `internal/guide` | what somebody has to be told, and when; data, not code |
+| `internal/migrate` | working out a migration, doing it, and checking the result |
 | `cmd/amberkeep` | the command-line tool |
 | `web/` | the viewer: React, TypeScript, its own nested Go module marker |
 | `internal/viewer` | the built viewer, embedded into the binary |

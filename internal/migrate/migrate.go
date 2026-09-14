@@ -109,10 +109,14 @@ func (p Plan) Summary() string {
 	if p.Empty() {
 		return "nothing to add: every message is already on the iPhone"
 	}
-	return fmt.Sprintf("%s into %s, leaving %s already there untouched",
+	said := fmt.Sprintf("%s into %s",
 		plural(p.Adding, "message", "messages"),
-		plural(len(p.touched()), "conversation", "conversations"),
-		plural(p.AlreadyThere, "message", "messages"))
+		plural(len(p.touched()), "conversation", "conversations"))
+	if p.AlreadyThere > 0 {
+		said += fmt.Sprintf(", leaving %s already there untouched",
+			plural(p.AlreadyThere, "message", "messages"))
+	}
+	return said
 }
 
 // touched is the conversations something would actually happen to.

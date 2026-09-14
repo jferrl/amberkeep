@@ -40,6 +40,7 @@ func commands() []command {
 		{"export", "write the archive out as web pages, text and structured data", runExport},
 		{"search", "find messages anywhere in the archive", runSearch},
 		{"serve", "bring an archive in, and read it in a browser on this machine", runServe},
+		{"migrate", "move an Android history into a copy of an iPhone backup", runMigrate},
 	}
 }
 

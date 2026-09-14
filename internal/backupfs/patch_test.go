@@ -242,24 +242,31 @@ func TestPatchRefuses(t *testing.T) {
 	}
 }
 
-// TestPatchLeavesNothingBehindWhenItFails covers the state worth fearing most: half a
-// backup, which looks like a backup.
+// TestPatchLeavesNothingBehindWhenItFails covers the state worth fearing most: half
+// a backup, which looks exactly like a backup.
+//
+// The failure is arranged after the copy has been made, which is the only part where
+// there is anything to leave behind. The first version of this test made the
+// replacement unreadable, which fails before a single byte is copied — and on Windows
+// does not fail at all, because chmod there only toggles the read-only bit. CI on an
+// operating system nobody develops on found a test that was not testing what it said.
 func TestPatchLeavesNothingBehindWhenItFails(t *testing.T) {
 	t.Parallel()
 
 	from := backupHolding(t, buildSQLiteDB(t, "CREATE TABLE a (b)"), nil)
 	into := filepath.Join(t.TempDir(), "abandoned")
 
-	// A replacement that passes the first checks and then is not there to copy.
-	with := replacement(t, "CREATE TABLE a (b)")
-	if err := os.Chmod(with, 0o000); err != nil {
-		t.Skipf("cannot make a file unreadable here: %v", err)
+	// A backup whose index lists the store but whose contents are not on disk, which
+	// is a damaged backup and is found only once the copy has been made.
+	id := fileIDOf(whatsApp, store)
+	if err := os.Remove(filepath.Join(from, id[:2], id)); err != nil {
+		t.Fatalf("preparing the fixture: %v", err)
 	}
-	t.Cleanup(func() { _ = os.Chmod(with, 0o600) })
 
-	if _, err := Patch(context.Background(), from, into,
-		Replacement{Domain: whatsApp, RelativePath: store, With: with}); err == nil {
-		t.Fatal("it succeeded with an unreadable replacement")
+	_, err := Patch(context.Background(), from, into,
+		Replacement{Domain: whatsApp, RelativePath: store, With: replacement(t, "CREATE TABLE a (b)")})
+	if err == nil {
+		t.Fatal("it succeeded against a backup missing the file it was replacing")
 	}
 	if _, err := os.Stat(into); err == nil {
 		t.Error("it left half a backup behind, which looks exactly like a backup")

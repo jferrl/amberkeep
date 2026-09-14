@@ -34,7 +34,7 @@ search and export. The iPhone side and the desktop application are being built.
 | iPhone backup access | working, including backups Finder will not show you |
 | Desktop application | planned |
 | English and Spanish | working |
-| Android to iPhone migration | planned |
+| Android to iPhone migration | engine working end to end, guided by `amberkeep migrate` |
 
 Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a laptop:
 
