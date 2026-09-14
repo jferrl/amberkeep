@@ -83,7 +83,9 @@ export function PollBody({ message }: { message: ArchivedMessage }) {
         <div key={option.name} className="flex justify-between gap-2 py-px">
           <span>{option.name}</span>
           <span className="whitespace-nowrap text-[var(--color-muted)]">
-            {option.votes === 1 ? t("vote") : t("votes", { count: option.votes })}
+            {option.votes === 1
+              ? t("vote")
+              : t("votes", { count: option.votes })}
           </span>
         </div>
       ))}
@@ -128,9 +130,10 @@ export function Reactions({ message }: { message: ArchivedMessage }) {
       {reactions.map((reaction, at) => (
         <span
           key={`${reaction.emoji}-${String(at)}`}
-          className="rounded-full border border-[var(--color-line)] bg-[var(--color-paper)] px-1.5 text-[0.78rem]"
+          className="rounded-full border border-[var(--color-line)] bg-[var(--color-bg)] px-1.5 text-[0.78rem]"
         >
-          {reaction.emoji} {reaction.from_me ? t("you") : (reaction.sender_name ?? "")}
+          {reaction.emoji}{" "}
+          {reaction.from_me ? t("you") : (reaction.sender_name ?? "")}
         </span>
       ))}
     </div>

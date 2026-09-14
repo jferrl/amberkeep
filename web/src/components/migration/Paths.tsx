@@ -138,7 +138,7 @@ export function MigrationPaths({
         />
 
         <div>
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {t("migrateCheck")}
           </Button>
         </div>

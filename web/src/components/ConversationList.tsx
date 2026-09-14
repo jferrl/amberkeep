@@ -106,8 +106,9 @@ function ConversationRow({
       aria-current={current ? "true" : undefined}
       className={cn(
         "flex w-full items-baseline justify-between gap-3 border-b border-[var(--color-line)]",
-        "px-3.5 py-2 text-left hover:bg-[var(--color-paper)]",
-        current && "bg-[var(--color-paper)] shadow-[inset_3px_0_0_var(--color-accent)]",
+        "px-3.5 py-2 text-left hover:bg-[var(--color-bg)]",
+        current &&
+          "bg-[var(--color-bg)] shadow-[inset_3px_0_0_var(--color-accent)]",
       )}
     >
       <span className="min-w-0 break-words font-semibold">

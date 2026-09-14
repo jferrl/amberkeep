@@ -105,7 +105,11 @@ export function MigrationPlanned({
         />
 
         <div>
-          <Button type="submit" disabled={busy || typed.trim() !== theWord}>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={busy || typed.trim() !== theWord}
+          >
             {t("migrateCarryOut")}
           </Button>
         </div>

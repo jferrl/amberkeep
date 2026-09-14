@@ -139,6 +139,7 @@ export function Android({
 
         <div>
           <Button
+            variant="primary"
             onClick={() => {
               onTyped({ at: at + 1 });
             }}
@@ -244,7 +245,7 @@ export function Android({
         />
 
         <div>
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {t("androidDecrypt")}
           </Button>
         </div>

@@ -54,13 +54,18 @@ export function Field({
   const note = useId();
   const problem = useId();
 
-  const describedBy = [hint === undefined ? "" : note, wrong === undefined ? "" : problem]
+  const describedBy = [
+    hint === undefined ? "" : note,
+    wrong === undefined ? "" : problem,
+  ]
     .filter((id) => id !== "")
     .join(" ");
 
   // Decided once, when the field is first drawn. Whether this page is in a window
   // cannot change while somebody is looking at it.
-  const [picker] = useState(() => (choosing === undefined ? false : inAWindow()));
+  const [picker] = useState(() =>
+    choosing === undefined ? false : inAWindow(),
+  );
   const [opening, setOpening] = useState(false);
 
   const open = () => {
@@ -124,7 +129,11 @@ export function Field({
         </p>
       )}
       {wrong !== undefined && (
-        <p id={problem} role="alert" className="m-0 text-sm font-medium text-[var(--color-accent)]">
+        <p
+          id={problem}
+          role="alert"
+          className="m-0 text-sm font-medium text-[var(--color-accent)]"
+        >
           {wrong}
         </p>
       )}

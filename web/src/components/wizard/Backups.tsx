@@ -51,7 +51,11 @@ export function Backups({
       total={2}
       heading={t("backupsTitle")}
       lead={situation === "some" ? t("backupsHelp") : undefined}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       {situation === "some" ? (
@@ -60,9 +64,14 @@ export function Backups({
             {found.map((backup) => (
               <li
                 key={backup.path}
-                className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4"
+                className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-4"
               >
-                <One backup={backup} busy={busy} language={language} onChoose={onChoose} />
+                <One
+                  backup={backup}
+                  busy={busy}
+                  language={language}
+                  onChoose={onChoose}
+                />
               </li>
             ))}
           </ul>
@@ -76,7 +85,11 @@ export function Backups({
           />
         </>
       ) : (
-        <Instead situation={situation} said={problem ?? ""} onInstead={onInstead} />
+        <Instead
+          situation={situation}
+          said={problem ?? ""}
+          onInstead={onInstead}
+        />
       )}
     </Shell>
   );
@@ -128,7 +141,9 @@ function One({
       <p className="m-0 mt-0.5 text-sm text-[var(--color-muted)]">
         {describe(backup, t, language)}
       </p>
-      <p className="m-0 mt-0.5 text-xs break-all text-[var(--color-muted)]">{backup.path}</p>
+      <p className="m-0 mt-0.5 text-xs break-all text-[var(--color-muted)]">
+        {backup.path}
+      </p>
 
       {backup.encrypted ? (
         // No button at all rather than one that is dimmed. A control somebody can
@@ -166,7 +181,9 @@ function NoImporter({ onInstead }: { onInstead: () => void }) {
         <Say>{t("noImporterHelp")}</Say>
       </Aside>
       <div>
-        <Button onClick={onInstead}>{t("openAFileInstead")}</Button>
+        <Button variant="primary" onClick={onInstead}>
+          {t("openAFileInstead")}
+        </Button>
       </div>
     </>
   );
@@ -198,7 +215,7 @@ function Problem({ said }: { said: string }) {
       {advice === "" ? (
         <Say>{t("backupsFullDisk")}</Say>
       ) : (
-        <pre className="m-0 overflow-x-auto bg-[var(--color-paper)] p-3 font-sans text-sm whitespace-pre-wrap">
+        <pre className="m-0 overflow-x-auto bg-[var(--color-bg)] p-3 font-sans text-sm whitespace-pre-wrap">
           {advice}
         </pre>
       )}
@@ -222,7 +239,9 @@ function Nowhere({ onInstead }: { onInstead: () => void }) {
         <Say>{t("backupsNowhereHelp")}</Say>
       </Aside>
       <div>
-        <Button onClick={onInstead}>{t("openAFileInstead")}</Button>
+        <Button variant="primary" onClick={onInstead}>
+          {t("openAFileInstead")}
+        </Button>
       </div>
     </>
   );
@@ -238,4 +257,3 @@ function NoBackups() {
     </Aside>
   );
 }
-

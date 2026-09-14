@@ -2,27 +2,27 @@
    theme, with no network and no fonts to download. */
 :root {
   color-scheme: light dark;
-  --bg: #f4f1ea;
-  --panel: #fffdf8;
-  --ink: #1c1a17;
-  --muted: #6b6459;
-  --line: #e2dbcd;
-  --mine: #dcf0d8;
-  --theirs: #fffdf8;
-  --accent: #9a6b2f;
-  --mark: #ffd98a;
+  --bg: oklch(1 0 0);
+  --panel: oklch(0.985 0.003 75);
+  --ink: oklch(0.19 0.005 75);
+  --muted: oklch(0.475 0.009 75);
+  --line: oklch(0.915 0.005 75);
+  --mine: oklch(0.965 0.012 70);
+  --theirs: oklch(0.985 0.003 75);
+  --accent: oklch(0.545 0.12 60);
+  --mark: oklch(0.90 0.10 85);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #16140f;
-    --panel: #1f1c16;
-    --ink: #ece7dc;
-    --muted: #9c9486;
-    --line: #322d24;
-    --mine: #24382a;
-    --theirs: #1f1c16;
-    --accent: #d5a761;
-    --mark: #6b5216;
+    --bg: oklch(0.165 0.006 75);
+    --panel: oklch(0.205 0.008 75);
+    --ink: oklch(0.955 0.004 75);
+    --muted: oklch(0.70 0.012 75);
+    --line: oklch(0.285 0.010 75);
+    --mine: oklch(0.245 0.018 70);
+    --theirs: oklch(0.205 0.008 75);
+    --accent: oklch(0.775 0.115 68);
+    --mark: oklch(0.42 0.09 85);
   }
 }
 

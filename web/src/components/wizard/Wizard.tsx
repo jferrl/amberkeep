@@ -2,7 +2,12 @@ import { useState } from "react";
 
 import type { Extras } from "@/api/client";
 import { decrypt, extract, openFile } from "@/api/client";
-import { isMissingImporter, useBackups, useClose, useSetupAction } from "@/api/queries";
+import {
+  isMissingImporter,
+  useBackups,
+  useClose,
+  useSetupAction,
+} from "@/api/queries";
 import type { Setup } from "@/api/types";
 import { Notices } from "@/components/Notices";
 import { Button } from "@/components/ui/button";
@@ -121,8 +126,8 @@ export function Wizard({
   const failure = stage === "failed" && !read ? state : undefined;
 
   return (
-    <div className="min-h-dvh bg-[var(--color-paper)]">
-      <p className="m-0 border-b border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-2 text-center text-sm text-[var(--color-muted)]">
+    <div className="min-h-dvh bg-[var(--color-bg)]">
+      <p className="m-0 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-2 text-center text-sm text-[var(--color-muted)]">
         {t("readOnly")}
       </p>
 
@@ -204,7 +209,8 @@ function Screen({
   onStart: (work: () => Promise<Setup>) => void;
   extras: (folder: boolean) => Extras;
 }) {
-  if (unreachable !== undefined) return <Unreachable said={unreachable} onRetry={onRetry} />;
+  if (unreachable !== undefined)
+    return <Unreachable said={unreachable} onRetry={onRetry} />;
   if (state?.stage === "working") return <Working state={state} />;
 
   switch (route) {
@@ -265,7 +271,8 @@ function Screen({
       return <Migration language={language} onLeave={onBack} />;
     case "choose":
       // Nothing to correct behind a failure met here, so it gets a screen of its own.
-      if (failure !== undefined) return <Failure state={failure} onBack={onAgain} />;
+      if (failure !== undefined)
+        return <Failure state={failure} onBack={onAgain} />;
       return <Choose onChoose={onRoute} importing={importing} />;
   }
 }
@@ -284,7 +291,9 @@ function Unreachable({ said, onRetry }: { said: string; onRetry: () => void }) {
     <Shell step={1} heading={t("couldNotAsk")}>
       <Say>{said}</Say>
       <div>
-        <Button onClick={onRetry}>{t("retry")}</Button>
+        <Button variant="primary" onClick={onRetry}>
+          {t("retry")}
+        </Button>
       </div>
     </Shell>
   );

@@ -52,14 +52,16 @@ export function Trouble({
           <h2 className="m-0 text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
             {t("failedGuidance")}
           </h2>
-          <pre className="m-0 overflow-x-auto bg-[var(--color-panel)] p-3 font-sans text-sm whitespace-pre-wrap">
+          <pre className="m-0 overflow-x-auto bg-[var(--color-surface)] p-3 font-sans text-sm whitespace-pre-wrap">
             {state.guidance}
           </pre>
         </div>
       )}
 
       {correctable === true && (
-        <p className="m-0 text-sm text-[var(--color-muted)]">{t("correctAndTryAgain")}</p>
+        <p className="m-0 text-sm text-[var(--color-muted)]">
+          {t("correctAndTryAgain")}
+        </p>
       )}
     </div>
   );
@@ -75,14 +77,22 @@ export function Trouble({
  * use and less work, and this screen exists only so that there is never a state the
  * wizard cannot be got out of.
  */
-export function Failure({ state, onBack }: { state: Failed; onBack: () => void }) {
+export function Failure({
+  state,
+  onBack,
+}: {
+  state: Failed;
+  onBack: () => void;
+}) {
   const t = useT();
 
   return (
     <Shell step={1} heading={t("failedTitle")}>
       <Trouble state={state} />
       <div>
-        <Button onClick={onBack}>{t("tryAgain")}</Button>
+        <Button variant="primary" onClick={onBack}>
+          {t("tryAgain")}
+        </Button>
       </div>
     </Shell>
   );

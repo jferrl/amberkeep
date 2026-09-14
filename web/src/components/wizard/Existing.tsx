@@ -89,7 +89,7 @@ export function Existing({
           onChange={onContacts}
         />
         <div>
-          <Button type="submit" disabled={busy}>
+          <Button variant="primary" type="submit" disabled={busy}>
             {t("fileOpen")}
           </Button>
         </div>

@@ -77,7 +77,8 @@ beforeEach(() => {
     const at = fetchTarget(input);
 
     if (init?.method === "POST") {
-      const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : {};
+      const body: unknown =
+        typeof init.body === "string" ? JSON.parse(init.body) : {};
       posted.push({ at, body: body as Record<string, unknown> });
 
       if (at.startsWith("/api/close")) {
@@ -97,14 +98,21 @@ beforeEach(() => {
       return Promise.resolve(answer(started, 202));
     }
 
-    if (at.startsWith("/api/state")) return Promise.resolve(answer(nextState()));
+    if (at.startsWith("/api/state"))
+      return Promise.resolve(answer(nextState()));
     if (at.startsWith("/api/backups")) return Promise.resolve(answer(backups));
     if (at.startsWith("/api/archive")) {
       return Promise.resolve(
-        answer({ title: "Archive", conversations: 1, messages: 2, searchable: false }),
+        answer({
+          title: "Archive",
+          conversations: 1,
+          messages: 2,
+          searchable: false,
+        }),
       );
     }
-    if (at.startsWith("/api/chats")) return Promise.resolve(answer({ total: 0, chats: [] }));
+    if (at.startsWith("/api/chats"))
+      return Promise.resolve(answer({ total: 0, chats: [] }));
 
     return Promise.resolve(new Response("not found", { status: 404 }));
   });
@@ -147,7 +155,10 @@ const routes: {
     name: "a file somebody already has is opened by its path alone",
     walk: async (user) => {
       await chooseRoute(user, /I already have a file/);
-      await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/msgstore.db");
+      await user.type(
+        await screen.findByLabelText("The full path to the file"),
+        "/tmp/msgstore.db",
+      );
       await user.click(screen.getByRole("button", { name: "Open it" }));
     },
     at: "/api/open",
@@ -170,7 +181,9 @@ const routes: {
     },
     walk: async (user) => {
       await chooseRoute(user, /My iPhone is backed up to this computer/);
-      await user.click(await screen.findByRole("button", { name: "Use this backup" }));
+      await user.click(
+        await screen.findByRole("button", { name: "Use this backup" }),
+      );
     },
     at: "/api/extract",
     body: { backup: "/Backups/00008110-aaa" },
@@ -212,19 +225,26 @@ describe("the three ways in", () => {
 
     await walk(user);
 
-    for (const at of addressesAsked()) expect(at.startsWith("/api/")).toBe(true);
+    for (const at of addressesAsked())
+      expect(at.startsWith("/api/")).toBe(true);
   });
 });
 
 describe("the workspace", () => {
   it("is shown before anything is written, as the server suggested it", async () => {
-    backups = { backups: [{ path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false }] };
+    backups = {
+      backups: [
+        { path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false },
+      ],
+    };
     const user = userEvent.setup();
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    expect(await screen.findByLabelText("Where the files should go")).toHaveValue(workspace);
+    expect(
+      await screen.findByLabelText("Where the files should go"),
+    ).toHaveValue(workspace);
   });
 
   /**
@@ -233,7 +253,11 @@ describe("the workspace", () => {
    * would be deciding for somebody every time they pressed a button.
    */
   it("is what the work is told to use once somebody has changed it", async () => {
-    backups = { backups: [{ path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false }] };
+    backups = {
+      backups: [
+        { path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false },
+      ],
+    };
     const user = userEvent.setup();
     render(<App language="en" />);
 
@@ -244,7 +268,10 @@ describe("the workspace", () => {
     await user.click(screen.getByRole("button", { name: "Use this backup" }));
 
     await waitFor(() => {
-      expect(posted[0]?.body).toEqual({ backup: "/Backups/one", into: "/tmp/elsewhere" });
+      expect(posted[0]?.body).toEqual({
+        backup: "/Backups/one",
+        into: "/tmp/elsewhere",
+      });
     });
   });
 });
@@ -253,8 +280,16 @@ describe("an encrypted iPhone backup", () => {
   beforeEach(() => {
     backups = {
       backups: [
-        { path: "/Backups/locked", device_name: "Ana's old iPhone", encrypted: true },
-        { path: "/Backups/open", device_name: "Ana's iPhone", encrypted: false },
+        {
+          path: "/Backups/locked",
+          device_name: "Ana's old iPhone",
+          encrypted: true,
+        },
+        {
+          path: "/Backups/open",
+          device_name: "Ana's iPhone",
+          encrypted: false,
+        },
       ],
     };
   });
@@ -266,7 +301,9 @@ describe("an encrypted iPhone backup", () => {
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    expect(await screen.findByRole("heading", { name: "Ana's old iPhone" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Ana's old iPhone" }),
+    ).toBeInTheDocument();
   });
 
   it("cannot be chosen", async () => {
@@ -274,11 +311,15 @@ describe("an encrypted iPhone backup", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
-    const locked = (await screen.findByRole("heading", { name: "Ana's old iPhone" })).closest("li");
+    const locked = (
+      await screen.findByRole("heading", { name: "Ana's old iPhone" })
+    ).closest("li");
 
     expect(within(locked!).queryByRole("button")).not.toBeInTheDocument();
     // The one that is not encrypted still can be, so this is not a broken screen.
-    expect(screen.getByRole("button", { name: "Use this backup" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Use this backup" }),
+    ).toBeInTheDocument();
   });
 
   it("says why, and what to change in Finder, and what to save first", async () => {
@@ -286,13 +327,17 @@ describe("an encrypted iPhone backup", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
-    const locked = (await screen.findByRole("heading", { name: "Ana's old iPhone" })).closest("li");
+    const locked = (
+      await screen.findByRole("heading", { name: "Ana's old iPhone" })
+    ).closest("li");
     const said = within(locked!);
 
     expect(said.getByText(/locked with a password/)).toBeInTheDocument();
     expect(said.getByText(/untick .Encrypt local backup./)).toBeInTheDocument();
     expect(said.getByText(/chats are not affected/)).toBeInTheDocument();
-    expect(said.getByText(/one backup per phone, and the next one replaces it/)).toBeInTheDocument();
+    expect(
+      said.getByText(/one backup per phone, and the next one replaces it/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -319,9 +364,15 @@ describe("when the backups cannot be looked at", () => {
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(/permissions restriction/);
-    expect(screen.queryByText("No iPhone backup was found on this computer.")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Use this backup" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /permissions restriction/,
+    );
+    expect(
+      screen.queryByText("No iPhone backup was found on this computer."),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Use this backup" }),
+    ).not.toBeInTheDocument();
   });
 
   /**
@@ -347,16 +398,27 @@ describe("when the backups cannot be looked at", () => {
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    expect(await screen.findByText(/Privacy & Security, then Full Disk Access/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Privacy & Security, then Full Disk Access/),
+    ).toBeInTheDocument();
   });
 });
 
 describe("while the work is happening", () => {
   it("says which part of it, and that nothing is being uploaded", async () => {
-    states = [{ stage: "working", workspace, step: "decrypting", detail: "Reading the header." }];
+    states = [
+      {
+        stage: "working",
+        workspace,
+        step: "decrypting",
+        detail: "Reading the header.",
+      },
+    ];
     render(<App language="en" />);
 
-    expect(await screen.findByText("Unlocking the backup.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Unlocking the backup."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Reading the header.")).toBeInTheDocument();
     expect(screen.getByText(/Nothing is being uploaded/)).toBeInTheDocument();
   });
@@ -367,16 +429,25 @@ describe("while the work is happening", () => {
    */
   it("keeps asking until the stage moves, and then shows the archive", async () => {
     states = [
-      { stage: "working", workspace, step: "preparing", detail: "Reading the message table." },
+      {
+        stage: "working",
+        workspace,
+        step: "preparing",
+        detail: "Reading the message table.",
+      },
       { stage: "ready", workspace },
     ];
     render(<App language="en" />);
 
-    expect(await screen.findByText("Reading the message table.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Reading the message table."),
+    ).toBeInTheDocument();
 
     await waitFor(
       () => {
-        expect(screen.getByRole("button", { name: "Close this archive" })).toBeInTheDocument();
+        expect(
+          screen.getByRole("button", { name: "Close this archive" }),
+        ).toBeInTheDocument();
       },
       { timeout: 4000 },
     );
@@ -396,15 +467,20 @@ describe("when the work fails", () => {
     stage: "failed",
     workspace,
     detail: "the key did not decrypt this backup",
-    guidance: "Check that the key is the one this phone showed you.\nKeys are not shared between phones.",
+    guidance:
+      "Check that the key is the one this phone showed you.\nKeys are not shared between phones.",
   };
 
   it("shows what went wrong and the advice underneath it", async () => {
     states = [failure];
     render(<App language="en" />);
 
-    expect(await screen.findByRole("alert")).toHaveTextContent("the key did not decrypt this backup");
-    expect(screen.getByText(/Keys are not shared between phones/)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "the key did not decrypt this backup",
+    );
+    expect(
+      screen.getByText(/Keys are not shared between phones/),
+    ).toBeInTheDocument();
   });
 
   /** It arrives with its line breaks in it and is written to be read as it is. */
@@ -430,21 +506,38 @@ describe("when the work fails", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /I already have a file/);
-    await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/holiday.jpg");
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/holiday.jpg",
+    );
 
     // Through the working screen, which replaces the form, and out the other side.
-    leadsTo = { stage: "working", workspace, step: "opening", detail: "Reading the file." };
+    leadsTo = {
+      stage: "working",
+      workspace,
+      step: "opening",
+      detail: "Reading the file.",
+    };
     await user.click(screen.getByRole("button", { name: "Open it" }));
     expect(await screen.findByText("Reading the file.")).toBeInTheDocument();
 
-    states = [{ stage: "failed", workspace, detail: "not a database", guidance: "Try another." }];
+    states = [
+      {
+        stage: "failed",
+        workspace,
+        detail: "not a database",
+        guidance: "Try another.",
+      },
+    ];
     await waitFor(
       () => {
         expect(screen.getByRole("alert")).toHaveTextContent("not a database");
       },
       { timeout: 4000 },
     );
-    expect(screen.getByLabelText("The full path to the file")).toHaveValue("/tmp/holiday.jpg");
+    expect(screen.getByLabelText("The full path to the file")).toHaveValue(
+      "/tmp/holiday.jpg",
+    );
   });
 
   /**
@@ -457,17 +550,33 @@ describe("when the work fails", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/one.crypt15",
+    );
     await user.type(screen.getByLabelText("The 64-digit key"), key);
 
-    leadsTo = { stage: "working", workspace, step: "decrypting", detail: "Unlocking it." };
+    leadsTo = {
+      stage: "working",
+      workspace,
+      step: "decrypting",
+      detail: "Unlocking it.",
+    };
     await user.click(screen.getByRole("button", { name: "Unlock the file" }));
     expect(await screen.findByText("Unlocking it.")).toBeInTheDocument();
 
-    states = [{ stage: "failed", workspace, detail: "the key did not decrypt this backup" }];
+    states = [
+      {
+        stage: "failed",
+        workspace,
+        detail: "the key did not decrypt this backup",
+      },
+    ];
     await waitFor(
       () => {
-        expect(screen.getByRole("alert")).toHaveTextContent("the key did not decrypt this backup");
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "the key did not decrypt this backup",
+        );
       },
       { timeout: 4000 },
     );
@@ -475,7 +584,9 @@ describe("when the work fails", () => {
     // Still on the fifth step with the file still named, rather than back at the
     // first of five. The key is gone on purpose: it is sent and forgotten in the
     // same breath, and typing it again is the price of it existing in one fewer place.
-    expect(screen.getByLabelText(/Where msgstore.db.crypt15 is/)).toHaveValue("/tmp/one.crypt15");
+    expect(screen.getByLabelText(/Where msgstore.db.crypt15 is/)).toHaveValue(
+      "/tmp/one.crypt15",
+    );
     expect(screen.getByLabelText("The 64-digit key")).toHaveValue("");
   });
 
@@ -484,9 +595,13 @@ describe("when the work fails", () => {
     const user = userEvent.setup();
     render(<App language="en" />);
 
-    await user.click(await screen.findByRole("button", { name: "Go back and try again" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Go back and try again" }),
+    );
 
-    expect(await screen.findByText("Where is your WhatsApp history?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Where is your WhatsApp history?"),
+    ).toBeInTheDocument();
     expect(posted.map((one) => one.at)).toEqual(["/api/close"]);
   });
 
@@ -501,9 +616,13 @@ describe("when the work fails", () => {
     const user = userEvent.setup();
     render(<App language="en" />);
 
-    await user.click(await screen.findByRole("button", { name: "Go back and try again" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Go back and try again" }),
+    );
 
-    expect(await screen.findByText("Where is your WhatsApp history?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Where is your WhatsApp history?"),
+    ).toBeInTheDocument();
   });
 });
 
@@ -527,7 +646,10 @@ describe("the decryption key", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/one.crypt15",
+    );
     await user.type(screen.getByLabelText("The 64-digit key"), key);
     await user.click(screen.getByRole("button", { name: "Unlock the file" }));
 
@@ -546,7 +668,10 @@ describe("the decryption key", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/one.crypt15",
+    );
     await user.type(screen.getByLabelText("The 64-digit key"), key);
 
     // A refusal is the one answer that leaves the form on screen to be looked at.
@@ -566,8 +691,14 @@ describe("the decryption key", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
-    await user.type(screen.getByLabelText("The 64-digit key"), key.replace(/(.{8})/g, "$1 "));
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/one.crypt15",
+    );
+    await user.type(
+      screen.getByLabelText("The 64-digit key"),
+      key.replace(/(.{8})/g, "$1 "),
+    );
     await user.click(screen.getByRole("button", { name: "Unlock the file" }));
 
     await waitFor(() => {
@@ -580,24 +711,39 @@ describe("the decryption key", () => {
    * offers a password beside the key, and a password cannot be used here at all.
    */
   const refusals: { name: string; typed: string; said: RegExp }[] = [
-    { name: "a password typed where a key belongs", typed: "correcthorsebattery", said: /not a 64-digit key/ },
-    { name: "a key with a character that is not a digit", typed: `${"0".repeat(63)}z`, said: /not a 64-digit key/ },
+    {
+      name: "a password typed where a key belongs",
+      typed: "correcthorsebattery",
+      said: /not a 64-digit key/,
+    },
+    {
+      name: "a key with a character that is not a digit",
+      typed: `${"0".repeat(63)}z`,
+      said: /not a 64-digit key/,
+    },
     { name: "nothing at all", typed: "", said: /Type the key before going on/ },
   ];
 
-  it.each(refusals)("$name is refused without a request", async ({ typed, said }) => {
-    const user = userEvent.setup();
-    render(<App language="en" />);
+  it.each(refusals)(
+    "$name is refused without a request",
+    async ({ typed, said }) => {
+      const user = userEvent.setup();
+      render(<App language="en" />);
 
-    await chooseRoute(user, /I have an Android phone/);
-    await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
-    if (typed !== "") await user.type(screen.getByLabelText("The 64-digit key"), typed);
-    await user.click(screen.getByRole("button", { name: "Unlock the file" }));
+      await chooseRoute(user, /I have an Android phone/);
+      await walkThePhone(user);
+      await user.type(
+        await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+        "/tmp/one.crypt15",
+      );
+      if (typed !== "")
+        await user.type(screen.getByLabelText("The 64-digit key"), typed);
+      await user.click(screen.getByRole("button", { name: "Unlock the file" }));
 
-    expect(await screen.findByText(said)).toBeInTheDocument();
-    expect(posted).toEqual([]);
-  });
+      expect(await screen.findByText(said)).toBeInTheDocument();
+      expect(posted).toEqual([]);
+    },
+  );
 });
 
 describe("walking through an Android phone", () => {
@@ -607,8 +753,12 @@ describe("walking through an Android phone", () => {
 
     await chooseRoute(user, /I have an Android phone/);
 
-    expect(await screen.findByText(/choose the 64-digit key/)).toBeInTheDocument();
-    expect(screen.getByText(/the key never leaves the phone/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/choose the 64-digit key/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/the key never leaves the phone/),
+    ).toBeInTheDocument();
   });
 
   it("says which file to copy and which ones are no use", async () => {
@@ -621,7 +771,9 @@ describe("walking through an Android phone", () => {
     }
 
     expect(
-      await screen.findByText(/Android\/media\/com.whatsapp\/WhatsApp\/Databases/),
+      await screen.findByText(
+        /Android\/media\/com.whatsapp\/WhatsApp\/Databases/,
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText(/msgstore-increment/)).toBeInTheDocument();
   });
@@ -645,50 +797,61 @@ describe("walking through an Android phone", () => {
     expect(await screen.findByText("Step 2 of 6")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Back" }));
-    expect(await screen.findByText("Where is your WhatsApp history?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Where is your WhatsApp history?"),
+    ).toBeInTheDocument();
   });
 });
 
 describe("the promise the whole program rests on", () => {
-  const screens: { name: string; arrive: (user: UserEvent) => Promise<void>; before?: () => void }[] =
-    [
-      { name: "the first screen", arrive: () => Promise.resolve() },
-      {
-        name: "choosing an iPhone backup",
-        arrive: (user) => chooseRoute(user, /My iPhone is backed up to this computer/),
+  const screens: {
+    name: string;
+    arrive: (user: UserEvent) => Promise<void>;
+    before?: () => void;
+  }[] = [
+    { name: "the first screen", arrive: () => Promise.resolve() },
+    {
+      name: "choosing an iPhone backup",
+      arrive: (user) =>
+        chooseRoute(user, /My iPhone is backed up to this computer/),
+    },
+    {
+      name: "walking through an Android phone",
+      arrive: (user) => chooseRoute(user, /I have an Android phone/),
+    },
+    {
+      name: "opening a file somebody already has",
+      arrive: (user) => chooseRoute(user, /I already have a file/),
+    },
+    {
+      name: "while the work is happening",
+      before: () => {
+        states = [{ stage: "working", workspace, step: "opening" }];
       },
-      {
-        name: "walking through an Android phone",
-        arrive: (user) => chooseRoute(user, /I have an Android phone/),
+      arrive: () => Promise.resolve(),
+    },
+    {
+      name: "after it has failed",
+      before: () => {
+        states = [{ stage: "failed", workspace, detail: "no" }];
       },
-      {
-        name: "opening a file somebody already has",
-        arrive: (user) => chooseRoute(user, /I already have a file/),
-      },
-      {
-        name: "while the work is happening",
-        before: () => {
-          states = [{ stage: "working", workspace, step: "opening" }];
-        },
-        arrive: () => Promise.resolve(),
-      },
-      {
-        name: "after it has failed",
-        before: () => {
-          states = [{ stage: "failed", workspace, detail: "no" }];
-        },
-        arrive: () => Promise.resolve(),
-      },
-    ];
+      arrive: () => Promise.resolve(),
+    },
+  ];
 
-  it.each(screens)("$name says nothing leaves this computer", async ({ before, arrive }) => {
-    before?.();
-    const user = userEvent.setup();
-    render(<App language="en" />);
-    await arrive(user);
+  it.each(screens)(
+    "$name says nothing leaves this computer",
+    async ({ before, arrive }) => {
+      before?.();
+      const user = userEvent.setup();
+      render(<App language="en" />);
+      await arrive(user);
 
-    expect(await screen.findByText("Nothing here leaves this computer.")).toBeInTheDocument();
-  });
+      expect(
+        await screen.findByText("Nothing here leaves this computer."),
+      ).toBeInTheDocument();
+    },
+  );
 });
 
 describe("a request the server would not accept", () => {
@@ -697,7 +860,10 @@ describe("a request the server would not accept", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /I already have a file/);
-    await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/msgstore.db");
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/msgstore.db",
+    );
 
     refusing = new Response("into is required\n", { status: 400 });
     await user.click(screen.getByRole("button", { name: "Open it" }));
@@ -708,11 +874,15 @@ describe("a request the server would not accept", () => {
 
 describe("when the server cannot be reached at all", () => {
   it("says it may have been closed, and offers to ask again", async () => {
-    fetching.mockImplementation(() => Promise.resolve(new Response("", { status: 502 })));
+    fetching.mockImplementation(() =>
+      Promise.resolve(new Response("", { status: 502 })),
+    );
     render(<App language="en" />);
 
     expect(await screen.findByText(/could not be reached/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Try again" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -722,9 +892,13 @@ describe("closing an archive", () => {
     const user = userEvent.setup();
     render(<App language="en" />);
 
-    await user.click(await screen.findByRole("button", { name: "Close this archive" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Close this archive" }),
+    );
 
-    expect(await screen.findByText("Where is your WhatsApp history?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Where is your WhatsApp history?"),
+    ).toBeInTheDocument();
     expect(posted.map((one) => one.at)).toEqual(["/api/close"]);
   });
 });
@@ -733,7 +907,9 @@ describe("speaking Spanish", () => {
   it("offers the three routes in the reader's own language", async () => {
     render(<App language="es" />, "es");
 
-    expect(await screen.findByText("¿Dónde está tu historial de WhatsApp?")).toBeInTheDocument();
+    expect(
+      await screen.findByText("¿Dónde está tu historial de WhatsApp?"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Tengo un teléfono Android.")).toBeInTheDocument();
   });
 });
@@ -750,18 +926,28 @@ describe("what gets written", () => {
 
     await chooseRoute(user, /I already have a file/);
 
-    expect(await screen.findByText(/A search index is written beside it/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/A search index is written beside it/),
+    ).toBeInTheDocument();
   });
 
   it("says what will be created before an iPhone backup is touched", async () => {
-    backups = { backups: [{ path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false }] };
+    backups = {
+      backups: [
+        { path: "/Backups/one", device_name: "Ana's iPhone", encrypted: false },
+      ],
+    };
     const user = userEvent.setup();
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    expect(await screen.findByText(/as ChatStorage.sqlite, with a search index/)).toBeInTheDocument();
-    expect(screen.getByText(/Nothing in the backup itself is changed/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/as ChatStorage.sqlite, with a search index/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nothing in the backup itself is changed/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -772,12 +958,21 @@ describe("an address book", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /I already have a file/);
-    await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/msgstore.db");
-    await user.type(screen.getByLabelText(/An address book/), "/tmp/contacts.vcf");
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/msgstore.db",
+    );
+    await user.type(
+      screen.getByLabelText(/An address book/),
+      "/tmp/contacts.vcf",
+    );
     await user.click(screen.getByRole("button", { name: "Open it" }));
 
     await waitFor(() => {
-      expect(posted[0]?.body).toEqual({ path: "/tmp/msgstore.db", contacts: "/tmp/contacts.vcf" });
+      expect(posted[0]?.body).toEqual({
+        path: "/tmp/msgstore.db",
+        contacts: "/tmp/contacts.vcf",
+      });
     });
   });
 
@@ -788,9 +983,9 @@ describe("an address book", () => {
 
     await chooseRoute(user, /I already have a file/);
 
-    expect(await screen.findByText(/A .vcf file exported from your contacts, or/)).toHaveTextContent(
-      /wa.db/,
-    );
+    expect(
+      await screen.findByText(/A .vcf file exported from your contacts, or/),
+    ).toHaveTextContent(/wa.db/);
   });
 });
 
@@ -806,23 +1001,32 @@ describe("a build without the importer", () => {
     fetching.mockImplementation((input, init) => {
       const at = fetchTarget(input);
       if (at.startsWith("/api/backups")) {
-        return Promise.resolve(new Response("no importer in this build\n", { status: 501 }));
+        return Promise.resolve(
+          new Response("no importer in this build\n", { status: 501 }),
+        );
       }
       if (init?.method === "POST") return Promise.resolve(answer({}));
-      if (at.startsWith("/api/state")) return Promise.resolve(answer(nextState()));
+      if (at.startsWith("/api/state"))
+        return Promise.resolve(answer(nextState()));
       return Promise.resolve(new Response("not found", { status: 404 }));
     });
 
     render(<App language="en" />);
 
-    expect(await screen.findByRole("button", { name: /I already have a file/ })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /I already have a file/ }),
+    ).toBeInTheDocument();
     await waitFor(() => {
       expect(
         screen.queryByRole("button", { name: /My iPhone is backed up/ }),
       ).not.toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: /I have an Android phone/ })).not.toBeInTheDocument();
-    expect(screen.getByText(/only open a file you already have/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /I have an Android phone/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/only open a file you already have/),
+    ).toBeInTheDocument();
   });
 });
 
@@ -838,9 +1042,19 @@ describe("work that is already running", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /I already have a file/);
-    await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/msgstore.db");
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/msgstore.db",
+    );
 
-    states = [{ stage: "working", workspace, step: "opening", detail: "Reading the schema." }];
+    states = [
+      {
+        stage: "working",
+        workspace,
+        step: "opening",
+        detail: "Reading the schema.",
+      },
+    ];
     await user.click(screen.getByRole("button", { name: "Open it" }));
 
     await waitFor(() => {
@@ -855,7 +1069,8 @@ describe("a failure with the form still behind it", () => {
     stage: "failed",
     workspace,
     detail: "no such file",
-    guidance: "Check the path.\nDrag the file into a terminal to see its full path.",
+    guidance:
+      "Check the path.\nDrag the file into a terminal to see its full path.",
   };
 
   /** Failure is not terminal here: the next attempt is taken without a reset. */
@@ -871,8 +1086,12 @@ describe("a failure with the form still behind it", () => {
     await user.click(screen.getByRole("button", { name: "Open it" }));
 
     expect(await screen.findByText("no such file")).toBeInTheDocument();
-    expect(screen.getByText(/Drag the file into a terminal/)).toBeInTheDocument();
-    expect(screen.getByLabelText("The full path to the file")).toHaveValue("/tmp/wrong.db");
+    expect(
+      screen.getByText(/Drag the file into a terminal/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("The full path to the file")).toHaveValue(
+      "/tmp/wrong.db",
+    );
   });
 
   it("takes the corrected answer without anything being reset first", async () => {
@@ -880,7 +1099,10 @@ describe("a failure with the form still behind it", () => {
     render(<App language="en" />);
 
     await chooseRoute(user, /I already have a file/);
-    await user.type(await screen.findByLabelText("The full path to the file"), "/tmp/wrong.db");
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/wrong.db",
+    );
 
     leadsTo = failed;
     await user.click(screen.getByRole("button", { name: "Open it" }));
@@ -908,7 +1130,10 @@ describe("a key kept in a file", () => {
 
     await chooseRoute(user, /I have an Android phone/);
     await walkThePhone(user);
-    await user.type(await screen.findByLabelText(/Where msgstore.db.crypt15 is/), "/tmp/one.crypt15");
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/one.crypt15",
+    );
     await user.type(screen.getByLabelText("The 64-digit key"), "/tmp/key.txt");
     await user.click(screen.getByRole("button", { name: "Unlock the file" }));
 
@@ -923,7 +1148,13 @@ describe("what the wizard has to say about itself", () => {
   it("carries the same two notices as the archive does", async () => {
     render(<App language="en" />);
 
-    expect(await screen.findByText(/Not affiliated with, endorsed by, or connected to/)).toBeInTheDocument();
-    expect(screen.getByText(/free software under the AGPL-3.0/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(
+        /Not affiliated with, endorsed by, or connected to/,
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/free software under the AGPL-3.0/),
+    ).toBeInTheDocument();
   });
 });

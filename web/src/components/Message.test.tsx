@@ -44,13 +44,18 @@ describe("a message never becomes markup", () => {
   const attempts = [
     { name: "a script tag", text: "<script>alert(1)</script>" },
     { name: "an image with a handler", text: `<img src=x onerror="alert(1)">` },
-    { name: "an attempt to close the bubble", text: "</div></article><script>x</script>" },
+    {
+      name: "an attempt to close the bubble",
+      text: "</div></article><script>x</script>",
+    },
     { name: "an entity", text: "&lt;not decoded&gt;" },
     { name: "an ampersand, which is not an attack", text: "tea & biscuits" },
   ] as const;
 
   it.each(attempts)("$name", ({ text }) => {
-    const { container } = render(<Message message={said({ text })} language="en" />);
+    const { container } = render(
+      <Message message={said({ text })} language="en" />,
+    );
 
     // The characters are on screen exactly as they were sent.
     expect(screen.getByText(text)).toBeInTheDocument();
@@ -82,14 +87,20 @@ describe("what a message shows", () => {
 
   it("calls the archive's owner You", () => {
     render(
-      <Message message={withoutSender({ from_me: true, text: "hola" })} language="en" />,
+      <Message
+        message={withoutSender({ from_me: true, text: "hola" })}
+        language="en"
+      />,
     );
     expect(screen.getByText("You")).toBeInTheDocument();
   });
 
   it("says so in Spanish when the page is Spanish", () => {
     render(
-      <Message message={withoutSender({ from_me: true, text: "hola" })} language="es" />,
+      <Message
+        message={withoutSender({ from_me: true, text: "hola" })}
+        language="es"
+      />,
       "es",
     );
     expect(screen.getByText("Tú")).toBeInTheDocument();
@@ -102,7 +113,10 @@ describe("what a message shows", () => {
   it("describes a message that was not words", () => {
     render(
       <Message
-        message={said({ kind: "image", rendered: "<image omitted: beach.jpg>" })}
+        message={said({
+          kind: "image",
+          rendered: "<image omitted: beach.jpg>",
+        })}
         language="en"
       />,
     );
@@ -111,7 +125,10 @@ describe("what a message shows", () => {
 
   it("does not repeat itself when the description is the words", () => {
     const { container } = render(
-      <Message message={said({ text: "hola", rendered: "hola" })} language="en" />,
+      <Message
+        message={said({ text: "hola", rendered: "hola" })}
+        language="en"
+      />,
     );
     expect(container.textContent.match(/hola/g)).toHaveLength(1);
   });
@@ -136,7 +153,10 @@ describe("what a message shows", () => {
     // in the whole API that it does.
     render(
       <Message
-        message={said({ kind: "poll", poll: { question: "Where?", options: null } })}
+        message={said({
+          kind: "poll",
+          poll: { question: "Where?", options: null },
+        })}
         language="en"
       />,
     );
@@ -157,9 +177,21 @@ describe("what a message shows", () => {
   });
 
   const tags = [
-    { name: "edited", message: said({ text: "x", edited_at: "2019-06-14T09:13:00Z" }), want: "edited" },
-    { name: "forwarded", message: said({ text: "x", forwarded: true }), want: "forwarded" },
-    { name: "starred", message: said({ text: "x", starred: true }), want: "starred" },
+    {
+      name: "edited",
+      message: said({ text: "x", edited_at: "2019-06-14T09:13:00Z" }),
+      want: "edited",
+    },
+    {
+      name: "forwarded",
+      message: said({ text: "x", forwarded: true }),
+      want: "forwarded",
+    },
+    {
+      name: "starred",
+      message: said({ text: "x", starred: true }),
+      want: "starred",
+    },
   ] as const;
 
   it.each(tags)("marks a message that was $name", ({ message, want }) => {
@@ -170,7 +202,10 @@ describe("what a message shows", () => {
   it("shows a notice without pretending somebody said it", () => {
     const { container } = render(
       <Message
-        message={withoutSender({ kind: "system", rendered: "Luis added Marta" })}
+        message={withoutSender({
+          kind: "system",
+          rendered: "Luis added Marta",
+        })}
         language="en"
       />,
     );

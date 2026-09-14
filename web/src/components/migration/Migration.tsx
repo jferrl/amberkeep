@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-import { carryOut, checkBackup, forgetMigration, planMigration } from "@/api/client";
+import {
+  carryOut,
+  checkBackup,
+  forgetMigration,
+  planMigration,
+} from "@/api/client";
 import { useGuide, useMigration, useMigrationStep } from "@/api/queries";
 import type { Migration as State } from "@/api/types";
 import { MigrationChecks } from "@/components/migration/Checks";
@@ -56,7 +61,13 @@ function Refused({ detail }: { detail: string }) {
  * because somebody pressed something, which is the whole design and the easiest thing
  * to undo by accident.
  */
-export function Migration({ language, onLeave }: { language: Language; onLeave: () => void }) {
+export function Migration({
+  language,
+  onLeave,
+}: {
+  language: Language;
+  onLeave: () => void;
+}) {
   const state = useMigration();
   const guide = useGuide();
   const step = useMigrationStep();

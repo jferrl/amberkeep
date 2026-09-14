@@ -40,7 +40,7 @@ export function SearchResults({
           onClick={() => {
             onOpen(hit);
           }}
-          className="w-full border-b border-[var(--color-line)] px-2 py-2 text-left hover:bg-[var(--color-panel)]"
+          className="w-full border-b border-[var(--color-line)] px-2 py-2 text-left hover:bg-[var(--color-surface)]"
         >
           <div>
             <span className="text-[0.8rem] font-semibold text-[var(--color-accent)]">
@@ -69,7 +69,10 @@ function Snippet({ text }: { text: string }) {
       {splitSnippet(text).map((piece, at) => {
         const key = `${String(at)}-${piece.text.slice(0, 8)}`;
         return piece.marked ? (
-          <mark key={key} className="rounded-sm bg-[var(--color-mark)] text-inherit">
+          <mark
+            key={key}
+            className="rounded-sm bg-[var(--color-mark)] text-inherit"
+          >
             {piece.text}
           </mark>
         ) : (

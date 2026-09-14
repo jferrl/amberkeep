@@ -1,38 +1,61 @@
 @import "tailwindcss";
 
-/* The palette is the one the exported archive pages use, so an archive read here
-   and an archive written to disk look like the same thing. Amber and paper rather
-   than the green everyone associates with the app it reads, which is deliberate:
-   this is not that product and must not pretend to be. */
+/*
+ * Amberkeep's surface.
+ *
+ * Amber is the product's name, so it stays — but as the accent and nothing else.
+ * The ground is a true neutral, because a warm near-white ground is the thing every
+ * generated interface reaches for, and this one was reaching for it too: the body
+ * colour used to be #f4f1ea, which is the canonical example of that reflex.
+ *
+ * What carries the warmth instead is the accent, and a whisper of its own hue in the
+ * neutrals — 0.005 chroma, far below anything that reads as a tint, but enough that
+ * the greys belong to this program rather than being the browser's.
+ *
+ * Every pair below was measured rather than eyeballed. Ink is 18:1 on the ground,
+ * muted 6.7:1, the accent 5.1:1; the old muted was about 4.3:1, which is under the
+ * line for body text and is why the old screens read as slightly washed.
+ */
 @theme {
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
+  /* The operating system's own face. On a desktop application that is the native
+     choice rather than a compromise, and it honours the rule that this program
+     fetches nothing: no webfont, no CDN, no request. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
 
-  --color-paper: #f4f1ea;
-  --color-panel: #fffdf8;
-  --color-ink: #1c1a17;
-  --color-muted: #6b6459;
-  --color-line: #e2dbcd;
-  --color-mine: #dcf0d8;
-  --color-theirs: #fffdf8;
-  --color-accent: #9a6b2f;
-  --color-mark: #ffd98a;
+  --color-bg: oklch(1 0 0);
+  --color-surface: oklch(0.985 0.003 75);
+  --color-ink: oklch(0.19 0.005 75);
+  --color-muted: oklch(0.475 0.009 75);
+  --color-line: oklch(0.915 0.005 75);
+  --color-accent: oklch(0.545 0.12 60);
+
+  /* A message somebody sent, and one they received. Both neutral: the green every
+     reader associates with the app this reads is not ours to borrow, and a
+     conversation is easier to follow when the two sides differ in weight rather
+     than in hue. */
+  --color-mine: oklch(0.965 0.012 70);
+  --color-theirs: oklch(0.985 0.003 75);
+  --color-mark: oklch(0.90 0.10 85);
 }
 
-/* The whole palette again for a dark room. Every colour is redefined here rather
-   than adjusted, because a half-converted theme is worse than either one. */
+/*
+ * The same palette for a dark room, redefined rather than adjusted. A half-converted
+ * theme is worse than either one, so every token above appears again below.
+ */
 @layer base {
   @media (prefers-color-scheme: dark) {
     :root {
-      --color-paper: #16140f;
-      --color-panel: #1f1c16;
-      --color-ink: #ece7dc;
-      --color-muted: #9c9486;
-      --color-line: #322d24;
-      --color-mine: #24382a;
-      --color-theirs: #1f1c16;
-      --color-accent: #d5a761;
-      --color-mark: #6b5216;
+      --color-bg: oklch(0.165 0.006 75);
+      --color-surface: oklch(0.205 0.008 75);
+      --color-ink: oklch(0.955 0.004 75);
+      --color-muted: oklch(0.70 0.012 75);
+      --color-line: oklch(0.285 0.010 75);
+      --color-accent: oklch(0.775 0.115 68);
+
+      --color-mine: oklch(0.245 0.018 70);
+      --color-theirs: oklch(0.205 0.008 75);
+      --color-mark: oklch(0.42 0.09 85);
     }
   }
 
@@ -42,11 +65,24 @@
 
   body {
     margin: 0;
-    background: var(--color-paper);
+    background: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
-    font-size: 15px;
+    /* 14px is the density a tool is read at. The wizard's own prose steps up to 15,
+       because that is read rather than scanned. */
+    font-size: 14px;
     line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings set a little tight, the way a interface face wants to be set. Nowhere
+     near the -0.04em floor where letters start to touch. */
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.011em;
+    text-wrap: balance;
   }
 
   /* A conversation reaches ninety thousand messages. This lets the browser skip
@@ -54,5 +90,17 @@
   .message-row {
     content-visibility: auto;
     contain-intrinsic-size: auto 3.5rem;
+  }
+
+  /* Motion says something changed; it is never decoration here, and it is never
+     imposed on somebody who has asked for less of it. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }

@@ -10,21 +10,33 @@ import { cn } from "@/lib/utils";
  * archive's vocabulary instead of the archive being bent to a library's.
  */
 const styles = cva(
-  "inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium " +
-    "transition-colors disabled:pointer-events-none disabled:opacity-50 " +
-    "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)]",
+  "inline-flex items-center justify-center gap-2 rounded-md text-[0.8125rem] font-medium " +
+    "transition-[background-color,border-color,color,opacity] duration-150 " +
+    "disabled:pointer-events-none disabled:opacity-45 " +
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
   {
     variants: {
       variant: {
+        /**
+         * The one thing this screen is for.
+         *
+         * Exactly one of these per screen. When every button is drawn the same
+         * weight, somebody who is anxious and skim-reading has to read all of them
+         * to find the way forward — which, on the screens in this program, is how
+         * you end up clicking the one that writes to your phone.
+         */
+        primary:
+          "bg-[var(--color-ink)] text-[var(--color-bg)] hover:opacity-90 active:opacity-100",
         default:
-          "border border-[var(--color-line)] bg-[var(--color-panel)] hover:border-[var(--color-accent)]",
-        ghost: "hover:bg-[var(--color-panel)]",
+          "border border-[var(--color-line)] bg-[var(--color-bg)] hover:bg-[var(--color-surface)] " +
+          "hover:border-[var(--color-muted)]",
+        ghost: "hover:bg-[var(--color-surface)]",
         quiet: "text-[var(--color-muted)] hover:text-[var(--color-ink)]",
       },
       size: {
-        default: "h-9 px-3",
-        sm: "h-8 px-2 text-xs",
-        icon: "size-9",
+        default: "h-8 px-3",
+        sm: "h-7 px-2 text-xs",
+        icon: "size-8",
       },
     },
     defaultVariants: { variant: "default", size: "default" },

@@ -3,7 +3,13 @@ import userEvent from "@testing-library/user-event";
 import type { UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { BackupList, Finding, Guide, Migration as State, MigrationPlan } from "@/api/types";
+import type {
+  BackupList,
+  Finding,
+  Guide,
+  Migration as State,
+  MigrationPlan,
+} from "@/api/types";
 import { Migration } from "@/components/migration/Migration";
 import { fetchTarget } from "@/test/fetchTarget";
 import { render } from "@/test/render";
@@ -51,12 +57,21 @@ function answer(body: unknown, status = 200): Response {
  * agreement between a test and its own fiction that proves nothing.
  */
 function refuses(said: string, status = 400): Response {
-  return new Response(said, { status, headers: { "Content-Type": "text/plain" } });
+  return new Response(said, {
+    status,
+    headers: { "Content-Type": "text/plain" },
+  });
 }
 
 /** A finding, with the defaults that make one that passed. */
 function finding(over: Partial<Finding> = {}): Finding {
-  return { step: "safety-backup", title: "A check", passed: true, blocking: false, ...over };
+  return {
+    step: "safety-backup",
+    title: "A check",
+    passed: true,
+    blocking: false,
+    ...over,
+  };
 }
 
 /** A plan with one conversation in it, which is enough to have something to agree to. */
@@ -129,7 +144,8 @@ beforeEach(() => {
     const at = fetchTarget(input);
 
     if (init?.method === "POST") {
-      const body: unknown = typeof init.body === "string" ? JSON.parse(init.body) : {};
+      const body: unknown =
+        typeof init.body === "string" ? JSON.parse(init.body) : {};
       posted.push({ at, body: body as Record<string, unknown> });
 
       const said = replies[at];
@@ -138,7 +154,8 @@ beforeEach(() => {
     }
 
     if (at.startsWith("/api/backups")) return Promise.resolve(answer(backups));
-    if (at.startsWith("/api/migration/guide")) return Promise.resolve(answer(guide));
+    if (at.startsWith("/api/migration/guide"))
+      return Promise.resolve(answer(guide));
     if (at.startsWith("/api/migration")) return Promise.resolve(answer(now));
 
     return Promise.resolve(new Response("not found", { status: 404 }));
@@ -168,9 +185,18 @@ function show(onLeave = () => (left += 1)) {
 }
 
 /** fillIn names the two halves and presses the button that looks at them. */
-async function fillIn(user: UserEvent, extras: { pairing?: string } = {}): Promise<void> {
-  await user.type(await screen.findByLabelText("The iPhone backup folder"), backupPath);
-  await user.type(screen.getByLabelText("The decrypted Android database"), androidPath);
+async function fillIn(
+  user: UserEvent,
+  extras: { pairing?: string } = {},
+): Promise<void> {
+  await user.type(
+    await screen.findByLabelText("The iPhone backup folder"),
+    backupPath,
+  );
+  await user.type(
+    screen.getByLabelText("The decrypted Android database"),
+    androidPath,
+  );
   if (extras.pairing !== undefined) {
     await user.type(screen.getByLabelText(/LID.sqlite/), extras.pairing);
   }
@@ -182,7 +208,10 @@ describe("the journey", () => {
     const user = userEvent.setup();
 
     replies["/api/migration/check"] = () =>
-      answer({ stage: "checked", checks: { findings: [finding({ title: "Not encrypted" })] } });
+      answer({
+        stage: "checked",
+        checks: { findings: [finding({ title: "Not encrypted" })] },
+      });
     replies["/api/migration/plan"] = () => answer(planned());
     replies["/api/migration/carry-out"] = () =>
       answer({
@@ -202,7 +231,9 @@ describe("the journey", () => {
 
     expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
 
-    await user.click(await screen.findByRole("button", { name: "Work out what would move" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Work out what would move" }),
+    );
     expect(sentTo("/api/migration/plan")).toEqual({
       backup: backupPath,
       android: androidPath,
@@ -213,8 +244,12 @@ describe("the journey", () => {
     await user.click(screen.getByRole("button", { name: "Do it" }));
     expect(sentTo("/api/migration/carry-out")).toEqual({ confirm: "migrate" });
 
-    expect(await screen.findByText("There is a backup to restore")).toBeInTheDocument();
-    expect(screen.getByText("/Backups/00008110-aaa.amberkeep")).toBeInTheDocument();
+    expect(
+      await screen.findByText("There is a backup to restore"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("/Backups/00008110-aaa.amberkeep"),
+    ).toBeInTheDocument();
   });
 
   it("asks for nothing until somebody presses something", async () => {
@@ -238,11 +273,21 @@ describe("the journey", () => {
     replies["/api/migration/plan"] = () => answer(planned());
 
     show();
-    await user.type(await screen.findByLabelText("The iPhone backup folder"), backupPath);
-    await user.type(screen.getByLabelText("The decrypted Android database"), androidPath);
+    await user.type(
+      await screen.findByLabelText("The iPhone backup folder"),
+      backupPath,
+    );
+    await user.type(
+      screen.getByLabelText("The decrypted Android database"),
+      androidPath,
+    );
     await user.click(screen.getByLabelText("Include group conversations"));
-    await user.click(screen.getByRole("button", { name: "Look at the backup" }));
-    await user.click(await screen.findByRole("button", { name: "Work out what would move" }));
+    await user.click(
+      screen.getByRole("button", { name: "Look at the backup" }),
+    );
+    await user.click(
+      await screen.findByRole("button", { name: "Work out what would move" }),
+    );
 
     expect(sentTo("/api/migration/plan")).toEqual({
       backup: backupPath,
@@ -259,7 +304,11 @@ describe("the word", () => {
     { name: "half of it leaves it shut", typed: "migr", opens: false },
     { name: "another word leaves it shut", typed: "yes", opens: false },
     { name: "the word opens it", typed: "migrate", opens: true },
-    { name: "the word with spaces round it opens it", typed: "  migrate  ", opens: true },
+    {
+      name: "the word with spaces round it opens it",
+      typed: "  migrate  ",
+      opens: true,
+    },
   ];
 
   it.each(attempts)("$name", async ({ typed, opens }) => {
@@ -292,9 +341,13 @@ describe("when something is wrong", () => {
     const user = userEvent.setup();
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Look at the backup" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Look at the backup" }),
+    );
 
-    expect(await screen.findAllByText("Say where the file is before going on.")).toHaveLength(2);
+    expect(
+      await screen.findAllByText("Say where the file is before going on."),
+    ).toHaveLength(2);
     expect(addressesAsked()).not.toContain("/api/migration/check");
   });
 
@@ -302,7 +355,8 @@ describe("when something is wrong", () => {
     const user = userEvent.setup();
     let first = true;
     replies["/api/migration/check"] = () => {
-      if (!first) return answer({ stage: "checked", checks: { findings: [finding()] } });
+      if (!first)
+        return answer({ stage: "checked", checks: { findings: [finding()] } });
       first = false;
       return refuses("that folder is not a backup");
     };
@@ -311,13 +365,21 @@ describe("when something is wrong", () => {
     await fillIn(user);
 
     expect(
-      await screen.findByText(/Amberkeep would not accept that: that folder is not a backup/),
+      await screen.findByText(
+        /Amberkeep would not accept that: that folder is not a backup/,
+      ),
     ).toBeInTheDocument();
     // The form is still there, with both paths in it, ready to be corrected.
-    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(backupPath);
+    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(
+      backupPath,
+    );
 
-    await user.click(screen.getByRole("button", { name: "Look at the backup" }));
-    expect(await screen.findByRole("button", { name: "Work out what would move" })).toBeEnabled();
+    await user.click(
+      screen.getByRole("button", { name: "Look at the backup" }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Work out what would move" }),
+    ).toBeEnabled();
   });
 
   it("will not let a blocked check be planned past", async () => {
@@ -337,9 +399,13 @@ describe("when something is wrong", () => {
     };
 
     show();
-    expect(await screen.findByRole("button", { name: "Work out what would move" })).toBeDisabled();
+    expect(
+      await screen.findByRole("button", { name: "Work out what would move" }),
+    ).toBeDisabled();
     // And the step that says what to do about it is on screen, not just the complaint.
-    expect(screen.getByText("Finder keeps one backup per phone and overwrites it.")).toBeVisible();
+    expect(
+      screen.getByText("Finder keeps one backup per phone and overwrites it."),
+    ).toBeVisible();
   });
 
   it("says so rather than offering the word when there is nothing to move", async () => {
@@ -347,52 +413,95 @@ describe("when something is wrong", () => {
 
     show();
     expect(
-      await screen.findByText("There is nothing to move: every message is already on the iPhone."),
+      await screen.findByText(
+        "There is nothing to move: every message is already on the iPhone.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Do it" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Do it" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows a failure above the screen that caused it, with the way back", async () => {
-    now = { stage: "failed", detail: "the disk filled up", guidance: "Free some room and try again" };
+    now = {
+      stage: "failed",
+      detail: "the disk filled up",
+      guidance: "Free some room and try again",
+    };
 
     show();
     expect(await screen.findByText(/the disk filled up/)).toBeInTheDocument();
     // Still the first screen: a failure is not a stage somebody is stuck in.
-    expect(screen.getByLabelText("The iPhone backup folder")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("The iPhone backup folder"),
+    ).toBeInTheDocument();
   });
 });
 
 describe("what it says out loud", () => {
   /** A tick and a cross carry the whole meaning of the check screen and neither reads aloud. */
-  const verdicts: { name: string; passed: boolean; blocking: boolean; said: string }[] = [
+  const verdicts: {
+    name: string;
+    passed: boolean;
+    blocking: boolean;
+    said: string;
+  }[] = [
     { name: "one that passed", passed: true, blocking: false, said: "Passed:" },
-    { name: "one that has to be put right", passed: false, blocking: true, said: "Has to be put right:" },
-    { name: "one worth reading", passed: false, blocking: false, said: "Worth reading:" },
+    {
+      name: "one that has to be put right",
+      passed: false,
+      blocking: true,
+      said: "Has to be put right:",
+    },
+    {
+      name: "one worth reading",
+      passed: false,
+      blocking: false,
+      said: "Worth reading:",
+    },
   ];
 
-  it.each(verdicts)("$name is said in words, not only in a mark", async ({ passed, blocking, said }) => {
-    now = {
-      stage: "checked",
-      checks: { findings: [finding({ title: "Backup encryption is off", passed, blocking })] },
-    };
+  it.each(verdicts)(
+    "$name is said in words, not only in a mark",
+    async ({ passed, blocking, said }) => {
+      now = {
+        stage: "checked",
+        checks: {
+          findings: [
+            finding({ title: "Backup encryption is off", passed, blocking }),
+          ],
+        },
+      };
 
-    show();
-    const row = (await screen.findByText("Backup encryption is off")).closest("span");
-    expect(row).not.toBeNull();
-    expect(within(row as HTMLElement).getByText(said)).toBeInTheDocument();
-  });
+      show();
+      const row = (await screen.findByText("Backup encryption is off")).closest(
+        "span",
+      );
+      expect(row).not.toBeNull();
+      expect(within(row as HTMLElement).getByText(said)).toBeInTheDocument();
+    },
+  );
 
   it("says the whole time that nothing leaves this computer", async () => {
     show();
     expect(
-      await screen.findByText(/Nothing is uploaded and nothing is sent anywhere/),
+      await screen.findByText(
+        /Nothing is uploaded and nothing is sent anywhere/,
+      ),
     ).toBeInTheDocument();
   });
 
   it("never stops saying that no backup it made has been restored to a phone", async () => {
     now = {
       stage: "done",
-      result: { backup: "/x", added: 1, merged: 0, created: 1, checks: 21, files: 9 },
+      result: {
+        backup: "/x",
+        added: 1,
+        merged: 0,
+        created: 1,
+        checks: 21,
+        files: 9,
+      },
     };
 
     show();
@@ -419,11 +528,15 @@ describe("leaving", () => {
     replies["/api/migration/forget"] = () => answer({ stage: "idle" });
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Change something" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Change something" }),
+    );
 
     expect(sentTo("/api/migration/forget")).toEqual({});
     expect(left).toBe(0);
-    expect(await screen.findByLabelText("The iPhone backup folder")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("The iPhone backup folder"),
+    ).toBeInTheDocument();
   });
 });
 
@@ -464,9 +577,13 @@ describe("choosing a backup rather than typing one", () => {
     backups = onThisComputer();
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Use this backup" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Use this backup" }),
+    );
 
-    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(backupPath);
+    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(
+      backupPath,
+    );
     // And it says which one, rather than leaving somebody to compare paths.
     expect(screen.getAllByText("Chosen").length).toBeGreaterThan(0);
   });
@@ -478,9 +595,16 @@ describe("choosing a backup rather than typing one", () => {
       answer({ stage: "checked", checks: { findings: [finding()] } });
 
     show();
-    await user.click(await screen.findByRole("button", { name: "Use this backup" }));
-    await user.type(screen.getByLabelText("The decrypted Android database"), androidPath);
-    await user.click(screen.getByRole("button", { name: "Look at the backup" }));
+    await user.click(
+      await screen.findByRole("button", { name: "Use this backup" }),
+    );
+    await user.type(
+      screen.getByLabelText("The decrypted Android database"),
+      androidPath,
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Look at the backup" }),
+    );
 
     expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
   });
@@ -497,7 +621,9 @@ describe("choosing a backup rather than typing one", () => {
     expect(locked).not.toBeNull();
 
     const inside = within(locked as HTMLElement);
-    expect(inside.getByText("Encrypted, so it cannot be opened")).toBeInTheDocument();
+    expect(
+      inside.getByText("Encrypted, so it cannot be opened"),
+    ).toBeInTheDocument();
     expect(inside.queryByRole("button")).not.toBeInTheDocument();
   });
 
@@ -506,15 +632,26 @@ describe("choosing a backup rather than typing one", () => {
    * not in it, and on macOS the folder is often unreadable until somebody grants a
    * permission — neither is a reason to be unable to go on.
    */
-  const withoutAList: { name: string; list: () => BackupList | undefined; says: RegExp }[] = [
+  const withoutAList: {
+    name: string;
+    list: () => BackupList | undefined;
+    says: RegExp;
+  }[] = [
     {
       name: "when the folder could not be read",
-      list: () => ({ backups: [], looked: ["/somewhere"], problem: "Amberkeep may not read that folder." }),
+      list: () => ({
+        backups: [],
+        looked: ["/somewhere"],
+        problem: "Amberkeep may not read that folder.",
+      }),
       says: /may not read that folder/,
     },
     {
       name: "when there are none",
-      list: () => ({ backups: [], looked: ["/Users/someone/…/MobileSync/Backup"] }),
+      list: () => ({
+        backups: [],
+        looked: ["/Users/someone/…/MobileSync/Backup"],
+      }),
       says: /No iPhone backup was found/,
     },
     {
@@ -536,7 +673,9 @@ describe("choosing a backup rather than typing one", () => {
     {
       name: "when backups are offered, it says to pick one",
       list: {
-        backups: [{ path: backupPath, device_name: "Ana's iPhone", encrypted: false }],
+        backups: [
+          { path: backupPath, device_name: "Ana's iPhone", encrypted: false },
+        ],
       },
       says: /Pick one above/,
     },
@@ -563,27 +702,35 @@ describe("choosing a backup rather than typing one", () => {
    * front of the thing somebody can actually do.
    */
   it("folds the permission instructions away, since typing a path still works", async () => {
-    backups = { backups: [], problem: "Amberkeep may not read that folder.\n\nOpen System Settings." };
+    backups = {
+      backups: [],
+      problem: "Amberkeep may not read that folder.\n\nOpen System Settings.",
+    };
 
     show();
-    expect(await screen.findByText(/may not read that folder/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/may not read that folder/),
+    ).toBeInTheDocument();
 
     const fold = screen.getByText("How to put that right").closest("details");
     expect(fold).not.toBeNull();
     expect(fold).not.toHaveAttribute("open");
   });
 
-  it.each(withoutAList)("$name, the path can still be typed", async ({ list, says }) => {
-    const user = userEvent.setup();
-    const answered = list();
-    if (answered !== undefined) backups = answered;
-    replies["/api/migration/check"] = () =>
-      answer({ stage: "checked", checks: { findings: [finding()] } });
+  it.each(withoutAList)(
+    "$name, the path can still be typed",
+    async ({ list, says }) => {
+      const user = userEvent.setup();
+      const answered = list();
+      if (answered !== undefined) backups = answered;
+      replies["/api/migration/check"] = () =>
+        answer({ stage: "checked", checks: { findings: [finding()] } });
 
-    show();
-    expect(await screen.findByText(says)).toBeInTheDocument();
+      show();
+      expect(await screen.findByText(says)).toBeInTheDocument();
 
-    await fillIn(user);
-    expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
-  });
+      await fillIn(user);
+      expect(sentTo("/api/migration/check")).toEqual({ backup: backupPath });
+    },
+  );
 });

@@ -28,7 +28,12 @@ export function MigrationDone({
   const result = state.result;
 
   return (
-    <Shell step={5} total={5} heading={t("migrateDoneTitle")} lead={t("migrateDoneHelp")}>
+    <Shell
+      step={5}
+      total={5}
+      heading={t("migrateDoneTitle")}
+      lead={t("migrateDoneHelp")}
+    >
       {result !== undefined && (
         <div className="flex flex-col gap-3">
           <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
@@ -43,14 +48,18 @@ export function MigrationDone({
                 <dt className="text-right text-sm font-medium tabular-nums">
                   {count(n, language)}
                 </dt>
-                <dd className="m-0 text-sm text-[var(--color-muted)]">{said}</dd>
+                <dd className="m-0 text-sm text-[var(--color-muted)]">
+                  {said}
+                </dd>
               </div>
             ))}
           </dl>
 
           <p className="m-0 text-sm">
             <span className="font-medium">{t("migrateDoneWhere")} </span>
-            <span className="break-all text-[var(--color-muted)]">{result.backup}</span>
+            <span className="break-all text-[var(--color-muted)]">
+              {result.backup}
+            </span>
           </p>
         </div>
       )}

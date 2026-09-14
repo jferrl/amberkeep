@@ -51,7 +51,9 @@ export function Sidebar({
   return (
     <>
       <header className="border-b border-[var(--color-line)] px-3.5 py-3">
-        <h1 className="m-0 mb-0.5 text-base font-semibold">{title ?? t("archive")}</h1>
+        <h1 className="m-0 mb-0.5 text-base font-semibold">
+          {title ?? t("archive")}
+        </h1>
         <p className="m-0 text-xs text-[var(--color-muted)]">
           {conversations === undefined || messages === undefined
             ? t("loading")
@@ -80,8 +82,15 @@ export function Sidebar({
           </Button>
         </div>
 
-        <p className="m-0 mt-1 h-4 text-xs text-[var(--color-muted)]" aria-live="polite">
-          <FoundCount showing={showingResults} matches={matches} language={language} />
+        <p
+          className="m-0 mt-1 h-4 text-xs text-[var(--color-muted)]"
+          aria-live="polite"
+        >
+          <FoundCount
+            showing={showingResults}
+            matches={matches}
+            language={language}
+          />
         </p>
       </header>
 

@@ -55,7 +55,9 @@ export function Working({ state }: { state: Setup }) {
         </div>
       </div>
 
-      <p className="m-0 text-sm text-[var(--color-muted)]">{t("workingLocal")}</p>
+      <p className="m-0 text-sm text-[var(--color-muted)]">
+        {t("workingLocal")}
+      </p>
     </Shell>
   );
 }

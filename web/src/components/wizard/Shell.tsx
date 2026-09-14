@@ -54,15 +54,23 @@ export function Shell({
   }, [heading]);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 py-8">
-      <div>
-        <p className="m-0 text-xs font-semibold tracking-wide text-[var(--color-accent)] uppercase">
-          {total === undefined ? t("step", { step }) : t("stepOf", { step, total })}
-        </p>
-        <h1 ref={title} tabIndex={-1} className="m-0 mt-1 text-2xl font-semibold outline-none">
-          {heading}
-        </h1>
-        {lead !== undefined && <p className="m-0 mt-2 text-[var(--color-muted)]">{lead}</p>}
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-7 px-5 py-10">
+      <div className="flex flex-col gap-3">
+        <Progress step={step} total={total} />
+        <div className="flex flex-col gap-2">
+          <h1
+            ref={title}
+            tabIndex={-1}
+            className="m-0 text-[1.625rem] leading-[1.2] font-semibold outline-none"
+          >
+            {heading}
+          </h1>
+          {lead !== undefined && (
+            <p className="m-0 max-w-[62ch] text-[0.9375rem] text-[var(--color-muted)]">
+              {lead}
+            </p>
+          )}
+        </div>
       </div>
 
       {trouble}
@@ -77,6 +85,61 @@ export function Shell({
         </div>
       )}
     </main>
+  );
+}
+
+/**
+ * How far along this is, drawn rather than announced.
+ *
+ * The count matters — somebody with a dead phone has no idea how long this takes —
+ * but it was set as a tracked uppercase kicker above the heading, which is the
+ * decoration every generated page puts there whether or not it means anything. Here
+ * the same fact is a filled rule: readable at a glance, and it stops competing with
+ * the heading for the top of the page.
+ *
+ * The first screen has no total, because it genuinely is not known yet: an iPhone
+ * backup takes two screens and an Android phone takes six.
+ */
+function Progress({
+  step,
+  total,
+}: {
+  step: number;
+  total?: number | undefined;
+}) {
+  const t = useT();
+  const said =
+    total === undefined ? t("step", { step }) : t("stepOf", { step, total });
+
+  return (
+    <div className="flex items-center gap-3">
+      {total !== undefined && (
+        <div
+          className="flex h-0.5 w-20 gap-0.5 overflow-hidden rounded-full"
+          // One element, one label. Twenty divs each announcing themselves is how a
+          // progress bar becomes unreadable to everything except eyes.
+          role="img"
+          aria-label={said}
+        >
+          {Array.from({ length: total }, (_, at) => (
+            <span
+              key={at}
+              className={`h-full flex-1 rounded-full ${
+                at < step
+                  ? "bg-[var(--color-accent)]"
+                  : "bg-[var(--color-line)]"
+              }`}
+            />
+          ))}
+        </div>
+      )}
+      <p
+        aria-hidden={total !== undefined}
+        className="m-0 text-[0.8125rem] text-[var(--color-muted)]"
+      >
+        {said}
+      </p>
+    </div>
   );
 }
 
@@ -97,17 +160,25 @@ export function Say({ children }: { children: ReactNode }) {
  */
 export function Expect({ children }: { children: ReactNode }) {
   return (
-    <p className="m-0 border-l-2 border-[var(--color-accent)] pl-3 text-sm text-[var(--color-muted)]">
+    <p className="m-0 rounded-md bg-[var(--color-surface)] px-3 py-2 text-[0.8125rem] text-[var(--color-muted)] ring-1 ring-[var(--color-line)] ring-inset">
       {children}
     </p>
   );
 }
 
 /** A box of advice beside something that went wrong or cannot be used. */
-export function Aside({ heading, children }: { heading?: string; children: ReactNode }) {
+export function Aside({
+  heading,
+  children,
+}: {
+  heading?: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-3.5 text-sm">
-      {heading !== undefined && <p className="m-0 font-semibold">{heading}</p>}
+    <div className="flex flex-col gap-2 rounded-lg bg-[var(--color-surface)] p-4 text-[0.8125rem] ring-1 ring-[var(--color-line)] ring-inset">
+      {heading !== undefined && (
+        <p className="m-0 text-sm font-semibold">{heading}</p>
+      )}
       {children}
     </div>
   );

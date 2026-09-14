@@ -39,7 +39,8 @@ export function ChooseBackup({
   const { situation, problem } = useOfferedBackups();
   const found = backups.data?.backups ?? [];
 
-  if (situation !== "some") return <Nothing situation={situation} said={problem ?? ""} />;
+  if (situation !== "some")
+    return <Nothing situation={situation} said={problem ?? ""} />;
 
   return (
     <section className="flex flex-col gap-3">
@@ -49,7 +50,7 @@ export function ChooseBackup({
         {found.map((backup) => (
           <li
             key={backup.path}
-            className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4"
+            className="rounded-lg border border-[var(--color-line)] bg-[var(--color-surface)] p-4"
           >
             <One
               backup={backup}
@@ -94,7 +95,9 @@ function One({
       <p className="m-0 mt-0.5 text-sm text-[var(--color-muted)]">
         {describe(backup, t, language)}
       </p>
-      <p className="m-0 mt-0.5 text-xs break-all text-[var(--color-muted)]">{backup.path}</p>
+      <p className="m-0 mt-0.5 text-xs break-all text-[var(--color-muted)]">
+        {backup.path}
+      </p>
 
       {backup.encrypted ? (
         // No button at all rather than one that is dimmed. A control somebody can
@@ -163,7 +166,7 @@ function Nothing({ situation, said }: { situation: Situation; said: string }) {
                 <Say>{t("backupsFullDisk")}</Say>
               </div>
             ) : (
-              <pre className="m-0 mt-2 overflow-x-auto bg-[var(--color-paper)] p-3 font-sans text-sm whitespace-pre-wrap">
+              <pre className="m-0 mt-2 overflow-x-auto bg-[var(--color-bg)] p-3 font-sans text-sm whitespace-pre-wrap">
                 {advice}
               </pre>
             )}

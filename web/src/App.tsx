@@ -83,7 +83,7 @@ function Browser({ language }: { language: Language }) {
     <div className="grid h-dvh grid-cols-1 md:grid-cols-[20rem_1fr]">
       <nav
         className={cn(
-          "flex min-h-0 flex-col border-r border-[var(--color-line)] bg-[var(--color-panel)]",
+          "flex min-h-0 flex-col border-r border-[var(--color-line)] bg-[var(--color-surface)]",
           reading && "hidden md:flex",
         )}
       >
@@ -139,7 +139,7 @@ function Nothing() {
   const t = useT();
   return (
     <>
-      <header className="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2.5">
+      <header className="border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5">
         <h2 className="m-0 text-base font-semibold">{t("pickAConversation")}</h2>
       </header>
       <p className="flex-1 p-12 text-center text-[var(--color-muted)]">{t("pickToStart")}</p>

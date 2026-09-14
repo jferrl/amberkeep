@@ -39,7 +39,9 @@ describe("in a browser, where there is no picker", () => {
       />,
     );
 
-    expect(await screen.findByLabelText("The iPhone backup folder")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("The iPhone backup folder"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
@@ -56,7 +58,10 @@ describe("in a browser, where there is no picker", () => {
       />,
     );
 
-    await user.type(await screen.findByLabelText("The decrypted Android database"), "/tmp/m.db");
+    await user.type(
+      await screen.findByLabelText("The decrypted Android database"),
+      "/tmp/m.db",
+    );
     expect(typed.join("")).toBe("/tmp/m.db");
   });
 });
@@ -76,7 +81,9 @@ describe("in its own window", () => {
 
     // "Choose…" three times on one screen tells a screen reader nothing, so what is
     // read out is which of them this is.
-    const button = await screen.findByRole("button", { name: "Choose the iPhone backup folder" });
+    const button = await screen.findByRole("button", {
+      name: "Choose the iPhone backup folder",
+    });
     expect(button).toBeVisible();
     expect(button).toHaveTextContent("Choose…");
   });
@@ -98,7 +105,9 @@ describe("in its own window", () => {
     await user.click(await screen.findByRole("button"));
     expect(chosen).toEqual(["/Backups/00008110-aaa"]);
     // The dialog is titled with the thing being looked for, not with "Choose a file".
-    expect(ChooseFolder).toHaveBeenCalledWith("Choose the iPhone backup folder");
+    expect(ChooseFolder).toHaveBeenCalledWith(
+      "Choose the iPhone backup folder",
+    );
   });
 
   /**
@@ -122,13 +131,17 @@ describe("in its own window", () => {
 
     await user.click(await screen.findByRole("button"));
     expect(changed).toEqual([]);
-    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue("/Backups/typed-by-hand");
+    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(
+      "/Backups/typed-by-hand",
+    );
   });
 
   /** A file and a folder are different questions, and get asked differently. */
   it("asks for a file when the thing wanted is a file", async () => {
     const user = userEvent.setup();
-    const { ChooseFile, ChooseFolder } = windowAround({ file: "/tmp/msgstore.db" });
+    const { ChooseFile, ChooseFolder } = windowAround({
+      file: "/tmp/msgstore.db",
+    });
 
     render(
       <Field
@@ -140,7 +153,10 @@ describe("in its own window", () => {
     );
 
     await user.click(await screen.findByRole("button"));
-    expect(ChooseFile).toHaveBeenCalledWith("Choose the decrypted Android database", "database");
+    expect(ChooseFile).toHaveBeenCalledWith(
+      "Choose the decrypted Android database",
+      "database",
+    );
     expect(ChooseFolder).not.toHaveBeenCalled();
   });
 });
@@ -154,8 +170,14 @@ describe("when the window is not what this page expects", () => {
   const strange: { name: string; bound: unknown }[] = [
     { name: "nothing bound at all", bound: undefined },
     { name: "bound to null", bound: { main: { Picker: null } } },
-    { name: "bound to something that is not a picker", bound: { main: { Picker: {} } } },
-    { name: "bound with only half of it", bound: { main: { Picker: { ChooseFolder: () => "" } } } },
+    {
+      name: "bound to something that is not a picker",
+      bound: { main: { Picker: {} } },
+    },
+    {
+      name: "bound with only half of it",
+      bound: { main: { Picker: { ChooseFolder: () => "" } } },
+    },
   ];
 
   it.each(strange)("$name leaves the field alone", async ({ bound }) => {
@@ -170,7 +192,9 @@ describe("when the window is not what this page expects", () => {
       />,
     );
 
-    expect(await screen.findByLabelText("The iPhone backup folder")).toBeInTheDocument();
+    expect(
+      await screen.findByLabelText("The iPhone backup folder"),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
@@ -197,6 +221,8 @@ describe("when the window is not what this page expects", () => {
 
     await user.click(await screen.findByRole("button"));
     expect(changed).toEqual([]);
-    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue("/Backups/typed-by-hand");
+    expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(
+      "/Backups/typed-by-hand",
+    );
   });
 });

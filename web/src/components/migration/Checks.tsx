@@ -39,7 +39,11 @@ export function MigrationChecks({
       total={5}
       heading={t("migrateChecksTitle")}
       lead={t("migrateChecksHelp")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -57,14 +61,22 @@ export function MigrationChecks({
             return step === undefined ? (
               <Say key={blocker.title}>{blocker.detail ?? blocker.title}</Say>
             ) : (
-              <Step key={blocker.step} step={step} number={before.indexOf(step) + 1} />
+              <Step
+                key={blocker.step}
+                step={step}
+                number={before.indexOf(step) + 1}
+              />
             );
           })}
         </Aside>
       )}
 
       <div className="flex flex-wrap gap-2">
-        <Button disabled={busy || blockers.length > 0} onClick={onPlan}>
+        <Button
+          variant="primary"
+          disabled={busy || blockers.length > 0}
+          onClick={onPlan}
+        >
           {t("migratePlanIt")}
         </Button>
         <Button variant="quiet" onClick={onBack}>
@@ -103,7 +115,9 @@ function Found({ finding }: { finding: Finding }) {
           {finding.title}
         </span>
         {finding.detail !== undefined && (
-          <span className="mt-0.5 block text-sm text-[var(--color-muted)]">{finding.detail}</span>
+          <span className="mt-0.5 block text-sm text-[var(--color-muted)]">
+            {finding.detail}
+          </span>
         )}
       </span>
     </div>

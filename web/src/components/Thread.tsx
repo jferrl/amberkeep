@@ -1,5 +1,11 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from "react";
 
 import type { Chat, Message as ArchivedMessage } from "@/api/types";
 import { useMessages } from "@/api/queries";
@@ -22,12 +28,21 @@ import { count, dayOf } from "@/lib/format";
 export function Thread({ chat, language }: { chat: Chat; language: Language }) {
   const t = useT();
   const viewport = useRef<HTMLDivElement>(null);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, isError } =
-    useMessages(chat.address);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending,
+    isError,
+  } = useMessages(chat.address);
 
   // The server returns each page newest-last and each subsequent page older, so the
   // pages are reversed to read the conversation forwards.
-  const rows = useMemo(() => toRows(data?.pages ?? [], language), [data?.pages, language]);
+  const rows = useMemo(
+    () => toRows(data?.pages ?? [], language),
+    [data?.pages, language],
+  );
 
   // The compiler declines to memoise a component that calls this, because the
   // virtualiser hands back functions it cannot prove are stable, and memoising
@@ -111,11 +126,7 @@ export function Thread({ chat, language }: { chat: Chat; language: Language }) {
       <div className="mx-auto max-w-3xl">
         {hasNextPage && (
           <div className="flex justify-center py-3">
-            <Button
-              size="sm"
-              disabled={isFetchingNextPage}
-              onClick={loadOlder}
-            >
+            <Button size="sm" disabled={isFetchingNextPage} onClick={loadOlder}>
               {isFetchingNextPage ? t("loading") : t("earlierMessages")}
             </Button>
           </div>
@@ -127,13 +138,19 @@ export function Thread({ chat, language }: { chat: Chat; language: Language }) {
         >
           <div
             className="absolute top-0 left-0 w-full"
-            style={{ transform: `translateY(${String(items[0]?.start ?? 0)}px)` }}
+            style={{
+              transform: `translateY(${String(items[0]?.start ?? 0)}px)`,
+            }}
           >
             {items.map((item) => {
               const row = rows[item.index];
               if (row === undefined) return null;
               return (
-                <div key={item.key} data-index={item.index} ref={virtualiser.measureElement}>
+                <div
+                  key={item.key}
+                  data-index={item.index}
+                  ref={virtualiser.measureElement}
+                >
                   {row.kind === "day" ? (
                     <DaySeparator label={row.label} />
                   ) : (
@@ -161,7 +178,10 @@ type Row =
  * virtualiser addresses rows by index, and a row that appears only sometimes would
  * make an index mean different things at different moments.
  */
-function toRows(pages: readonly { messages: readonly ArchivedMessage[] }[], language: Language): Row[] {
+function toRows(
+  pages: readonly { messages: readonly ArchivedMessage[] }[],
+  language: Language,
+): Row[] {
   const rows: Row[] = [];
   let previous = "";
 
@@ -183,7 +203,7 @@ function DaySeparator({ label }: { label: string }) {
   const t = useT();
   return (
     <div className="my-3 text-center">
-      <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-0.5 text-xs text-[var(--color-muted)]">
+      <span className="rounded-full border border-[var(--color-line)] bg-[var(--color-surface)] px-3 py-0.5 text-xs text-[var(--color-muted)]">
         {label === "" ? t("unknownDate") : label}
       </span>
     </div>
@@ -192,12 +212,20 @@ function DaySeparator({ label }: { label: string }) {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex-1 p-12 text-center text-[var(--color-muted)]">{children}</div>
+    <div className="flex-1 p-12 text-center text-[var(--color-muted)]">
+      {children}
+    </div>
   );
 }
 
 /** ThreadHeader names the conversation and says how much of it there is. */
-export function ThreadHeader({ chat, language }: { chat: Chat; language: Language }) {
+export function ThreadHeader({
+  chat,
+  language,
+}: {
+  chat: Chat;
+  language: Language;
+}) {
   const t = useT();
   const about = [`${count(chat.message_count, language)} ${t("messages")}`];
   if (chat.participants !== undefined && chat.participants.length > 0) {
@@ -205,8 +233,10 @@ export function ThreadHeader({ chat, language }: { chat: Chat; language: Languag
   }
 
   return (
-    <header className="flex items-baseline justify-between gap-4 border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2.5">
-      <h2 className="m-0 min-w-0 break-words text-base font-semibold">{chat.name}</h2>
+    <header className="flex items-baseline justify-between gap-4 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5">
+      <h2 className="m-0 min-w-0 break-words text-base font-semibold">
+        {chat.name}
+      </h2>
       <span className="whitespace-nowrap text-xs text-[var(--color-muted)]">
         {about.join(" · ")}
       </span>
