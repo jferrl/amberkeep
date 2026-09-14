@@ -131,7 +131,7 @@
   "migrateUnproven": "No backup Amberkeep has produced has yet been restored to a phone.",
   "migrateUnprovenHelp": "Everything it writes is checked, and the checks pass, but that is not the same thing. Read each step, and keep the safety backup it asks you to make.",
   "migratePathsTitle": "What to move, and where to",
-  "migratePathsHelp": "Both of these are already on this computer. Nothing is uploaded and nothing is sent anywhere.",
+  "migratePathsHelp": "Both of these are already on this computer.",
   "migrateBackupLabel": "The iPhone backup folder",
   "migrateBackupFound": "Backups this computer has already made",
   "migrateBackupChosen": "Chosen",
@@ -236,5 +236,9 @@
   "phoneFragments": "There are also part-files from a later backup on the phone. They are not offered: they are useless on their own.",
   "phoneTakeIt": "Take it off the phone",
   "phoneTakeItHelp": "Amberkeep copies the backup across and unlocks it. The phone is only read from; nothing on it is changed.",
-  "phoneOrCopy": "Or copy the file across yourself"
+  "phoneOrCopy": "Or copy the file across yourself",
+  "oneConversation": "1 conversation",
+  "oneMessage": "1 message",
+  "conversationsCount": "{count} conversations",
+  "messagesCount": "{count} messages"
 }

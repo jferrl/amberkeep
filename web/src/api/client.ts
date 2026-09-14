@@ -480,6 +480,8 @@ export function getExport(options: Cancellable = {}): Promise<Export> {
 /** What an export needs to be told. */
 export interface Writing {
   into?: string;
+  /** What the exported pages should call themselves, in the reader's language. */
+  words?: { title: string; noun: string; placeholder: string };
   formats: readonly string[];
   /** The conversations wanted, by address. Empty means all of them. */
   only?: readonly string[];
@@ -498,6 +500,7 @@ export async function writeArchive(
     notices: ask.notices ?? false,
   };
   if (ask.into !== undefined && ask.into !== "") body.into = ask.into;
+  if (ask.words !== undefined) body.words = ask.words;
   if (ask.only !== undefined && ask.only.length > 0) body.only = ask.only;
 
   return answer<Export>(await tell(`${api}/export`, body, options), options);

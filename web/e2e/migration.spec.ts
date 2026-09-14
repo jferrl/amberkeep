@@ -30,7 +30,9 @@ test("is offered as a way in, and opens on what it cannot promise", async ({ pag
   await expect(
     page.getByText(/No backup Amberkeep has produced has yet been restored to a phone/),
   ).toBeVisible();
-  await expect(page.getByText(/Nothing is uploaded and nothing is sent anywhere/)).toBeVisible();
+  // The page makes that promise once, on the strip above every screen, rather than
+  // three times in one viewport.
+  await expect(page.getByText(/Nothing here leaves this computer/)).toBeVisible();
 });
 
 /**

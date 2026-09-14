@@ -131,7 +131,7 @@
   "migrateUnproven": "Todavía no se ha restaurado en un teléfono ninguna copia hecha por Amberkeep.",
   "migrateUnprovenHelp": "Todo lo que escribe se comprueba, y las comprobaciones pasan, pero eso no es lo mismo. Lee cada paso y guarda la copia de seguridad que te pide hacer.",
   "migratePathsTitle": "Qué mover, y a dónde",
-  "migratePathsHelp": "Las dos cosas ya están en este ordenador. No se sube nada ni se envía nada a ninguna parte.",
+  "migratePathsHelp": "Las dos cosas ya están en este ordenador.",
   "migrateBackupLabel": "La carpeta de la copia de seguridad del iPhone",
   "migrateBackupFound": "Copias que este ordenador ya ha hecho",
   "migrateBackupChosen": "Elegida",
@@ -236,5 +236,9 @@
   "phoneFragments": "En el teléfono también hay fragmentos de una copia posterior. No se ofrecen: por sí solos no sirven.",
   "phoneTakeIt": "Sacarla del teléfono",
   "phoneTakeItHelp": "Amberkeep copia la copia de seguridad y la descifra. Del teléfono solo se lee; no se cambia nada.",
-  "phoneOrCopy": "O copia tú el archivo"
+  "phoneOrCopy": "O copia tú el archivo",
+  "oneConversation": "1 conversación",
+  "oneMessage": "1 mensaje",
+  "conversationsCount": "{count} conversaciones",
+  "messagesCount": "{count} mensajes"
 }

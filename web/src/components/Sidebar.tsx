@@ -4,7 +4,7 @@ import { SearchResults } from "@/components/SearchResults";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useT } from "@/i18n";
-import type { Language } from "@/i18n";
+import type { Language, Phrase } from "@/i18n";
 import { count } from "@/lib/format";
 
 /**
@@ -45,6 +45,11 @@ export function Sidebar({
   language: Language;
 }) {
   const t = useT();
+
+  // "1 conversaciones" is the kind of thing that makes somebody trust a program
+  // slightly less without being able to say why.
+  const said = (n: number, one: Phrase, many: Phrase) =>
+    n === 1 ? t(one) : t(many, { count: count(n, language) });
   const label = searchable ? t("searchEverything") : t("searchNames");
   const showingResults = searchable && term.trim() !== "";
 
@@ -57,7 +62,7 @@ export function Sidebar({
         <p className="m-0 text-xs text-[var(--color-muted)]">
           {conversations === undefined || messages === undefined
             ? t("loading")
-            : `${count(conversations, language)} ${t("conversations")} · ${count(messages, language)} ${t("messages")}`}
+            : `${said(conversations, "oneConversation", "conversationsCount")} · ${said(messages, "oneMessage", "messagesCount")}`}
         </p>
 
         <div className="mt-2.5 flex items-center gap-2">
@@ -91,6 +96,10 @@ export function Sidebar({
             </Button>
           )}
         </div>
+
+        {!searchable && (
+          <p className="m-0 mt-1 text-xs text-[var(--color-muted)]">{t("searchUnavailable")}</p>
+        )}
 
         <p
           className="m-0 mt-1 h-4 text-xs text-[var(--color-muted)]"

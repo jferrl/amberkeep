@@ -227,7 +227,11 @@ export function ThreadHeader({
   language: Language;
 }) {
   const t = useT();
-  const about = [`${count(chat.message_count, language)} ${t("messages")}`];
+  const about = [
+    chat.message_count === 1
+      ? t("oneMessage")
+      : t("messagesCount", { count: count(chat.message_count, language) }),
+  ];
   if (chat.participants !== undefined && chat.participants.length > 0) {
     about.push(`${String(chat.participants.length)} ${t("members")}`);
   }

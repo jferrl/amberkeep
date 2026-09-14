@@ -508,13 +508,21 @@ describe("what it says out loud", () => {
     },
   );
 
-  it("says the whole time that nothing leaves this computer", async () => {
+  /**
+   * Once, not three times.
+   *
+   * This screen used to make the claim twice in its own lead, under a permanent
+   * strip that already made it. Saying it three times in one viewport does not make
+   * it truer; it makes all three read as filler. The strip is not part of this
+   * component, so what is checked here is that the screen no longer repeats it.
+   */
+  it("does not repeat the promise the page already makes", async () => {
     show();
-    expect(
-      await screen.findByText(
-        /Nothing is uploaded and nothing is sent anywhere/,
-      ),
-    ).toBeInTheDocument();
+    await screen.findByLabelText("The iPhone backup folder");
+
+    expect(screen.queryByText(/nothing is sent anywhere/i)).not.toBeInTheDocument();
+    // The one it does make is about where the files are, which is this screen's own.
+    expect(screen.getByText(/already on this computer/)).toBeInTheDocument();
   });
 
   it("never stops saying that no backup it made has been restored to a phone", async () => {

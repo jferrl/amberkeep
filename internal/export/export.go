@@ -41,6 +41,12 @@ type Options struct {
 	// caller supplies one.
 	Me string
 
+	// Words are the exported page's own chrome — its heading, the noun for a
+	// conversation, and what the search box says before anything is typed. Supplied
+	// by the caller for the same reason Me is: every language has different ones,
+	// and this package has no business holding a catalogue. English when absent.
+	Words Words
+
 	// NoticeIdentified answers whether a system notice's action code is one this
 	// build understands, so an archive can admit what it could not phrase instead
 	// of leaving a consumer to guess. The reader that produced the archive knows;
@@ -81,6 +87,27 @@ const writeBuffer = 1 << 16
 
 // ErrExists reports that a file is already there and Overwrite was not set.
 var ErrExists = errors.New("the file already exists")
+
+// Words are the exported page's own few words.
+type Words struct {
+	Title       string
+	Noun        string
+	Placeholder string
+}
+
+// Or fills in English for anything the caller did not say.
+func (w Words) Or() Words {
+	if w.Title == "" {
+		w.Title = "Archive"
+	}
+	if w.Noun == "" {
+		w.Noun = "conversations"
+	}
+	if w.Placeholder == "" {
+		w.Placeholder = "Search for a person or group"
+	}
+	return w
+}
 
 // Conversation is one chat and the messages that belong to it.
 //

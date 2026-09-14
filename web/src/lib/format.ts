@@ -78,3 +78,22 @@ export function size(bytes: number, language: Language): string {
   const digits = at === 0 || n >= 100 ? 0 : 1;
   return `${n.toLocaleString(language, { maximumFractionDigits: digits })} ${steps[at] ?? "B"}`;
 }
+
+/**
+ * A count with the right noun beside it.
+ *
+ * "1 conversaciones" is the sort of thing that makes somebody trust a program
+ * slightly less without being able to say why. The catalogue already had this
+ * pattern for search results and it simply was not used for the two counts on the
+ * archive's own header.
+ *
+ * Two forms rather than a plural library: both languages this ships in are regular
+ * here, and a dependency for `if n === 1` would be a poor trade.
+ */
+export function plural(
+  n: number,
+  language: Language,
+  say: (key: "one" | "many", values: Record<string, string>) => string,
+): string {
+  return say(n === 1 ? "one" : "many", { count: count(n, language) });
+}

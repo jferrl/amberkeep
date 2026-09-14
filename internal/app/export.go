@@ -50,11 +50,16 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 	}
 
 	opts := export.Options{
-		Directory:        ask.Into,
-		Names:            r.Directory(),
-		Location:         zone,
-		Me:               ask.Me,
-		IncludeNotices:   ask.Notices,
+		Directory:      ask.Into,
+		Names:          r.Directory(),
+		Location:       zone,
+		Me:             ask.Me,
+		IncludeNotices: ask.Notices,
+		Words: export.Words{
+			Title:       ask.Words.Title,
+			Noun:        ask.Words.Noun,
+			Placeholder: ask.Words.Placeholder,
+		},
 		Overwrite:        true,
 		NoticeIdentified: NoticeIdentifier(r.Archive),
 	}
@@ -123,7 +128,13 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 
 		// Often enough to prove it is moving, seldom enough not to be the work.
 		if done%25 == 0 {
-			say(api.StepWriting, fmt.Sprintf("%d of %d conversations written.", done, len(chats)))
+			// "7450 of 10500" is wrong in English as well as Spanish. The numbers go
+			// and the page writes the sentence, the way the index build already does.
+			say(api.StepWriting,
+				fmt.Sprintf("%d of %d conversations written.", done, len(chats)),
+				api.Count{Of: "written", N: done},
+				api.Count{Of: "conversations", N: len(chats)},
+			)
 		}
 	}
 

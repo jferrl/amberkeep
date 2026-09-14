@@ -10,7 +10,11 @@ import { cn } from "@/lib/utils";
  * archive's vocabulary instead of the archive being bent to a library's.
  */
 const styles = cva(
+  // min-h rather than h: Spanish is longer than English almost everywhere, and a
+  // fixed height meant "Cerrar este archivo" wrapped to three lines inside a
+  // twenty-eight pixel box and spilled over its own border.
   "inline-flex items-center justify-center gap-2 rounded-md text-[0.8125rem] font-medium " +
+    "text-center leading-tight " +
     "transition-[background-color,border-color,color,opacity] duration-150 " +
     "disabled:pointer-events-none disabled:opacity-45 " +
     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]",
@@ -46,8 +50,8 @@ const styles = cva(
           "hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]",
       },
       size: {
-        default: "h-8 px-3",
-        sm: "h-7 px-2 text-xs",
+        default: "min-h-8 px-3 py-1.5",
+        sm: "min-h-7 px-2 py-1 text-xs",
         icon: "size-8",
       },
     },

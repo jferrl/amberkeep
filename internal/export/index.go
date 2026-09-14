@@ -48,11 +48,12 @@ func WriteIndex(entries []Entry, opts Options) (Result, error) {
 		return listed[i].Chat.LastAt.After(listed[j].Chat.LastAt)
 	})
 
+	words := opts.Words.Or()
 	page := indexPage{
 		Head: head{
-			Title:       "Archive",
-			Noun:        "conversations",
-			Placeholder: "Search for a person or group",
+			Title:       words.Title,
+			Noun:        words.Noun,
+			Placeholder: words.Placeholder,
 			CSS:         styles,
 		},
 		Tail: tail{JS: script},

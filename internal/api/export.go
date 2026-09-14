@@ -42,6 +42,16 @@ type ExportRequest struct {
 	Formats []string `json:"formats"`
 	// Only names the conversations to write, by address. Empty means all of them.
 	Only []string `json:"only,omitempty"`
+	// Words are what the exported page calls itself, in the reader's language. The
+	// page sends them because the page is where this program's words live; a server
+	// that guessed would produce an English archive for a Spanish reader, which is
+	// what it did.
+	Words struct {
+		Title       string `json:"title"`
+		Noun        string `json:"noun"`
+		Placeholder string `json:"placeholder"`
+	} `json:"words"`
+
 	// Groups includes group conversations. Ignored when Only names them.
 	Groups bool `json:"groups"`
 	// Notices writes what WhatsApp did as well as what people said.
