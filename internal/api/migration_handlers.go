@@ -1,0 +1,181 @@
+package api
+
+import (
+	"context"
+	"net/http"
+)
+
+// The endpoints a migration uses.
+//
+// Four of them, and none leads to the next on its own. Checking does not begin
+// planning; a plan does not begin writing. Each stage ends and waits, because the
+// thing at the end of this is somebody restoring a backup onto a phone they depend
+// on, and a flow that carries them along is a flow they can arrive at the end of
+// without having read anything.
+
+// handleMigration says how far along a migration is. The only thing the page polls.
+func (s *server) handleMigration(w http.ResponseWriter, r *http.Request) {
+	write(w, r, s.migration.state())
+}
+
+// handleGuide returns what somebody has to be told, and when.
+//
+// Served rather than written into the page, because these words live in one place and
+// a copy in the frontend would drift from this one the first time anybody corrected a
+// sentence.
+func (s *server) handleGuide(w http.ResponseWriter, r *http.Request) {
+	write(w, r, map[string]any{"stages": guidance()})
+}
+
+// handleCheck looks at a backup: whether it can be used at all, and what has to be
+// true that nothing here can see.
+func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {
+	ask, ok := s.acceptMigration(w, r, func(a MigrationRequest) string {
+		if a.Backup == "" {
+			return "which backup to look at is needed"
+		}
+		return ""
+	})
+	if !ok {
+		return
+	}
+
+	started := s.migration.begin(MigrationChecking, StepOpening, "Looking at the backup.", ask)
+	if started {
+		// The work deliberately outlives the request that asked for it: somebody who
+		// closes the tab halfway through should come back to a finished migration.
+		//nolint:contextcheck // see above
+		go func() {
+			ctx := context.WithoutCancel(s.background)
+			ready, err := s.migrator.Check(ctx, ask.Backup)
+			if err != nil {
+				s.migration.failed(sentence(err), s.advise(err))
+				return
+			}
+			s.migration.checked(ready)
+		}()
+	}
+	s.begun(w, r, started)
+}
+
+// handlePlanMigration works out what would move. It writes nothing, and it stops.
+func (s *server) handlePlanMigration(w http.ResponseWriter, r *http.Request) {
+	ask, ok := s.acceptMigration(w, r, func(a MigrationRequest) string {
+		switch {
+		case a.Backup == "":
+			return "which backup to move into is needed"
+		case a.Android == "":
+			return "which Android database to move is needed"
+		default:
+			return ""
+		}
+	})
+	if !ok {
+		return
+	}
+
+	started := s.migration.begin(MigrationPlanning, StepOpening, "Working out what would move.", ask)
+	if started {
+		// The work deliberately outlives the request that asked for it: somebody who
+		// closes the tab halfway through should come back to a finished migration.
+		//nolint:contextcheck // see above
+		go func() {
+			ctx := context.WithoutCancel(s.background)
+			plan, err := s.migrator.Plan(ctx, ask, Progress(s.migration.progress))
+			if err != nil {
+				s.migration.failed(sentence(err), s.advise(err))
+				return
+			}
+			s.migration.planned(plan)
+		}()
+	}
+	s.begun(w, r, started)
+}
+
+// agreement is what somebody has to send to have anything written.
+type agreement struct {
+	// Confirm has to be the word, typed out. A button alone is a button somebody
+	// clicked through; a word is a word they wrote.
+	Confirm string `json:"confirm"`
+	// Into is where to write the changed backup.
+	Into string `json:"into,omitempty"`
+}
+
+// theWord is what has to be typed before anything is written.
+const theWord = "migrate"
+
+// handleCarryOut does it: into a copy of the store, checked, then into a copy of the
+// backup. Nothing it touches is an original and no device is involved.
+func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
+	if s.migrator == nil {
+		http.Error(w, "this server was started without the means to migrate anything", http.StatusNotImplemented)
+		return
+	}
+
+	var said agreement
+	if !readRequest(w, r, &said) {
+		return
+	}
+	if said.Confirm != theWord {
+		http.Error(w, "type "+theWord+" to go on", http.StatusBadRequest)
+		return
+	}
+
+	plan, ok := s.migration.agreed()
+	if !ok {
+		http.Error(w, "there is no plan to carry out; ask for one first", http.StatusConflict)
+		return
+	}
+
+	ask := s.migration.request()
+	if said.Into != "" {
+		ask.Into = said.Into
+	}
+
+	started := s.migration.begin(MigrationWorking, StepPreparing, "Moving the messages. Nothing is being uploaded.", ask)
+	if started {
+		// The work deliberately outlives the request that asked for it: somebody who
+		// closes the tab halfway through should come back to a finished migration.
+		//nolint:contextcheck // see above
+		go func() {
+			ctx := context.WithoutCancel(s.background)
+			result, err := s.migrator.Carry(ctx, ask, plan, Progress(s.migration.progress))
+			if err != nil {
+				s.migration.failed(sentence(err), s.advise(err))
+				return
+			}
+			s.migration.done(result)
+		}()
+	}
+	s.begun(w, r, started)
+}
+
+// handleForgetMigration goes back to the beginning.
+func (s *server) handleForgetMigration(w http.ResponseWriter, r *http.Request) {
+	if s.migration.busy() {
+		http.Error(w, "something is still running", http.StatusConflict)
+		return
+	}
+	s.migration.forget()
+	write(w, r, s.migration.state())
+}
+
+// acceptMigration reads a request and checks it, answering the caller when it cannot.
+func (s *server) acceptMigration(w http.ResponseWriter, r *http.Request,
+	check func(MigrationRequest) string,
+) (MigrationRequest, bool) {
+	if s.migrator == nil {
+		http.Error(w, "this server was started without the means to migrate anything", http.StatusNotImplemented)
+		return MigrationRequest{}, false
+	}
+
+	var ask MigrationRequest
+	if !readRequest(w, r, &ask) {
+		return MigrationRequest{}, false
+	}
+	if missing := check(ask); missing != "" {
+		http.Error(w, missing, http.StatusBadRequest)
+		return MigrationRequest{}, false
+	}
+	return ask, true
+}

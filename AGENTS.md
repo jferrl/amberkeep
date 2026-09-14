@@ -121,6 +121,11 @@ sentence, and so the same words reach a terminal and a browser without drifting.
 `docs/adr/0006-planning-a-migration-separately-from-doing-it.md` has the reasoning,
 including four faults that only real data produced.
 
+In a browser it is the same four pieces behind `api.Migrator`, and nothing moves from
+one stage to the next on its own: checking does not begin planning, a plan does not
+begin writing, and writing needs the word `migrate` typed out. A page somebody can
+click through without reading is the one thing this must not be.
+
 ## The import wizard
 
 `amberkeep serve` starts with no archive. `internal/api` holds a session with four

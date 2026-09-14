@@ -54,6 +54,7 @@ func runServe(ctx context.Context, args []string) error {
 	}
 
 	bring := importer{me: *me, country: *country, noSearch: *noSearch}
+	move := migrator{me: *me, country: *country}
 
 	// Without a database there is nothing to open yet, and the page starts at the
 	// beginning. Everything below this point is the same either way.
@@ -104,6 +105,7 @@ func runServe(ctx context.Context, args []string) error {
 		Token:     token,
 		Index:     index,
 		Importer:  bring,
+		Migrator:  move,
 		Workspace: *work,
 		Advise:    adviseOn,
 	})

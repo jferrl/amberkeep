@@ -58,7 +58,12 @@ func TestTheThingsThatLoseDataAreMarked(t *testing.T) {
 	t.Parallel()
 
 	want := map[string]bool{"safety-backup": true, "health-data-goes": true, "decline-icloud": true}
+
 	for _, step := range Critical() {
+		if !want[step.ID] {
+			t.Errorf("%q is marked as losing something if skipped, and does not: the mark "+
+				"means nothing if everything important carries it", step.ID)
+		}
 		delete(want, step.ID)
 	}
 	for id := range want {

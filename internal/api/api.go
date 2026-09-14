@@ -81,6 +81,11 @@ type Options struct {
 	// archive it was given and nothing else, which is what the command line does.
 	Importer Importer
 
+	// Migrator moves a history onto a phone. Without one those endpoints answer 501
+	// and the page leaves the whole thing off, which is what a build that only reads
+	// archives should do.
+	Migrator Migrator
+
 	// Workspace is where anything this program writes will go. It is shown to
 	// somebody before anything is written there, so they can find it afterwards.
 	Workspace string
@@ -138,6 +143,13 @@ type server struct {
 	// importer does the work the wizard asks for.
 	importer Importer
 
+	// migration is how far along a migration is, and migrator is what does it. Kept
+	// apart from the archive session: bringing an archive in and moving one onto a
+	// phone are different jobs, and neither should be able to put the other into a
+	// state it did not ask for.
+	migration *migration
+	migrator  Migrator
+
 	// background outlives the request that began a piece of work, so closing the tab
 	// halfway through a decryption does not leave a half-written file.
 	background context.Context
@@ -183,7 +195,10 @@ func (s *Server) Close() error {
 func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	opts = opts.withDefaults()
 
-	s := &server{opts: opts, importer: opts.Importer, background: ctx}
+	s := &server{
+		opts: opts, importer: opts.Importer, migrator: opts.Migrator,
+		migration: newMigration(), background: ctx,
+	}
 
 	var open *opened
 	if archive != nil {
@@ -222,6 +237,15 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	mux.HandleFunc("POST /api/extract", s.handleExtract)
 	mux.HandleFunc("POST /api/decrypt", s.handleDecrypt)
 	mux.HandleFunc("POST /api/close", s.handleClose)
+
+	// Moving a history onto a phone. Nothing here moves from one stage to the next
+	// on its own, and the last one needs a word typed out.
+	mux.HandleFunc("GET /api/migration", s.handleMigration)
+	mux.HandleFunc("GET /api/migration/guide", s.handleGuide)
+	mux.HandleFunc("POST /api/migration/check", s.handleCheck)
+	mux.HandleFunc("POST /api/migration/plan", s.handlePlanMigration)
+	mux.HandleFunc("POST /api/migration/carry-out", s.handleCarryOut)
+	mux.HandleFunc("POST /api/migration/forget", s.handleForgetMigration)
 
 	// The built page names its stylesheet and script with a hash, so they are served
 	// as a tree rather than one by one. Nothing outside it is reachable: the file

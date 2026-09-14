@@ -176,10 +176,12 @@ var steps = []Step{
 
 	// ----------------------------------------------------------------- wrong
 	{
-		ID:       "go-back",
-		Stage:    Wrong,
-		Critical: true,
-		Title:    "Going back",
+		// Not marked as losing something if skipped: it is the remedy rather than a
+		// precaution, and the whole of this stage is shown together anyway. Marking
+		// everything important would leave the mark meaning nothing.
+		ID:    "go-back",
+		Stage: Wrong,
+		Title: "Going back",
 		Body: "The archived encrypted backup from the first step is the way back, and it is\n" +
 			"complete: everything as it was, Health data and passwords included.\n\n" +
 			"In Finder, with the phone selected, choose Restore Backup and pick the\n" +

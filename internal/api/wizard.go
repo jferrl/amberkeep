@@ -138,11 +138,8 @@ func (s *server) accept(w http.ResponseWriter, r *http.Request, check func(openi
 		return opening{}, false
 	}
 
-	// A wizard request is a few short strings. Anything larger is not one, and
-	// reading it would only give a malformed request somewhere to put a gigabyte.
 	var ask opening
-	if err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(&ask); err != nil {
-		http.Error(w, "that request could not be read", http.StatusBadRequest)
+	if !readRequest(w, r, &ask) {
 		return opening{}, false
 	}
 	if missing := check(ask); missing != "" {
@@ -154,6 +151,18 @@ func (s *server) accept(w http.ResponseWriter, r *http.Request, check func(openi
 		s.session.setWorkspace(ask.Into)
 	}
 	return ask, true
+}
+
+// readRequest reads a wizard request into v.
+//
+// A wizard request is a few short strings. Anything larger is not one, and reading it
+// would only give a malformed request somewhere to put a gigabyte.
+func readRequest(w http.ResponseWriter, r *http.Request, v any) bool {
+	if err := json.NewDecoder(io.LimitReader(r.Body, 64<<10)).Decode(v); err != nil {
+		http.Error(w, "that request could not be read", http.StatusBadRequest)
+		return false
+	}
+	return true
 }
 
 // begun answers a request that asked for work.
