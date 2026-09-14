@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -228,5 +229,57 @@ func TestNoADBIsSaidPlainly(t *testing.T) {
 	var none ADB
 	if _, err := none.Phones(context.Background()); err == nil {
 		t.Fatal("it claimed to reach a phone with no adb to reach it with")
+	}
+}
+
+// TestItLooksWhereTheInstructionsSay is the test that would have caught a promise
+// this program was making and not keeping.
+//
+// The screen tells somebody to download a zip, unzip it, and leave the folder in
+// Downloads or Applications, and says Amberkeep will notice on its own. It did not:
+// it looked only where a package manager or Android Studio puts adb. Telling
+// somebody to put a folder somewhere and then not looking there is the kind of
+// promise that makes a program feel broken by people who followed it exactly.
+func TestItLooksWhereTheInstructionsSay(t *testing.T) {
+	t.Parallel()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("the folders the instructions name differ; the Windows list is checked by reading it")
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		t.Skipf("no home directory to reason about: %v", err)
+	}
+
+	// Exactly the places phoneInstallMac and phoneInstallLinux name.
+	told := []string{
+		filepath.Join(home, "Downloads", "platform-tools", "adb"),
+		filepath.Join(home, "Applications", "platform-tools", "adb"),
+		"/Applications/platform-tools/adb",
+		filepath.Join(home, "platform-tools", "adb"),
+	}
+
+	looked := guesses()
+	for _, want := range told {
+		if !slices.Contains(looked, want) {
+			t.Errorf("the instructions say to put it in %s and nothing looks there", want)
+		}
+	}
+}
+
+// TestTheGuessesAreAbsolute covers the one way this list could become a way to run
+// something unexpected: a relative entry would resolve against the working
+// directory, which is wherever somebody happened to start the program.
+func TestTheGuessesAreAbsolute(t *testing.T) {
+	t.Parallel()
+
+	for _, guess := range guesses() {
+		if !filepath.IsAbs(guess) {
+			t.Errorf("%q is relative, so what it finds depends on where this was started", guess)
+		}
+		if filepath.Base(guess) != "adb" && filepath.Base(guess) != "adb.exe" {
+			t.Errorf("%q does not end in adb", guess)
+		}
 	}
 }
