@@ -174,9 +174,20 @@ func TestOnlyOneExportAtATime(t *testing.T) {
 
 	gate := make(chan struct{})
 	handler := writing(t, &writer{stub: &stub{}, gate: gate})
-	t.Cleanup(func() { close(gate) })
 
-	first := map[string]any{"into": t.TempDir(), "formats": []string{"html"}}
+	// The folder first, so that the cleanup below is registered after the one that
+	// removes it and therefore runs before it. Cleanups run last-registered-first,
+	// and the work here deliberately outlives the request that started it: released
+	// any later, the export would be writing its files into a directory the test
+	// framework was in the middle of deleting. On Unix that is invisible; Windows
+	// reports the directory it could not empty and fails the run.
+	into := t.TempDir()
+	t.Cleanup(func() {
+		close(gate)
+		reachesExport(t, handler, string(ExportDone))
+	})
+
+	first := map[string]any{"into": into, "formats": []string{"html"}}
 	if status, _ := post(t, handler, "/api/export", first); status != http.StatusAccepted {
 		t.Fatal("the first request was not accepted")
 	}
