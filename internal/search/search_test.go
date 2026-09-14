@@ -7,6 +7,7 @@ import (
 	"iter"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -465,6 +466,15 @@ func TestStats(t *testing.T) {
 // it is no more readable than the archive it came from.
 func TestIndexIsPrivate(t *testing.T) {
 	t.Parallel()
+
+	// Windows has no Unix permission bits: a file created 0600 is reported 0666,
+	// because os.Chmod there only toggles the read-only flag. The rule still matters
+	// there and is simply not expressible this way — keeping an index to its owner on
+	// Windows means an ACL, which this program does not yet set. Said out loud rather
+	// than asserted loosely, so the gap is a known one.
+	if runtime.GOOS == "windows" {
+		t.Skip("permission bits mean nothing on Windows")
+	}
 
 	index := buildIndex(t, said(1, 0, "hello"))
 

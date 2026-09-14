@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -505,6 +506,15 @@ func TestWritingIsSafe(t *testing.T) {
 
 	t.Run("an archive is not readable by everybody", func(t *testing.T) {
 		t.Parallel()
+
+		// Windows has no Unix permission bits: a file created 0600 is reported 0666,
+		// because os.Chmod there only toggles the read-only flag. The rule this proves
+		// still matters on Windows and is simply not expressible this way — keeping the
+		// archive to its owner there means an ACL, which this program does not yet set.
+		// Said out loud rather than asserted loosely, so the gap is a known one.
+		if runtime.GOOS == "windows" {
+			t.Skip("permission bits mean nothing on Windows; see docs/adr/0001")
+		}
 
 		opts := testOptions(t)
 		result, err := WriteText(conversationOf(theChat, incoming("private")), opts)

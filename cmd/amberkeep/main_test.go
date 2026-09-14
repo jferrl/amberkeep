@@ -87,6 +87,10 @@ func TestParseZoneRefusesTheUnknown(t *testing.T) {
 	}
 }
 
+// TestDefaultOutput converts its paths rather than writing them out, because the
+// answer is a path and a path is spelled differently on Windows. The first CI run
+// there failed on exactly this, which is the whole reason to run the tests on an
+// operating system nobody is developing on.
 func TestDefaultOutput(t *testing.T) {
 	t.Parallel()
 
@@ -103,8 +107,12 @@ func TestDefaultOutput(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
 			t.Parallel()
-			if got := defaultOutput(tt.in); got != tt.want {
-				t.Errorf("defaultOutput(%q) = %q, want %q", tt.in, got, tt.want)
+
+			// Written with slashes because that is how a path reads, and converted
+			// on both sides because that is not how Windows spells one.
+			in, want := filepath.FromSlash(tt.in), filepath.FromSlash(tt.want)
+			if got := defaultOutput(in); got != want {
+				t.Errorf("defaultOutput(%q) = %q, want %q", in, got, want)
 			}
 		})
 	}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -112,7 +113,7 @@ func (h *helper) Open(_ context.Context, path, contacts string, _ Progress) (Arc
 }
 
 // wizard returns a server with nothing open and an importer behind it.
-func wizard(t *testing.T, bring Importer) http.Handler {
+func wizard(t *testing.T, bring Importer) *Server {
 	t.Helper()
 
 	handler, err := New(context.Background(), nil, Options{
@@ -125,6 +126,7 @@ func wizard(t *testing.T, bring Importer) http.Handler {
 	if err != nil {
 		t.Fatalf("New() with no archive failed: %v", err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	return handler
 }
 
@@ -647,8 +649,11 @@ func TestTheWorkspaceHasAHomeWorthFinding(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := defaultWorkspace(tt.home); got != tt.want {
-				t.Errorf("defaultWorkspace(%q) = %q, want %q", tt.home, got, tt.want)
+			// Written with slashes because that is how a path reads, and converted
+			// because that is not how Windows spells one.
+			home, want := filepath.FromSlash(tt.home), filepath.FromSlash(tt.want)
+			if got := defaultWorkspace(home); got != want {
+				t.Errorf("defaultWorkspace(%q) = %q, want %q", home, got, want)
 			}
 		})
 	}

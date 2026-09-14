@@ -1,5 +1,10 @@
 # Amberkeep
 
+[![CI](https://github.com/jferrl/amberkeep/actions/workflows/ci.yml/badge.svg)](https://github.com/jferrl/amberkeep/actions/workflows/ci.yml)
+[![Licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-A64B08)](LICENSE)
+[![Go](https://img.shields.io/badge/go-1.27-A64B08)](go.mod)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-A64B08)](#status)
+
 Read, search and export your own WhatsApp history from backups you already have, on
 your own computer. Later, move that history between an Android phone and an iPhone.
 

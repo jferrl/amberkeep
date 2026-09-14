@@ -1,0 +1,13 @@
+# Line endings are LF in this repository and LF in every checkout.
+#
+# Not a style preference. Several tests compare bytes this program generates against
+# files committed here — the recorded API replies, the export goldens — and a Windows
+# checkout that rewrites them to CRLF fails every one of those tests for a reason that
+# has nothing to do with what they are testing. The first CI run on Windows found
+# exactly that.
+* text=auto eol=lf
+
+# Holds the two control characters that wrap a matched word in a search result. Git
+# may well decide this file is binary; saying so here means nothing ever rewrites it,
+# whichever way that guess goes.
+web/src/api/marks.ts -text

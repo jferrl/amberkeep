@@ -143,7 +143,34 @@ type server struct {
 	background context.Context
 }
 
-// New returns a handler.
+// Server answers requests about an archive, and lets go of it when asked.
+//
+// Letting go is the whole reason this is a type rather than a bare handler. A
+// process that is about to exit does not need it, which is why nobody noticed for
+// months; anything longer-lived does, and on Windows an open file cannot even be
+// deleted. The first CI run there found it, in a test whose temporary directory
+// could not be cleaned up.
+type Server struct {
+	handler http.Handler
+	session *session
+}
+
+// ServeHTTP answers one request.
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.handler.ServeHTTP(w, r)
+}
+
+// Close releases whatever archive is open, and the index built over it.
+//
+// It is safe to call more than once and safe to call while requests are in flight:
+// closing waits for anything already reading, and everything afterwards is answered
+// with "no archive is open yet", which is a state the page already knows.
+func (s *Server) Close() error {
+	s.session.close()
+	return nil
+}
+
+// New returns a server.
 //
 // The archive may be nil. The server then serves the wizard until one is opened
 // through it, which is the case that matters: somebody whose phone died does not
@@ -153,7 +180,7 @@ type server struct {
 // When an archive is given, the conversation list is read here rather than per
 // request, so a failure to read it is reported at startup instead of as a broken
 // page later.
-func New(ctx context.Context, archive Archive, opts Options) (http.Handler, error) {
+func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	opts = opts.withDefaults()
 
 	s := &server{opts: opts, importer: opts.Importer, background: ctx}
@@ -202,7 +229,7 @@ func New(ctx context.Context, archive Archive, opts Options) (http.Handler, erro
 	mux.Handle("GET /assets/", s.immutable(http.FileServerFS(assets)))
 	mux.HandleFunc("GET /{$}", s.handlePage)
 
-	return s.authenticated(mux), nil
+	return &Server{handler: s.authenticated(mux), session: s.session}, nil
 }
 
 // prepare reads everything from an archive that is needed on every request.

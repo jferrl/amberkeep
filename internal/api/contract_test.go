@@ -338,7 +338,7 @@ func preamble(what string) string {
 // A real one rather than a stub: the search reply is assembled in the handler from
 // what the index returns, so a recording made without one would be describing the
 // test rather than the program.
-func searchable(t *testing.T) http.Handler {
+func searchable(t *testing.T) *Server {
 	t.Helper()
 
 	archive := fixture()
@@ -361,6 +361,7 @@ func searchable(t *testing.T) http.Handler {
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	return handler
 }
 

@@ -22,7 +22,12 @@ import (
 // message store, the real search index, over the real HTTP API.
 
 // wizardOver returns a server with nothing open and the real importer behind it.
-func wizardOver(t *testing.T, workspace string) http.Handler {
+//
+// It lets go at the end of the test, which is not housekeeping: the archive it opens
+// is a file in the test's own temporary directory, and on Windows a file that is
+// still open cannot be deleted, so the cleanup fails and takes the test with it. The
+// first CI run on Windows found that, on a machine nobody develops on.
+func wizardOver(t *testing.T, workspace string) *api.Server {
 	t.Helper()
 
 	handler, err := api.New(t.Context(), nil, api.Options{
@@ -34,6 +39,7 @@ func wizardOver(t *testing.T, workspace string) http.Handler {
 	if err != nil {
 		t.Fatalf("starting the wizard: %v", err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	return handler
 }
 

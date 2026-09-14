@@ -131,7 +131,7 @@ func fixture() *stub {
 }
 
 // serve returns a handler over the fixture, with no secret to carry.
-func serve(t *testing.T, archive Archive) http.Handler {
+func serve(t *testing.T, archive Archive) *Server {
 	t.Helper()
 
 	handler, err := New(context.Background(), archive, Options{
@@ -140,6 +140,7 @@ func serve(t *testing.T, archive Archive) http.Handler {
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
 	}
+	t.Cleanup(func() { _ = handler.Close() })
 	return handler
 }
 

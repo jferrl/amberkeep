@@ -66,8 +66,6 @@ func runServe(ctx context.Context, args []string) error {
 		if reader, err = source.Open(ctx, *db); err != nil {
 			return err
 		}
-		defer reader.Close()
-
 		if names, err = loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country); err != nil {
 			return err
 		}
@@ -95,6 +93,9 @@ func runServe(ctx context.Context, args []string) error {
 		archive = reader
 	}
 
+	// From here the server owns the archive and is what closes it. Until here it is
+	// this function's, which matters only on the paths that fail before handing it
+	// over.
 	handler, err := api.New(ctx, archive, api.Options{
 		Names:     names,
 		Location:  location,
@@ -107,8 +108,12 @@ func runServe(ctx context.Context, args []string) error {
 		Advise:    adviseOn,
 	})
 	if err != nil {
+		if reader != nil {
+			_ = reader.Close()
+		}
 		return err
 	}
+	defer func() { _ = handler.Close() }()
 
 	// Loopback only, and said explicitly rather than left to the default: an
 	// archive reachable from the network is somebody's whole history reachable from

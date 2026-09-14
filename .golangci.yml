@@ -44,6 +44,9 @@ linters:
         - (*github.com/jferrl/amberkeep/internal/search.Index).Close
         - (github.com/jferrl/amberkeep/internal/source.Archive).Close
         - (github.com/jferrl/amberkeep/internal/api.Archive).Close
+        # Letting go of the archive a server holds. It reports nothing a caller could
+        # act on, and it is called on the way out of a command that is ending anyway.
+        - (*github.com/jferrl/amberkeep/internal/api.Server).Close
         - (*github.com/jferrl/amberkeep/internal/backupfs.Archive).Close
         # Rolling back a transaction that already committed is how the deferred
         # cleanup is written; it reports ErrTxDone and means nothing went wrong.

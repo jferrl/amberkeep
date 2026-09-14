@@ -17,8 +17,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           check-latest: true
@@ -40,14 +40,21 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           check-latest: true
-      - uses: golangci/golangci-lint-action@v6
+      - uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # Pinned rather than "latest", and to the version a laptop has, because a
+          # linter that disagrees with the one people run locally teaches them to
+          # stop trusting a clean local run. Raise it deliberately, and fix whatever
+          # the new release finds in the same change.
+          #
+          # v6 of the action installs the v1 line, which is built with an older Go
+          # than this module targets and refuses to read a v2 configuration at all.
+          version: v2.13.2
       - name: Check formatting
         run: |
           unformatted=$(gofmt -l .)
@@ -61,8 +68,8 @@ jobs:
     name: Fuzz smoke
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           check-latest: true
@@ -79,14 +86,14 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
       # The end-to-end tests drive the real binary, so this job needs Go as well.
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version: stable
           check-latest: true
@@ -141,7 +148,7 @@ jobs:
     name: No private data
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Real backups, keys and message databases must never reach this repository,
       # so the guard is mechanical rather than a matter of remembering.
       - name: Scan for backup and key material
