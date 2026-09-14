@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 	"time"
 
 	"howett.net/plist"
@@ -62,12 +63,12 @@ func readPlist(path string, v any) error {
 	data, err := os.ReadFile(path) //nolint:gosec // G304: path is built from a caller-supplied or discovered backup directory, which is exactly what this package exists to read
 	if err != nil {
 		if errors.Is(err, fs.ErrPermission) {
-			return ErrPermissionDenied.withCause(fmt.Errorf("%s: %w", path, err))
+			return ErrPermissionDenied.withCause(blame(path, err))
 		}
-		return ErrCorruptManifest.withCause(fmt.Errorf("%s: %w", path, err))
+		return ErrCorruptManifest.withCause(blame(path, err))
 	}
 	if _, err := plist.Unmarshal(data, v); err != nil {
-		return ErrCorruptManifest.withCause(fmt.Errorf("%s: %w", path, err))
+		return ErrCorruptManifest.withCause(blame(path, err))
 	}
 	return nil
 }
@@ -81,7 +82,26 @@ func wrapFSError(context string, err error) error {
 		return nil
 	}
 	if errors.Is(err, fs.ErrPermission) {
-		return ErrPermissionDenied.withCause(fmt.Errorf("%s: %w", context, err))
+		return ErrPermissionDenied.withCause(blame(context, err))
 	}
-	return ErrUnreadable.withCause(fmt.Errorf("%s: %w", context, err))
+	return ErrUnreadable.withCause(blame(context, err))
+}
+
+// blame says what was being done and what went wrong, without saying where twice.
+//
+// Every failure from the os package is a *fs.PathError, which renders as "open
+// /some/path: operation not permitted" — it already names the file. Prefixing that
+// with the same path, as this package did, produced sentences reading "/long/path:
+// open /long/path: operation not permitted", and that is the first thing a macOS
+// user sees, because Full Disk Access is not granted until somebody grants it.
+//
+// So the path is dropped from the cause when the context already carries it, and
+// kept when it does not: "clearing an unfinished copy" is worth knowing the file for,
+// while "opening /x" is not worth being told about /x a second time.
+func blame(context string, err error) error {
+	var path *fs.PathError
+	if errors.As(err, &path) && strings.Contains(context, path.Path) {
+		return fmt.Errorf("%s: %w", context, path.Err)
+	}
+	return fmt.Errorf("%s: %w", context, err)
 }
