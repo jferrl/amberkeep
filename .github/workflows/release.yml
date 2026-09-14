@@ -26,8 +26,8 @@ jobs:
         env:
           CGO_ENABLED: 0
 
-  build:
-    name: Build
+  cli:
+    name: Command line
     needs: verify
     runs-on: ubuntu-latest
     steps:
@@ -67,6 +67,95 @@ jobs:
               tar -czf "dist/amberkeep_${version}_${os}_${arch}.tar.gz" -C "build/$os-$arch" .
             fi
           done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli
+          path: dist/
+          retention-days: 1
+
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    needs: verify
+    # Built on the platform it runs on. Wails needs cgo on macOS, and an .app bundle
+    # can only be assembled and turned into a disk image by macOS itself. Windows
+    # needs no cgo but is built on Windows anyway, so that what ships is what a
+    # Windows machine produced rather than what a Mac guessed it would.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          check-latest: true
+
+      # Only for the icon: the mark is rendered from the brand SVGs rather than
+      # committed as a binary, and rendering needs the browser the frontend already
+      # depends on. The pages themselves are committed at internal/viewer/dist.
+      - uses: actions/setup-node@v6
+        if: matrix.os == 'macos-latest'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install what renders the icon
+        if: matrix.os == 'macos-latest'
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Build the application
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          mkdir -p dist
+
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            ./desktop/build/bundle.sh "$PWD/Amberkeep.app"
+
+            # A disk image is how a Mac application is handed over, and the symlink
+            # is the drag-to-install everybody expects to find inside one.
+            staging="$(mktemp -d)"
+            cp -R Amberkeep.app "$staging/"
+            ln -s /Applications "$staging/Applications"
+            cp LICENSE "$staging/"
+            hdiutil create -volname Amberkeep -srcfolder "$staging" -ov -format UDZO \
+              "dist/Amberkeep_${version}_macos.dmg"
+          else
+            mkdir -p build/windows
+            # No cgo: Wails reaches Windows through WebView2 with pure Go bindings.
+            CGO_ENABLED=0 go build -C desktop -tags desktop,production -trimpath \
+              -ldflags "-s -w -H windowsgui" -o "$PWD/build/windows/Amberkeep.exe" ./...
+            cp LICENSE README.md build/windows/
+            (cd build/windows && 7z a -tzip "../../dist/Amberkeep_${version}_windows_amd64.zip" .)
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: dist/
+          retention-days: 1
+
+  publish:
+    name: Publish
+    needs: [cli, desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v5
+        with:
+          path: staged
+      - name: Gather
+        run: |
+          mkdir -p dist
+          find staged -type f -exec cp {} dist/ \;
+          ls -la dist
 
       - name: Checksums
         # The only integrity story an unsigned binary has. Somebody who cares can

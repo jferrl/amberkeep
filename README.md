@@ -36,6 +36,26 @@ search and export. The iPhone side and the desktop application are being built.
 | English and Spanish | working |
 | Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
 
+### Opening it the first time
+
+**Nothing here is signed, so both operating systems will refuse it the first time.**
+That is not a bug in the download and not a claim about the download: it is what
+happens to any application whose publisher has not paid for an identity, and this
+one has not. Signing is a deliberate not-yet rather than an oversight.
+
+On **macOS**, the disk image mounts and the application refuses to open. Clear the
+quarantine flag the browser attached and it will run:
+
+```sh
+xattr -dr com.apple.quarantine /Applications/Amberkeep.app
+```
+
+On **Windows**, SmartScreen shows "Windows protected your PC". Choose **More info**,
+then **Run anyway**.
+
+If you would rather not do either, build it yourself — `go build ./cmd/amberkeep` for
+the command line needs nothing but Go, and produces the same program.
+
 **The migration needs a Mac or a Windows PC**, because restoring a backup onto an
 iPhone is done by Apple's own software — Finder, iTunes or the Apple Devices app —
 and Apple ships none of it for Linux. On Linux, Amberkeep reads Android backups,

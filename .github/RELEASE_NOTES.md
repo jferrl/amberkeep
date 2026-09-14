@@ -66,3 +66,21 @@ AGPL-3.0. The engine is free software so that anybody asked to trust it with the
 entire message history can read what it does with it.
 
 Not affiliated with, endorsed by, or connected to WhatsApp LLC or Meta Platforms, Inc.
+
+
+## The desktop application
+
+`Amberkeep_*_macos.dmg` and `Amberkeep_*_windows_amd64.zip` are the window: the same
+program as the command line, with a dock icon, a menu bar and the operating system's
+own file pickers. Everything else in this release is the command-line tool, which is
+one static binary and needs nothing installed.
+
+**Neither is signed, so both systems will refuse it the first time.** That is what
+happens to any application whose publisher has not paid for an identity, and this one
+has not.
+
+- macOS: `xattr -dr com.apple.quarantine /Applications/Amberkeep.app`
+- Windows: SmartScreen → **More info** → **Run anyway**
+
+`SHA256SUMS` is the only integrity story an unsigned download has. It is worth
+checking what you downloaded is what was built.
