@@ -242,5 +242,14 @@
   "conversationsCount": "{count} conversations",
   "messagesCount": "{count} messages",
   "phoneWaiting": "Plug the phone in and Amberkeep will fetch it",
-  "phoneWaitingHelp": "Connect the phone to this computer with a cable and unlock it. It will appear here on its own, and Amberkeep can copy the backup across for you — so none of the steps below are needed. Many charging cables carry no data, so if nothing appears, try a different one."
+  "phoneWaitingHelp": "Connect the phone to this computer with a cable and unlock it. It will appear here on its own, and Amberkeep can copy the backup across for you — so none of the steps below are needed. Many charging cables carry no data, so if nothing appears, try a different one.",
+  "phoneCouldFetch": "Amberkeep can take it off the phone instead",
+  "phoneNeedsTools": "It needs one small piece of Android tooling that is not on this computer. Installing it is optional — copying the file across by hand, below, works just as well.",
+  "phoneHowToInstall": "How to install it",
+  "phoneInstallMac": "If you have Homebrew, run this in Terminal:\n\n    brew install --cask android-platform-tools\n\nOtherwise download \"SDK Platform-Tools for Mac\" from developer.android.com, unzip it, and move the folder to your Applications. Amberkeep looks for it on its own and this screen will notice.",
+  "phoneInstallWindows": "In PowerShell, run:\n\n    winget install --id Google.PlatformTools\n\nOtherwise download \"SDK Platform-Tools for Windows\" from developer.android.com and unzip it. Amberkeep looks where Android Studio puts it and this screen will notice.",
+  "phoneInstallLinux": "Install your distribution’s android-tools package — on Debian and Ubuntu that is:\n\n    sudo apt install android-tools-adb\n\nAmberkeep looks for it on the path and this screen will notice.",
+  "phoneToolsBroken": "The Android tooling on this computer will not run",
+  "phoneToolsBrokenHelp": "It is installed but something is wrong with it, so installing it again will not help. Copy the file across by hand instead, with the steps below — it works just as well and needs nothing installed.",
+  "phoneNothingDownloaded": "Amberkeep will not download or install anything itself. It never connects to the internet, and it is not going to start for this."
 }

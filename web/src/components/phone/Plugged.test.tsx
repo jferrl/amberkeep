@@ -127,17 +127,57 @@ describe("when it cannot help", () => {
    * Each of these is an ordinary situation with a different thing to go and do, and
    * the screen underneath still works in all of them.
    */
-  it("says nothing at all on a computer with no Android tools", async () => {
-    phones = { phones: [], trouble: "adb is not installed on this computer" };
+  /**
+   * Missing tooling is an offer, folded away.
+   *
+   * Not silence, because somebody who would happily install one small thing cannot
+   * find out otherwise. Not a heading either: the path underneath needs nothing
+   * installed and works just as well, and a person with a dead phone has no
+   * appetite for a side quest presented as the main road.
+   */
+  it("offers to explain the tooling, without making it the main path", async () => {
+    phones = {
+      phones: [],
+      trouble: "adb is not installed on this computer",
+      why: "no-tools",
+      platform: "darwin",
+    };
 
-    const { container } = render(
-      <Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />,
-    );
-    // Not an error and not a warning. Just absent, so the screen reads as though
-    // this was never on offer.
-    await vi.waitFor(() => {
-      expect(container).toBeEmptyDOMElement();
-    });
+    render(<Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />);
+
+    const fold = (await screen.findByText(/take it off the phone instead/i)).closest("details");
+    expect(fold).not.toBeNull();
+    expect(fold).not.toHaveAttribute("open");
+    // The instruction is the one for this machine, not three and a choice.
+    expect(screen.getByText(/brew install/)).toBeInTheDocument();
+    expect(screen.queryByText(/winget/)).not.toBeInTheDocument();
+  });
+
+  /**
+   * Installed and broken is not the same as never installed, and telling somebody to
+   * install it again would send them round a loop that cannot end.
+   */
+  it("does not tell somebody to install what is already installed", async () => {
+    phones = {
+      phones: [],
+      trouble: "the Android tools on this computer would not run: /usr/bin/adb",
+      why: "unusable",
+      platform: "darwin",
+    };
+
+    render(<Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />);
+
+    expect(await screen.findByText(/will not run/)).toBeInTheDocument();
+    expect(screen.queryByText(/brew install/)).not.toBeInTheDocument();
+    expect(screen.getByText(/installing it again will not help/)).toBeInTheDocument();
+  });
+
+  /** The promise this program is built on does not get an exception for convenience. */
+  it("says plainly that it will not download anything itself", async () => {
+    phones = { phones: [], trouble: "x", why: "no-tools", platform: "windows" };
+
+    render(<Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />);
+    expect(await screen.findByText(/will not download or install anything itself/)).toBeInTheDocument();
   });
 
   /**

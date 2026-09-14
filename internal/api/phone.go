@@ -2,7 +2,11 @@ package api
 
 import (
 	"context"
+	"errors"
 	"net/http"
+	"runtime"
+
+	"github.com/jferrl/amberkeep/internal/phone"
 )
 
 // Reading a backup off the phone it is on.
@@ -42,7 +46,25 @@ type Phones struct {
 	// Trouble is the reason there is no list rather than an empty one: usually that
 	// the Android tools this borrows are not installed.
 	Trouble string `json:"trouble,omitempty"`
+	// Why is that reason as a code, so the page can phrase it and can tell the two
+	// apart: tools that were never installed are a thing somebody can go and fix,
+	// and tools that will not run are not fixed by installing them again.
+	Why Why `json:"why,omitempty"`
+	// Platform is which system this is, so the page can give the instruction that
+	// belongs to it rather than three and a choice.
+	Platform string `json:"platform,omitempty"`
 }
+
+// Why is the reason no phone can be seen.
+type Why string
+
+// The reasons.
+const (
+	// WhyNoTools is that adb was never installed.
+	WhyNoTools Why = "no-tools"
+	// WhyUnusable is that it is installed and will not run.
+	WhyUnusable Why = "unusable"
+)
 
 // Reader talks to a phone over adb, and only reads it.
 //
@@ -71,7 +93,13 @@ func (s *server) handlePhones(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Not an error to the page. A computer with no Android tools installed is an
 		// ordinary computer, and the screen says so and offers the other way in.
-		write(w, r, Phones{Phones: []Phone{}, Trouble: sentence(err)})
+		why := WhyUnusable
+		if errors.Is(err, phone.ErrNoADB) {
+			why = WhyNoTools
+		}
+		write(w, r, Phones{
+			Phones: []Phone{}, Trouble: sentence(err), Why: why, Platform: runtime.GOOS,
+		})
 		return
 	}
 	if found == nil {

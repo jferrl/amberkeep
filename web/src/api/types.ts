@@ -670,9 +670,21 @@ export interface PhoneBackup {
   partial: boolean;
 }
 
+/**
+ * Why no phone can be seen.
+ *
+ * Two different situations. Tools that were never installed are something somebody
+ * can go and fix; tools that are installed and will not run are not fixed by
+ * installing them again, and telling them to would waste their evening.
+ */
+export type Why = "no-tools" | "unusable";
+
 /** What this computer can see, and why it can see nothing when it cannot. */
 export interface Phones {
   phones: readonly Phone[];
   /** Why there is no list rather than an empty one — usually no Android tools. */
   trouble?: string;
+  why?: Why;
+  /** Which system this is, so the instruction is the one that belongs to it. */
+  platform?: string;
 }

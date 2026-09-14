@@ -1,7 +1,7 @@
 import { Smartphone } from "lucide-react";
 
 import { usePhoneBackups, usePhones } from "@/api/queries";
-import type { Phone, PhoneBackup } from "@/api/types";
+import type { Phone, PhoneBackup, Why } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Aside, Say } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
@@ -40,9 +40,13 @@ export function Plugged({
   const found = phones.data?.phones ?? [];
   const trouble = phones.data?.trouble;
 
-  // A computer that has never had the Android tools says nothing: this genuinely is
-  // not on offer there, and explaining a thing that cannot happen is noise.
-  if (trouble !== undefined) return null;
+  // Tooling that is missing or broken. Not silence any more, but not the main path
+  // either: it is folded away, so somebody who should simply copy the file across
+  // is not made to feel they are doing it the hard way, and somebody who would
+  // rather install one small thing can find out how.
+  if (trouble !== undefined) {
+    return <Without why={phones.data?.why} platform={phones.data?.platform} />;
+  }
 
   // A computer that can look and sees nothing plugged in is a different case, and
   // getting it wrong was the whole bug: somebody holding the phone this exists for
@@ -149,5 +153,56 @@ function One({
         </li>
       )}
     </ul>
+  );
+}
+
+/**
+ * What to say when this computer cannot look at all.
+ *
+ * Two situations that look identical and are not. Tools nobody installed are a thing
+ * somebody can go and fix in two minutes; tools that are installed and will not run
+ * are not fixed by installing them again, and sending somebody round that loop would
+ * waste their evening.
+ *
+ * Either way this is a disclosure rather than a heading. The path underneath — copy
+ * the file across yourself — needs nothing installed and works just as well, and the
+ * person reading this has a dead phone and no appetite for a side quest.
+ */
+function Without({ why, platform }: { why: Why | undefined; platform: string | undefined }) {
+  const t = useT();
+
+  if (why === "unusable") {
+    return (
+      <Aside heading={t("phoneToolsBroken")} tone="note">
+        <Say>{t("phoneToolsBrokenHelp")}</Say>
+      </Aside>
+    );
+  }
+
+  const how =
+    platform === "darwin"
+      ? "phoneInstallMac"
+      : platform === "windows"
+        ? "phoneInstallWindows"
+        : "phoneInstallLinux";
+
+  return (
+    <details className="rounded-lg bg-[var(--color-surface)] p-4 ring-1 ring-[var(--color-line)] ring-inset">
+      <summary className="cursor-pointer text-sm font-medium">
+        {t("phoneCouldFetch")}
+      </summary>
+      <div className="mt-2 flex flex-col gap-2 text-[0.8125rem]">
+        <Say>{t("phoneNeedsTools")}</Say>
+        <p className="m-0 font-medium">{t("phoneHowToInstall")}</p>
+        {/*
+          The commands are rendered with their line breaks intact and as text, never
+          as markup — the same rule every other sentence in this program follows.
+        */}
+        <pre className="m-0 overflow-x-auto bg-[var(--color-bg)] p-3 font-sans text-[0.8125rem] whitespace-pre-wrap">
+          {t(how)}
+        </pre>
+        <Say>{t("phoneNothingDownloaded")}</Say>
+      </div>
+    </details>
   );
 }
