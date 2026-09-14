@@ -1,7 +1,11 @@
 import type { SyntheticEvent } from "react";
 import { useState } from "react";
 
-import type { Migration, MigrationConversation, MigrationPlan } from "@/api/types";
+import type {
+  Migration,
+  MigrationConversation,
+  MigrationPlan,
+} from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
@@ -63,7 +67,11 @@ export function MigrationPlanned({
       total={5}
       heading={t("migratePlanTitle")}
       lead={t("migratePlanHelp")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       <Totals plan={plan} language={language} />
@@ -84,6 +92,7 @@ export function MigrationPlanned({
 
         <Field
           label={t("migrateIntoLabel")}
+          choosing={{ what: "folder", named: t("chooseInto") }}
           hint={t("migrateIntoHint")}
           value={into}
           onChange={onInto}
@@ -106,7 +115,13 @@ export function MigrationPlanned({
 }
 
 /** The numbers, each with the sentence that says what it means. */
-function Totals({ plan, language }: { plan: MigrationPlan; language: Language }) {
+function Totals({
+  plan,
+  language,
+}: {
+  plan: MigrationPlan;
+  language: Language;
+}) {
   const t = useT();
 
   const lines: [number, string][] = [
@@ -124,7 +139,9 @@ function Totals({ plan, language }: { plan: MigrationPlan; language: Language })
       <dl className="m-0 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5">
         {lines.map(([n, said]) => (
           <div key={said} className="contents">
-            <dt className="text-right text-sm font-medium tabular-nums">{count(n, language)}</dt>
+            <dt className="text-right text-sm font-medium tabular-nums">
+              {count(n, language)}
+            </dt>
             <dd className="m-0 text-sm text-[var(--color-muted)]">{said}</dd>
           </div>
         ))}
@@ -148,9 +165,15 @@ function Totals({ plan, language }: { plan: MigrationPlan; language: Language })
  * Shown rather than counted. A conversation left out silently is one somebody finds
  * missing weeks later, on a phone they can no longer compare against.
  */
-function LeftOut({ conversations }: { conversations: readonly MigrationConversation[] }) {
+function LeftOut({
+  conversations,
+}: {
+  conversations: readonly MigrationConversation[];
+}) {
   const t = useT();
-  const skipped = conversations.filter((c) => c.skipped !== undefined && c.skipped !== "");
+  const skipped = conversations.filter(
+    (c) => c.skipped !== undefined && c.skipped !== "",
+  );
   if (skipped.length === 0) return null;
 
   return (

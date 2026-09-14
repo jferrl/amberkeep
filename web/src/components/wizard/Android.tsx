@@ -19,24 +19,29 @@ import type { Phrase } from "@/i18n";
  * what will appear afterwards, so somebody halfway through a menu they have never
  * opened can tell whether they are still on course.
  */
-const onThePhone: { title: Phrase; says: readonly Phrase[]; expect: Phrase }[] = [
-  {
-    title: "androidStep1Title",
-    says: ["androidStep1a", "androidStep1b"],
-    expect: "androidNext1",
-  },
-  {
-    title: "androidStep2Title",
-    says: ["androidStep2a", "androidStep2b"],
-    expect: "androidNext2",
-  },
-  { title: "androidStep3Title", says: ["androidStep3a"], expect: "androidNext3" },
-  {
-    title: "androidStep4Title",
-    says: ["androidStep4a", "androidStep4b"],
-    expect: "androidNext4",
-  },
-];
+const onThePhone: { title: Phrase; says: readonly Phrase[]; expect: Phrase }[] =
+  [
+    {
+      title: "androidStep1Title",
+      says: ["androidStep1a", "androidStep1b"],
+      expect: "androidNext1",
+    },
+    {
+      title: "androidStep2Title",
+      says: ["androidStep2a", "androidStep2b"],
+      expect: "androidNext2",
+    },
+    {
+      title: "androidStep3Title",
+      says: ["androidStep3a"],
+      expect: "androidNext3",
+    },
+    {
+      title: "androidStep4Title",
+      says: ["androidStep4a", "androidStep4b"],
+      expect: "androidNext4",
+    },
+  ];
 
 /** Every screen of this route, including the choice that led to it. */
 const screens = onThePhone.length + 2;
@@ -114,7 +119,12 @@ export function Android({
   const showing = onThePhone[at];
   if (showing !== undefined) {
     return (
-      <Shell step={at + 2} total={screens} heading={t(showing.title)} onBack={back}>
+      <Shell
+        step={at + 2}
+        total={screens}
+        heading={t(showing.title)}
+        onBack={back}
+      >
         <div className="flex flex-col gap-3">
           {showing.says.map((phrase) => (
             <Say key={phrase}>{t(phrase)}</Say>
@@ -186,7 +196,11 @@ export function Android({
       step={screens}
       total={screens}
       heading={t("androidStep5Title")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={back}
     >
       {/* No action and no method: this form is handled here and submitted nowhere.
@@ -195,6 +209,7 @@ export function Android({
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("androidFileLabel")}
+          choosing={{ what: "encrypted", named: t("chooseEncrypted") }}
           value={file}
           wrong={wrong.file}
           onChange={(next) => {

@@ -32,7 +32,7 @@ search and export. The iPhone side and the desktop application are being built.
 | Command-line tool | working |
 | Import wizard | working, in the browser and on the command line |
 | iPhone backup access | working, including backups Finder will not show you |
-| Desktop application | planned |
+| Desktop application | working on macOS and Windows; a window, a dock icon and native file pickers |
 | English and Spanish | working |
 | Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
 

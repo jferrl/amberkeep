@@ -32,6 +32,7 @@ export function Where({
     <>
       <Field
         label={t("workspaceLabel")}
+        choosing={{ what: "folder", named: t("chooseWorkspace") }}
         hint={t(writes)}
         value={into}
         wrong={wrong}
@@ -39,6 +40,7 @@ export function Where({
       />
       <Field
         label={t("contactsLabel")}
+        choosing={{ what: "contacts", named: t("chooseContacts") }}
         hint={t("contactsHint")}
         value={contacts}
         onChange={onContacts}

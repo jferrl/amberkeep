@@ -62,12 +62,17 @@ export function Existing({
       total={2}
       heading={t("fileTitle")}
       lead={t("fileHelp")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("fileLabel")}
+          choosing={{ what: "database", named: t("chooseDatabase") }}
           hint={t("fileWrites")}
           value={typed.path}
           wrong={wrong}
@@ -78,6 +83,7 @@ export function Existing({
         />
         <Field
           label={t("contactsLabel")}
+          choosing={{ what: "contacts", named: t("chooseContacts") }}
           hint={t("contactsHint")}
           value={contacts}
           onChange={onContacts}

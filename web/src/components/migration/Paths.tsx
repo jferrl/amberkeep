@@ -66,7 +66,11 @@ export function MigrationPaths({
       total={5}
       heading={t("migratePathsTitle")}
       lead={t("migratePathsHelp")}
-      trouble={failure === undefined ? undefined : <Trouble state={failure} correctable />}
+      trouble={
+        failure === undefined ? undefined : (
+          <Trouble state={failure} correctable />
+        )
+      }
       onBack={onBack}
     >
       <Aside heading={t("migrateUnproven")}>
@@ -86,6 +90,7 @@ export function MigrationPaths({
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("migrateBackupLabel")}
+          choosing={{ what: "folder", named: t("chooseBackupFolder") }}
           hint={offered ? t("migrateBackupHint") : t("migrateBackupHintAlone")}
           value={paths.backup}
           wrong={wrong.backup}
@@ -96,6 +101,7 @@ export function MigrationPaths({
         />
         <Field
           label={t("migrateAndroidLabel")}
+          choosing={{ what: "database", named: t("chooseDatabase") }}
           hint={t("migrateAndroidHint")}
           value={paths.android}
           wrong={wrong.android}
@@ -106,6 +112,7 @@ export function MigrationPaths({
         />
         <Field
           label={t("migratePairingLabel")}
+          choosing={{ what: "database", named: t("choosePairing") }}
           hint={t("migratePairingHint")}
           value={paths.pairing}
           onChange={(pairing) => {
@@ -173,7 +180,10 @@ function Choice({
         }}
       />
       <div>
-        <label htmlFor={box} className="block cursor-pointer text-sm font-medium">
+        <label
+          htmlFor={box}
+          className="block cursor-pointer text-sm font-medium"
+        >
           {label}
         </label>
         <p id={note} className="m-0 mt-0.5 text-sm text-[var(--color-muted)]">

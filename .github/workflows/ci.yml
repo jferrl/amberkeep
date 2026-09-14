@@ -164,6 +164,36 @@ jobs:
         # makes none, and the severity gate blocks on the same findings anyway.
         run: npm run doctor
 
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    # Not ubuntu. Wails reaches Linux through WebKitGTK, which needs system
+    # development packages this job would have to install to prove something nobody
+    # ships: Apple's software does not run there, so the window cannot restore a
+    # backup and the command does everything on Linux that a window would.
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          check-latest: true
+      # The window embeds the same built pages the command does, from
+      # internal/viewer/dist, which is committed. Nothing to build here but Go.
+      - name: Build the window
+        working-directory: desktop
+        # -tags desktop,production is not optional: without them Wails compiles to a
+        # binary that starts, prints "will not build without the correct build tags"
+        # and exits. A build that produces something unrunnable is worse than one
+        # that fails.
+        run: go build -tags desktop,production -o /dev/null ./...
+      - name: Vet
+        working-directory: desktop
+        run: go vet -tags desktop,production ./...
+
   no-private-data:
     name: No private data
     runs-on: ubuntu-latest

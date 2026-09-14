@@ -1,0 +1,7 @@
+# The assembled application, built on demand by build/bundle.sh. Nothing in it is
+# source and it is a different binary on every machine.
+Amberkeep.app/
+
+# What `go build` leaves behind when it is not given an output path.
+/desktop
+/desktop.exe
