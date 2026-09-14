@@ -75,9 +75,24 @@ function answer(body: unknown): Response {
   });
 }
 
+/**
+ * Every test in this file is about an archive that is already open.
+ *
+ * The page asks what the server is holding before it shows anything, and shows the
+ * import wizard when the answer is "nothing". So each of these replies must say the
+ * archive is open, or the test would be looking at the wizard instead.
+ */
+function alreadyOpen(at: string): Response | undefined {
+  if (!at.startsWith("/api/state")) return undefined;
+  return answer({ stage: "ready", workspace: "/Users/someone/Amberkeep" });
+}
+
 beforeEach(() => {
   fetching = vi.fn<typeof fetch>((input) => {
     const at = fetchTarget(input);
+
+    const open = alreadyOpen(at);
+    if (open !== undefined) return Promise.resolve(open);
 
     if (at.startsWith("/api/archive")) {
       return Promise.resolve(
@@ -190,6 +205,8 @@ describe("searching", () => {
   it("says plainly when nothing matched", async () => {
     fetching.mockImplementation((input) => {
       const at = fetchTarget(input);
+      const open = alreadyOpen(at);
+      if (open !== undefined) return Promise.resolve(open);
       if (at.startsWith("/api/search")) {
         return Promise.resolve(answer({ total: 0, hits: [] }));
       }
@@ -228,6 +245,8 @@ describe("searching", () => {
   it("offers to search only names when the archive has no index", async () => {
     fetching.mockImplementation((input) => {
       const at = fetchTarget(input);
+      const open = alreadyOpen(at);
+      if (open !== undefined) return Promise.resolve(open);
       if (at.startsWith("/api/archive")) {
         return Promise.resolve(answer({ conversations: 2, messages: 3, searchable: false }));
       }
@@ -243,9 +262,11 @@ describe("searching", () => {
 
 describe("when the archive cannot be read", () => {
   it("does not pretend it is empty", async () => {
-    fetching.mockImplementation(() =>
-      Promise.resolve(new Response("the disk gave up", { status: 500 })),
-    );
+    fetching.mockImplementation((input) => {
+      const open = alreadyOpen(fetchTarget(input));
+      if (open !== undefined) return Promise.resolve(open);
+      return Promise.resolve(new Response("the disk gave up", { status: 500 }));
+    });
 
     render(<App language="en" />);
 
@@ -253,5 +274,27 @@ describe("when the archive cannot be read", () => {
     await waitFor(() => {
       expect(screen.queryByRole("list")).not.toBeInTheDocument();
     });
+  });
+});
+
+/**
+ * The two notices this project is obliged to show, on the only screens most people
+ * will ever see of it.
+ *
+ * Tested because they are exactly the kind of thing that disappears in a refactor and
+ * is noticed by a lawyer rather than by a user: one is Meta's trademark rules, which
+ * Wondershare was made to rename a product over, and the other is what the AGPL asks
+ * of a program somebody interacts with through a browser.
+ */
+describe("what this program has to say about itself", () => {
+  it("says it is nobody's official anything, and where its source is", async () => {
+    render(<App language="en" />);
+
+    expect(await screen.findByText(/Not affiliated with, endorsed by, or connected to/)).toHaveTextContent(
+      /WhatsApp LLC or Meta Platforms/,
+    );
+    expect(screen.getByText(/free software under the AGPL-3.0/)).toHaveTextContent(
+      "github.com/jferrl/amberkeep",
+    );
   });
 });

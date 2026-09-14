@@ -124,6 +124,39 @@ type indexSettings struct {
 	book     string
 	whatsApp string
 	country  string
+
+	// say is where to put the running commentary. Nothing means the terminal, which
+	// is where a command belongs; the wizard sets it so the same sentences reach
+	// somebody watching a browser instead.
+	say func(string)
+}
+
+// announce reports one thing that has happened.
+func (s indexSettings) announce(line string) {
+	if s.say != nil {
+		s.say(line)
+		return
+	}
+	fmt.Fprintln(os.Stderr, line)
+}
+
+// counting reports how far the build has got.
+//
+// A terminal gets one line rewritten in place, because a few hundred of them
+// scrolling past is noise. Anywhere else gets the sentence.
+func (s indexSettings) counting(conversations, messages int) {
+	if s.say != nil {
+		s.say(fmt.Sprintf("Indexed %d conversations and %d messages so far.", conversations, messages))
+		return
+	}
+	fmt.Fprintf(os.Stderr, "\r%d conversations, %d messages...", conversations, messages)
+}
+
+// finished clears whatever counting left on the terminal.
+func (s indexSettings) finished() {
+	if s.say == nil {
+		fmt.Fprint(os.Stderr, "\r\033[K")
+	}
 }
 
 // openIndex returns a usable index, building one if there is none or the one there
@@ -138,10 +171,10 @@ func openIndex(ctx context.Context, db, at string, settings indexSettings) (*sea
 				_ = index.Close()
 			case !stats.MatchesSource(db):
 				_ = index.Close()
-				fmt.Fprintln(os.Stderr, "the archive has changed since the index was built; building it again")
+				settings.announce("The archive has changed since the index was built; building it again.")
 			case stats.Notices != settings.notices:
 				_ = index.Close()
-				fmt.Fprintln(os.Stderr, "the index was built with different settings; building it again")
+				settings.announce("The index was built with different settings; building it again.")
 			default:
 				return index, nil
 			}
@@ -161,7 +194,7 @@ func openIndex(ctx context.Context, db, at string, settings indexSettings) (*sea
 		return nil, err
 	}
 
-	fmt.Fprintf(os.Stderr, "building the search index; this happens once and takes a few minutes\n")
+	settings.announce("Building the search index. This happens once and takes a few minutes.")
 	started := time.Now()
 
 	index, err := search.Build(ctx, reader, at, db, search.Options{
@@ -170,22 +203,22 @@ func openIndex(ctx context.Context, db, at string, settings indexSettings) (*sea
 		IncludeNotices: settings.notices,
 		Progress: func(conversations, messages int) {
 			if conversations%100 == 0 {
-				fmt.Fprintf(os.Stderr, "\r%d conversations, %d messages...", conversations, messages)
+				settings.counting(conversations, messages)
 			}
 		},
 	})
 	if err != nil {
 		return nil, err
 	}
-	fmt.Fprint(os.Stderr, "\r\033[K")
+	settings.finished()
 
 	stats, err := index.Stats(ctx)
 	if err != nil {
 		_ = index.Close()
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "indexed %d messages from %d conversations in %s\n",
-		stats.Messages, stats.Conversations, time.Since(started).Round(time.Second))
+	settings.announce(fmt.Sprintf("Indexed %d messages from %d conversations in %s.",
+		stats.Messages, stats.Conversations, time.Since(started).Round(time.Second)))
 	return index, nil
 }
 

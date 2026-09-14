@@ -4,10 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,6 +30,10 @@ type stub struct {
 	messages  map[int64][]model.Message
 	directory *model.Directory
 	failWith  error
+
+	// closed is written by whatever goroutine the session let go of this archive
+	// on, and read by the test, so it is not an ordinary bool.
+	closed atomic.Bool
 }
 
 func (s *stub) Chats(context.Context) ([]model.Chat, error) {
@@ -37,8 +43,30 @@ func (s *stub) Chats(context.Context) ([]model.Chat, error) {
 	return s.chats, nil
 }
 
+// Messages streams one conversation, which is what building a search index needs.
+func (s *stub) Messages(_ context.Context, chat model.Chat) iter.Seq2[model.Message, error] {
+	return func(yield func(model.Message, error) bool) {
+		if s.failWith != nil {
+			yield(model.Message{}, s.failWith)
+			return
+		}
+		for _, m := range s.messages[chat.ID] {
+			if !yield(m, nil) {
+				return
+			}
+		}
+	}
+}
+
 func (s *stub) Directory() *model.Directory { return s.directory }
 func (s *stub) Layout() string              { return "modern" }
+
+// Close records that the session let go of this archive, which it must do when a
+// second one is opened.
+func (s *stub) Close() error {
+	s.closed.Store(true)
+	return nil
+}
 
 // Page mirrors the reader: newest first by limit, handed back oldest first.
 func (s *stub) Page(_ context.Context, chat model.Chat, before model.Cursor, limit int) ([]model.Message, model.Cursor, error) {

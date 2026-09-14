@@ -55,6 +55,17 @@ wrong here.
 - **A regression test must be checked against the unfixed code.** Break the fix, watch
   the test fail, restore it. A regression test that would not have caught the bug is
   worse than none because it looks like cover.
+- **The page's types are checked against what the server really sends.** Every reply
+  is recorded from the real handlers into `web/src/api/contract/`, and
+  `web/src/api/contract.test.ts` assigns each recording to the type the page declares.
+  Change a handler and re-record in the same commit:
+
+  ```sh
+  go test ./internal/api -run TestTheRecordedRepliesStillMatch -update
+  ```
+
+  The diff is the page's contract changing. Do not hand-edit a recording, and do not
+  re-record to make a failure go away without reading what moved.
 - `go test ./... -race` and a coverage gate of 85% on the whole module. CI enforces both.
 
 ## Before you finish
@@ -67,6 +78,7 @@ And, if anything under `web/` changed:
 
 ```sh
 cd web && npm run typecheck && npm run lint && npm test && npm run doctor && npm run build
+cd web && npm run e2e:build   # rebuilds the binary, then drives it in a real browser
 ```
 
 The build writes into `internal/viewer/dist`, which is committed, so a viewer change
@@ -79,6 +91,17 @@ and say why in the same change.
 Commits follow Conventional Commits and need a sign-off (`git commit -s`). A commit
 message explains what was learned, not what was typed: the bug that was found, the
 measurement that settled an argument, the thing that turned out to be wrong.
+
+## The import wizard
+
+`amberkeep serve` starts with no archive. `internal/api` holds a session with four
+stages — empty, working, ready, failed — and six endpoints get somebody from a
+backup to an archive; `GET /api/state` is the only thing the page polls, and every
+endpoint that reads an archive answers 409 until one is open. `api.Importer` is the
+seam: the server knows what to ask, `cmd/amberkeep/importer.go` knows how a backup
+is decrypted and where Apple hides one. Do not reimplement any of that behind the
+API — call the command's own helper, or there will be two answers to what a backup
+is. The contract and the reasoning are in `docs/adr/0004-the-import-wizard.md`.
 
 ## Things that have already caught people out
 
@@ -99,6 +122,11 @@ measurement that settled an argument, the thing that turned out to be wrong.
 - **A message must never become markup.** Everything the page renders is a text
   node; the linter bans `dangerouslySetInnerHTML` and a test checks the outcome.
 - **`go build ./...` walks `node_modules`.** `web/go.mod` exists only to stop it.
+- **The 64-digit key must never come back out.** Not in the state the page polls, not
+  in an error, not in an address. Errors are the thing most likely to be pasted into
+  a bug report. Two tests fail if it appears in any response; do not defeat them.
+- **A header set after `WriteHeader` is silently dropped.** This is why `write` and
+  `writeStatus` are one function: a 202 built the other way round arrives as text.
 - **Measure before optimising, and measure again after.** A larger page cache was
   worth 25% before the indexes were restored and 2% after, for three times the memory.
 
@@ -115,7 +143,7 @@ measurement that settled an argument, the thing that turned out to be wrong.
 | `internal/contacts` | names from an address book |
 | `internal/export` | text, structured data and web pages |
 | `internal/search` | the full-text index |
-| `internal/api` | the archive over HTTP, loopback only |
+| `internal/api` | the archive over HTTP, loopback only, and the import wizard |
 | `cmd/amberkeep` | the command-line tool |
 | `web/` | the viewer: React, TypeScript, its own nested Go module marker |
 | `internal/viewer` | the built viewer, embedded into the binary |

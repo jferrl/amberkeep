@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/fs"
 	"net/http"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -49,6 +50,11 @@ type Archive interface {
 	Page(ctx context.Context, chat model.Chat, before model.Cursor, limit int) ([]model.Message, model.Cursor, error)
 	Directory() *model.Directory
 	Layout() string
+
+	// Close releases the file. A session that opens a second archive closes the
+	// first, so that somebody trying two backups in turn does not leave a database
+	// open on each.
+	Close() error
 }
 
 // Options say how an archive is presented.
@@ -70,6 +76,19 @@ type Options struct {
 	// Index is the full-text index. Searching is unavailable without one, and says
 	// so rather than returning nothing.
 	Index *search.Index
+
+	// Importer does the work the wizard asks for. Without one the server serves an
+	// archive it was given and nothing else, which is what the command line does.
+	Importer Importer
+
+	// Workspace is where anything this program writes will go. It is shown to
+	// somebody before anything is written there, so they can find it afterwards.
+	Workspace string
+
+	// Advise turns a failure into the several lines of help that go with it. The
+	// wording lives with the commands, which is where every other failure in this
+	// program is explained.
+	Advise func(error) string
 }
 
 func (o Options) withDefaults() Options {
@@ -85,63 +104,75 @@ func (o Options) withDefaults() Options {
 	if o.Title == "" {
 		o.Title = "Archive"
 	}
+	if o.Workspace == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			home = ""
+		}
+		o.Workspace = defaultWorkspace(home)
+	}
 	return o
+}
+
+// Searchable is an archive that came with a full-text index over it.
+//
+// It is an optional interface rather than part of Archive because an index is not
+// part of reading one: an archive opened from the command line without `--search`
+// is perfectly readable, and one the wizard opened built its index on the way in.
+// Whoever produced the archive knows which, and says so by implementing this.
+type Searchable interface {
+	Index() *search.Index
 }
 
 // server answers questions about one archive.
 type server struct {
-	archive Archive
-	opts    Options
+	opts Options
 
 	// assets is the built viewer.
 	assets fs.FS
 
-	// chats is the conversation list, held because it is small, needed on every
-	// request, and expensive to rebuild.
-	chats  []model.Chat
-	byJID  map[string]model.Chat
-	export export.Options
+	// session is whatever archive is open, which may be none: the wizard has to be
+	// reachable by somebody who does not have one yet.
+	session *session
+
+	// importer does the work the wizard asks for.
+	importer Importer
+
+	// background outlives the request that began a piece of work, so closing the tab
+	// halfway through a decryption does not leave a half-written file.
+	background context.Context
 }
 
-// New returns a handler serving the archive.
+// New returns a handler.
 //
-// The conversation list is read once here rather than per request, so a failure to
-// read the archive is reported at startup instead of as a broken page later.
+// The archive may be nil. The server then serves the wizard until one is opened
+// through it, which is the case that matters: somebody whose phone died does not
+// have a readable archive, and getting from what they do have to one is the part
+// they need help with.
+//
+// When an archive is given, the conversation list is read here rather than per
+// request, so a failure to read it is reported at startup instead of as a broken
+// page later.
 func New(ctx context.Context, archive Archive, opts Options) (http.Handler, error) {
 	opts = opts.withDefaults()
 
-	chats, err := archive.Chats(ctx)
-	if err != nil {
-		return nil, err
-	}
+	s := &server{opts: opts, importer: opts.Importer, background: ctx}
 
-	s := &server{
-		archive: archive,
-		opts:    opts,
-		byJID:   make(map[string]model.Chat, len(chats)),
-		export: export.Options{
-			Names:    opts.Names,
-			Location: opts.Location,
-			Me:       opts.Me,
-		},
-	}
-	for _, chat := range chats {
-		if !chat.Includable() {
-			continue
+	var open *opened
+	if archive != nil {
+		var err error
+		open, err = s.prepare(ctx, archive)
+		if err != nil {
+			return nil, err
 		}
-		s.chats = append(s.chats, chat)
-		s.byJID[chat.JID.String()] = chat
+		// An archive given at startup was opened by the command line, which built
+		// or found the index separately and passes it here.
+		if open.index == nil {
+			open.index = opts.Index
+		}
 	}
-	// Ordered once here rather than on every request. A real archive holds several
-	// thousand conversations, and the order they are listed in cannot change while
-	// the server is running.
-	s.chats = sortedByRecency(s.chats)
+	s.session = newSession(opts.Workspace, open)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /api/archive", s.handleArchive)
-	mux.HandleFunc("GET /api/chats", s.handleChats)
-	mux.HandleFunc("GET /api/chats/{jid}/messages", s.handleMessages)
-	mux.HandleFunc("GET /api/search", s.handleSearch)
 	assets, err := builtViewer()
 	if err != nil {
 		return nil, fmt.Errorf("this binary was built without the viewer: %w", err)
@@ -151,6 +182,20 @@ func New(ctx context.Context, archive Archive, opts Options) (http.Handler, erro
 	}
 	s.assets = assets
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /api/archive", s.handleArchive)
+	mux.HandleFunc("GET /api/chats", s.handleChats)
+	mux.HandleFunc("GET /api/chats/{jid}/messages", s.handleMessages)
+	mux.HandleFunc("GET /api/search", s.handleSearch)
+
+	// The wizard, which is reachable before there is anything to read.
+	mux.HandleFunc("GET /api/state", s.handleState)
+	mux.HandleFunc("GET /api/backups", s.handleBackups)
+	mux.HandleFunc("POST /api/open", s.handleOpen)
+	mux.HandleFunc("POST /api/extract", s.handleExtract)
+	mux.HandleFunc("POST /api/decrypt", s.handleDecrypt)
+	mux.HandleFunc("POST /api/close", s.handleClose)
+
 	// The built page names its stylesheet and script with a hash, so they are served
 	// as a tree rather than one by one. Nothing outside it is reachable: the file
 	// system is the embedded one and holds only what the build produced.
@@ -158,6 +203,60 @@ func New(ctx context.Context, archive Archive, opts Options) (http.Handler, erro
 	mux.HandleFunc("GET /{$}", s.handlePage)
 
 	return s.authenticated(mux), nil
+}
+
+// prepare reads everything from an archive that is needed on every request.
+func (s *server) prepare(ctx context.Context, archive Archive) (*opened, error) {
+	chats, err := archive.Chats(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	open := &opened{
+		archive: archive,
+		index:   indexOver(archive),
+		byJID:   make(map[string]model.Chat, len(chats)),
+		export: export.Options{
+			Names:    archive.Directory(),
+			Location: s.opts.Location,
+			Me:       s.opts.Me,
+		},
+	}
+	for _, chat := range chats {
+		if !chat.Includable() {
+			continue
+		}
+		open.chats = append(open.chats, chat)
+		open.byJID[chat.JID.String()] = chat
+	}
+	// Ordered once here rather than on every request. A real archive holds several
+	// thousand conversations, and the order they are listed in cannot change while
+	// that archive is the one open.
+	open.chats = sortedByRecency(open.chats)
+	return open, nil
+}
+
+// indexOver returns the search index an archive brought with it, if any.
+func indexOver(archive Archive) *search.Index {
+	searchable, ok := archive.(Searchable)
+	if !ok {
+		return nil
+	}
+	return searchable.Index()
+}
+
+// reading returns the open archive, or answers the caller when there is none.
+//
+// A page that asks for conversations before the wizard has finished is not an
+// error to be logged; it is a page that has not caught up, and the status says so
+// plainly enough for it to.
+func (s *server) reading(w http.ResponseWriter) (*opened, bool) {
+	open := s.session.archive()
+	if open == nil {
+		http.Error(w, "no archive is open yet", http.StatusConflict)
+		return nil, false
+	}
+	return open, true
 }
 
 // authenticated turns away anything that does not carry the launch secret.
@@ -214,13 +313,23 @@ func matches(given, want string) bool {
 
 // handleArchive reports what the archive holds.
 func (s *server) handleArchive(w http.ResponseWriter, r *http.Request) {
+	open, ok := s.reading(w)
+	if !ok {
+		return
+	}
+	write(w, r, s.summarise(open))
+}
+
+// summarise is what an archive says about itself, which the wizard also shows the
+// moment one becomes readable.
+func (s *server) summarise(open *opened) map[string]any {
 	var (
 		messages int
 		earliest time.Time
 		latest   time.Time
 		byKind   = make(map[string]int)
 	)
-	for _, chat := range s.chats {
+	for _, chat := range open.chats {
 		messages += chat.Messages
 		byKind[chat.Kind.String()]++
 		if !chat.CreatedAt.IsZero() && (earliest.IsZero() || chat.CreatedAt.Before(earliest)) {
@@ -231,15 +340,16 @@ func (s *server) handleArchive(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	names := open.archive.Directory()
 	body := map[string]any{
 		"title":         s.opts.Title,
-		"layout":        s.archive.Layout(),
-		"conversations": len(s.chats),
+		"layout":        open.archive.Layout(),
+		"conversations": len(open.chats),
 		"messages":      messages,
 		"by_kind":       byKind,
-		"people":        s.opts.Names.Len(),
-		"named":         s.opts.Names.Identified(),
-		"searchable":    s.opts.Index != nil,
+		"people":        names.Len(),
+		"named":         names.Identified(),
+		"searchable":    open.index != nil,
 		"time_zone":     s.opts.Location.String(),
 	}
 	if !earliest.IsZero() {
@@ -248,11 +358,16 @@ func (s *server) handleArchive(w http.ResponseWriter, r *http.Request) {
 	if !latest.IsZero() {
 		body["latest"] = latest.UTC()
 	}
-	write(w, r, body)
+	return body
 }
 
 // handleChats lists conversations, most recently used first.
 func (s *server) handleChats(w http.ResponseWriter, r *http.Request) {
+	open, ok := s.reading(w)
+	if !ok {
+		return
+	}
+
 	var (
 		q             = strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
 		limit         = intParam(r, "limit", 200, 1000)
@@ -262,7 +377,7 @@ func (s *server) handleChats(w http.ResponseWriter, r *http.Request) {
 		skipRemaining = offset
 	)
 
-	for _, chat := range s.chats {
+	for _, chat := range open.chats {
 		if q != "" && !strings.Contains(strings.ToLower(chat.Title()), q) {
 			continue
 		}
@@ -278,7 +393,7 @@ func (s *server) handleChats(w http.ResponseWriter, r *http.Request) {
 
 	list := make([]any, 0, len(matched))
 	for _, chat := range matched {
-		list = append(list, export.ChatValue(chat, s.export))
+		list = append(list, export.ChatValue(chat, open.export))
 	}
 	write(w, r, map[string]any{"total": total, "chats": list})
 }
@@ -286,7 +401,12 @@ func (s *server) handleChats(w http.ResponseWriter, r *http.Request) {
 // handleMessages returns a page of one conversation, ending at a position and
 // reading backwards, which is the order somebody reads a conversation in.
 func (s *server) handleMessages(w http.ResponseWriter, r *http.Request) {
-	chat, ok := s.byJID[r.PathValue("jid")]
+	open, reading := s.reading(w)
+	if !reading {
+		return
+	}
+
+	chat, ok := open.byJID[r.PathValue("jid")]
 	if !ok {
 		http.Error(w, "no such conversation", http.StatusNotFound)
 		return
@@ -298,7 +418,7 @@ func (s *server) handleMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page, next, err := s.archive.Page(r.Context(), chat, before, intParam(r, "limit", 60, 500))
+	page, next, err := open.archive.Page(r.Context(), chat, before, intParam(r, "limit", 60, 500))
 	if err != nil {
 		fail(w, r, err)
 		return
@@ -309,11 +429,11 @@ func (s *server) handleMessages(w http.ResponseWriter, r *http.Request) {
 		if !m.Displayable() {
 			continue
 		}
-		messages = append(messages, export.MessageValue(m, s.export))
+		messages = append(messages, export.MessageValue(m, open.export))
 	}
 
 	body := map[string]any{
-		"chat":     export.ChatValue(chat, s.export),
+		"chat":     export.ChatValue(chat, open.export),
 		"messages": messages,
 	}
 	if !next.IsZero() {
@@ -324,7 +444,11 @@ func (s *server) handleMessages(w http.ResponseWriter, r *http.Request) {
 
 // handleSearch finds messages anywhere in the archive.
 func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
-	if s.opts.Index == nil {
+	open, ok := s.reading(w)
+	if !ok {
+		return
+	}
+	if open.index == nil {
 		http.Error(w, "this archive was served without a search index", http.StatusServiceUnavailable)
 		return
 	}
@@ -337,7 +461,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		Before: search.MarkOpen, After: search.MarkClose,
 	}
 
-	hits, err := s.opts.Index.Search(r.Context(), term, query)
+	hits, err := open.index.Search(r.Context(), term, query)
 	if err != nil {
 		if errors.Is(err, search.ErrEmptyQuery) {
 			write(w, r, map[string]any{"total": 0, "hits": []any{}})
@@ -346,7 +470,7 @@ func (s *server) handleSearch(w http.ResponseWriter, r *http.Request) {
 		fail(w, r, err)
 		return
 	}
-	total, err := s.opts.Index.Count(r.Context(), term, query)
+	total, err := open.index.Count(r.Context(), term, query)
 	if err != nil {
 		fail(w, r, err)
 		return
@@ -466,7 +590,18 @@ func parseCursor(s string) (model.Cursor, error) {
 
 // write sends a JSON response.
 func write(w http.ResponseWriter, r *http.Request, body any) {
+	writeStatus(w, r, http.StatusOK, body)
+}
+
+// writeStatus sends a JSON response with a particular status.
+//
+// The header is set before the status rather than after, which is the whole reason
+// this is one function: a header set once the status has gone out is silently
+// dropped, and the caller is left wondering why their JSON arrived as text.
+func writeStatus(w http.ResponseWriter, r *http.Request, status int, body any) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+
 	encoder := json.NewEncoder(w)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(body); err != nil && r.Context().Err() == nil {

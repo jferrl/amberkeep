@@ -110,30 +110,45 @@ func writeDecrypted(key crypt15.Key, encrypted []byte, target string) (int64, er
 	return written, nil
 }
 
-// readKey loads the key from a file, or accepts it directly.
+// loadKey reads the key from a file, or accepts it directly, and says which it was.
 //
-// A file is the better way round: a key typed on the command line is recorded in
-// the shell's history and shows up in the list of running processes, where other
-// people on the machine can read it.
-func readKey(source string) (crypt15.Key, error) {
+// Both spellings are accepted because both are what people have: WhatsApp shows the
+// key on screen to be written down, and anybody sensible then saves it in a file.
+// Which one arrived matters only to the caller, who may have something to say about
+// it, so it is reported rather than remarked on here.
+func loadKey(source string) (key crypt15.Key, fromFile bool, err error) {
 	// #nosec G304 -- reading the file the user named is what --key means.
 	if contents, err := os.ReadFile(source); err == nil {
 		key, err := crypt15.ParseKey(string(contents))
 		if err != nil {
-			return crypt15.Key{}, fmt.Errorf("reading the key from %s: %w", abbreviate(source), err)
+			return crypt15.Key{}, true, fmt.Errorf("reading the key from %s: %w", abbreviate(source), err)
 		}
-		return key, nil
+		return key, true, nil
 	}
 
 	// Not a file, so treat it as the key itself. The error deliberately does not
 	// repeat what was passed, in case it ends up in a log.
-	key, err := crypt15.ParseKey(source)
+	key, err = crypt15.ParseKey(source)
 	if err != nil {
-		return crypt15.Key{}, fmt.Errorf("--key is neither a readable file nor a valid key: %w", err)
+		return crypt15.Key{}, false, fmt.Errorf("that is neither a readable file nor a valid key: %w", err)
 	}
-	fmt.Fprintln(os.Stderr,
-		"warning: passing the key on the command line leaves it in your shell history;\n"+
-			"         keeping it in a file and passing that is safer")
+	return key, false, nil
+}
+
+// readKey loads the key for the command line, where passing it directly has a cost
+// worth mentioning: a key typed as an argument is recorded in the shell's history
+// and shows up in the list of running processes, where other people on the machine
+// can read it.
+func readKey(source string) (crypt15.Key, error) {
+	key, fromFile, err := loadKey(source)
+	if err != nil {
+		return crypt15.Key{}, err
+	}
+	if !fromFile {
+		fmt.Fprintln(os.Stderr,
+			"warning: passing the key on the command line leaves it in your shell history;\n"+
+				"         keeping it in a file and passing that is safer")
+	}
 	return key, nil
 }
 

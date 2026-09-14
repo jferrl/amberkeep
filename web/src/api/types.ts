@@ -338,3 +338,88 @@ export interface SearchPage {
   total: number;
   hits: readonly Hit[];
 }
+
+/**
+ * How far the server has got towards having an archive to read.
+ *
+ * `empty` is a program that has been started and pointed at nothing yet, which is
+ * how somebody with a dead phone finds it. `working` is the only stage that changes
+ * on its own, and the only reason anything in this page polls.
+ */
+export type Stage = "empty" | "working" | "ready" | "failed";
+
+/**
+ * Which part of the work is happening.
+ *
+ * These are stages of one job rather than a percentage, because none of them can be
+ * measured honestly while it runs: decrypting knows the size of the file and nothing
+ * about how far through it is, and building indexes knows neither.
+ *
+ * A server newer than this page may report a step this build has never heard of,
+ * which is why anything turning one into a sentence has an answer for the rest.
+ */
+export type SetupStep =
+  | "extracting"
+  | "decrypting"
+  | "preparing"
+  | "indexing"
+  | "opening";
+
+/**
+ * What the server is doing, and where it will put what it makes.
+ *
+ * `workspace` is present at every stage, including before anything has been chosen,
+ * so that somebody can be told where files will be written before any are.
+ * `detail` is one sentence and `guidance` is several lines with the line breaks
+ * already in them: both are the server's own words and are rendered as text.
+ */
+export interface Setup {
+  stage: Stage;
+  workspace: string;
+  step?: SetupStep;
+  detail?: string;
+  guidance?: string;
+  archive?: Archive;
+}
+
+/**
+ * One iPhone backup this computer has already made.
+ *
+ * Everything but the path is optional here, and that is about what an old backup
+ * knows rather than about what the server sends. Apple's own index records a device
+ * name, a model, an iOS version and a date, and a backup written years ago by an old
+ * iTunes is missing about half of them. The server sends an empty string for each
+ * one it could not read, and Go leaves an empty string out, so absent and empty are
+ * the same thing and every reader treats them as one.
+ *
+ * `last_backup` is an instant in universal time, not a date somebody already
+ * formatted. It is turned into words here, in the reader's own language and zone, by
+ * the same helpers the rest of the viewer uses.
+ *
+ * `encrypted` is the exception, and is always sent even when it is false. It decides
+ * whether a backup can be used at all, and silence is a poor way to say no.
+ */
+export interface Backup {
+  path: string;
+  device_name?: string;
+  product_type?: string;
+  ios_version?: string;
+  last_backup?: Timestamp;
+  encrypted: boolean;
+}
+
+/**
+ * The backups on this computer, or why they could not be looked at.
+ *
+ * A `problem` is the difference between "there are none" and "I was not allowed to
+ * look", and those two have to be said differently: showing an empty list for the
+ * second is how somebody concludes their backups are gone. On macOS that second case
+ * is the ordinary state of affairs until Full Disk Access is granted.
+ *
+ * The list itself is always a list, empty rather than absent, so nothing has to check
+ * before iterating it. Both of those are recorded in contract/backups-refused.json.
+ */
+export interface BackupList {
+  backups: readonly Backup[];
+  problem?: string;
+}

@@ -1,13 +1,47 @@
 import { useCallback, useDeferredValue, useState } from "react";
 
 import type { Chat, Hit } from "@/api/types";
-import { useArchive, useChats, useSearch } from "@/api/queries";
+import { useArchive, useChats, useClose, useSearch, useSetupState } from "@/api/queries";
+import { Notices } from "@/components/Notices";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
 import { Button } from "@/components/ui/button";
+import { Wizard } from "@/components/wizard/Wizard";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
 import { cn } from "@/lib/utils";
+
+/**
+ * The program, which is two programs depending on whether it holds anything.
+ *
+ * Started with a file it is an archive to read. Started with nothing — which is how
+ * somebody whose phone has died finds it — it is a wizard that gets them to a file
+ * they can read. The server says which, and it is the only thing that does: a page
+ * that decided for itself would show a browser over an archive that is not open.
+ */
+export function App({ language }: { language: Language }) {
+  const setup = useSetupState();
+
+  if (setup.data?.stage === "ready") return <Browser language={language} />;
+  if (setup.isPending) return <Waiting />;
+
+  return (
+    <Wizard
+      state={setup.data}
+      unreachable={setup.error?.message}
+      onRetry={() => {
+        void setup.refetch();
+      }}
+      language={language}
+    />
+  );
+}
+
+/** The moment before the server has said what it is holding. */
+function Waiting() {
+  const t = useT();
+  return <p className="p-12 text-center text-[var(--color-muted)]">{t("loading")}</p>;
+}
 
 /**
  * The archive, in two panes: what there is on the left, what is in it on the right.
@@ -17,9 +51,11 @@ import { cn } from "@/lib/utils";
  * server, which is the whole reason it can be trusted with somebody's entire
  * message history.
  */
-export function App({ language }: { language: Language }) {
+function Browser({ language }: { language: Language }) {
+  const t = useT();
   const [term, setTerm] = useState("");
   const [chat, setChat] = useState<Chat | undefined>(undefined);
+  const letGo = useClose();
 
   // Typing must not wait on a search across a million messages. The results follow
   // the deferred value, so the box stays responsive while they catch up.
@@ -51,6 +87,17 @@ export function App({ language }: { language: Language }) {
           reading && "hidden md:flex",
         )}
       >
+        {/* The promise and the way out of this archive, in the same strip. Closing
+            is here rather than hidden in a menu because somebody who opened the
+            wrong file should not have to restart the program to open the right
+            one. */}
+        <div className="flex items-center justify-between gap-2 border-b border-[var(--color-line)] px-3.5 py-1.5">
+          <span className="text-xs text-[var(--color-muted)]">{t("readOnly")}</span>
+          <Button variant="quiet" size="sm" onClick={letGo}>
+            {t("closeArchive")}
+          </Button>
+        </div>
+
         <Sidebar
           title={archive.data?.title}
           conversations={archive.data?.conversations}
@@ -66,6 +113,8 @@ export function App({ language }: { language: Language }) {
           onOpenHit={openHit}
           language={language}
         />
+
+        <Notices />
       </nav>
 
       <section className={cn("flex min-h-0 min-w-0 flex-col", !reading && "hidden md:flex")}>

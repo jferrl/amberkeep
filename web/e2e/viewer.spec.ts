@@ -111,7 +111,9 @@ test.describe("reading a conversation", () => {
     await page.getByRole("button", { name: /Vermut del sabado/ }).click();
     await page.getByRole("button", { name: /Show this picture larger/ }).click();
 
-    const enlarged = page.getByRole("button", { name: /Close/ });
+    // Named exactly: there is now a "Close this archive" button in the header too,
+    // and a loose match would find both and say neither.
+    const enlarged = page.getByRole("button", { name: "Close", exact: true });
     await expect(enlarged).toBeVisible();
 
     await page.keyboard.press("Escape");

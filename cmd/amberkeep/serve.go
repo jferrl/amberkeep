@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/api"
+	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -23,10 +24,16 @@ import (
 // The alternative, writing the whole archive to disk first, is a fine thing to have
 // and a poor way to look around: it costs a few hundred megabytes and several
 // minutes before the first conversation can be read. This costs a second.
+//
+// Without --db it starts at the beginning instead, with the page that finds a
+// backup and brings the messages out of it. That is the case this program exists
+// for: somebody whose phone has died does not have a database to point at, and
+// getting from what they do have to one is the part they need help with.
 func runServe(ctx context.Context, args []string) error {
-	fs := newFlagSet("serve", "read the archive in a browser, on this machine only")
+	fs := newFlagSet("serve", "bring an archive in, and read it in a browser on this machine")
 	var (
-		db       = fs.String("db", "", "the decrypted message database, usually msgstore.db")
+		db       = fs.String("db", "", "the decrypted message database (default: start with the page that finds one)")
+		work     = fs.String("workspace", "", "where to write anything brought out of a backup (default: ~/Amberkeep)")
 		indexAt  = fs.String("index", "", "where to keep the search index (default: beside the database)")
 		bookPath = fs.String("contacts", "", "an address book, so conversations show names instead of numbers")
 		waPath   = fs.String("whatsapp-contacts", "", "WhatsApp's own contacts database, usually wa.db")
@@ -40,36 +47,39 @@ func runServe(ctx context.Context, args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
-	if *db == "" {
-		fs.Usage()
-		return fmt.Errorf("--db is needed")
-	}
 
 	location, err := parseZone(*zone)
 	if err != nil {
 		return err
 	}
 
-	reader, err := source.Open(ctx, *db)
-	if err != nil {
-		return err
-	}
-	defer reader.Close()
+	bring := importer{me: *me, country: *country, noSearch: *noSearch}
 
-	names, err := loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country)
-	if err != nil {
-		return err
-	}
-
-	var index *search.Index
-	if !*noSearch {
-		index, err = openIndex(ctx, *db, indexPath(*db, *indexAt), indexSettings{
-			me: *me, book: *bookPath, whatsApp: *waPath, country: *country,
-		})
-		if err != nil {
+	// Without a database there is nothing to open yet, and the page starts at the
+	// beginning. Everything below this point is the same either way.
+	var (
+		reader source.Archive
+		names  *model.Directory
+		index  *search.Index
+	)
+	if *db != "" {
+		if reader, err = source.Open(ctx, *db); err != nil {
 			return err
 		}
-		defer func() { _ = index.Close() }()
+		defer reader.Close()
+
+		if names, err = loadNames(ctx, reader.Directory(), *bookPath, *waPath, *country); err != nil {
+			return err
+		}
+		if !*noSearch {
+			index, err = openIndex(ctx, *db, indexPath(*db, *indexAt), indexSettings{
+				me: *me, book: *bookPath, whatsApp: *waPath, country: *country,
+			})
+			if err != nil {
+				return err
+			}
+			defer func() { _ = index.Close() }()
+		}
 	}
 
 	token, err := secret()
@@ -77,13 +87,24 @@ func runServe(ctx context.Context, args []string) error {
 		return err
 	}
 
-	handler, err := api.New(ctx, reader, api.Options{
-		Names:    names,
-		Location: location,
-		Me:       *me,
-		Title:    "Archive",
-		Token:    token,
-		Index:    index,
+	// A nil reader has to arrive as a nil interface rather than as an interface
+	// holding a nil pointer, which would be a non-nil value that panics on first
+	// use. This is the one place the distinction matters.
+	var archive api.Archive
+	if reader != nil {
+		archive = reader
+	}
+
+	handler, err := api.New(ctx, archive, api.Options{
+		Names:     names,
+		Location:  location,
+		Me:        *me,
+		Title:     "Archive",
+		Token:     token,
+		Index:     index,
+		Importer:  bring,
+		Workspace: *work,
+		Advise:    adviseOn,
 	})
 	if err != nil {
 		return err
@@ -104,7 +125,11 @@ func runServe(ctx context.Context, args []string) error {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
-	fmt.Printf("reading the archive at %s\n", address)
+	if *db == "" {
+		fmt.Printf("open %s to bring your messages in\n", address)
+	} else {
+		fmt.Printf("reading the archive at %s\n", address)
+	}
 	fmt.Printf("\nThis address works in this browser only, and only from this computer.\n")
 	fmt.Printf("Press control-C to stop.\n")
 

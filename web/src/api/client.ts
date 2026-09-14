@@ -13,7 +13,15 @@
  * them is better than inventing worse ones.
  */
 
-import type { Archive, ChatList, Cursor, MessagePage, SearchPage } from "./types";
+import type {
+  Archive,
+  BackupList,
+  ChatList,
+  Cursor,
+  MessagePage,
+  SearchPage,
+  Setup,
+} from "./types";
 
 /** Where the archive answers. Rooted, never absolute. */
 const api = "/api";
@@ -90,26 +98,21 @@ function narrow(values: Record<string, string | number | undefined>): URLSearchP
   return params;
 }
 
+/** addressOf joins a path to its parameters, while there is still a secret to attach. */
+function addressOf(path: string, params: URLSearchParams): string {
+  if (launchSecret !== "") params.set(secretParam, launchSecret);
+  const query = params.toString();
+  return query === "" ? path : `${path}?${query}`;
+}
+
 /**
- * ask makes the request and turns anything but an answer into an ArchiveError.
+ * answer turns anything but a readable reply into an ArchiveError.
  *
  * The reply is not validated against the type it is asked for. The program that
  * serves this page is the program that built it, so a reply that does not match is a
  * bug in this repository rather than something to defend a browser against.
  */
-async function ask<T>(path: string, params: URLSearchParams, options: Cancellable): Promise<T> {
-  if (launchSecret !== "") params.set(secretParam, launchSecret);
-
-  const query = params.toString();
-  const response = await fetch(query === "" ? path : `${path}?${query}`, {
-    credentials: "same-origin",
-    headers: { Accept: "application/json" },
-    signal: options.signal ?? null,
-  });
-  // The reply carries the cookie the rest of this session travels on, so the copy
-  // held here has done its work whether the server liked it or not.
-  launchSecret = "";
-
+async function answer<T>(response: Response, options: Cancellable): Promise<T> {
   if (!response.ok) {
     throw new ArchiveError(response.status, await explanation(response));
   }
@@ -124,6 +127,42 @@ async function ask<T>(path: string, params: URLSearchParams, options: Cancellabl
     throw new ArchiveError(response.status, "the archive sent a reply this page could not read");
   }
   return body as T;
+}
+
+/** ask reads something the server already knows. */
+async function ask<T>(path: string, params: URLSearchParams, options: Cancellable): Promise<T> {
+  const response = await fetch(addressOf(path, params), {
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+    signal: options.signal ?? null,
+  });
+  // The reply carries the cookie the rest of this session travels on, so the copy
+  // held here has done its work whether the server liked it or not.
+  launchSecret = "";
+
+  return answer<T>(response, options);
+}
+
+/**
+ * tell starts a piece of work and hands back the reply without reading it.
+ *
+ * Everything it sends travels in a JSON body, never in the query string. One of
+ * these requests carries a decryption key, and a query string is the part of a
+ * request that survives: in a server log, in the browser's history, in the address
+ * bar of a screenshot somebody sends asking for help. Nothing secret is ever a
+ * parameter here, and keeping that true of all four is what stops the fifth one
+ * being written the other way.
+ */
+async function tell(path: string, body: unknown, options: Cancellable): Promise<Response> {
+  const response = await fetch(addressOf(path, new URLSearchParams()), {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(body),
+    signal: options.signal ?? null,
+  });
+  launchSecret = "";
+  return response;
 }
 
 /** explanation is what the server said, or the honest absence of it. */
@@ -181,4 +220,120 @@ export interface SearchQuery extends Cancellable {
 /** search finds messages anywhere in the archive. */
 export function search(q: string, { chat, limit, offset, signal }: SearchQuery = {}): Promise<SearchPage> {
   return ask<SearchPage>(`${api}/search`, narrow({ q, chat, limit, offset }), { signal });
+}
+
+/**
+ * getState reports what the server is doing and where it will write what it makes.
+ *
+ * This is the one thing here that changes while somebody watches it, and the only
+ * reason the page polls anything at all.
+ */
+export function getState(options: Cancellable = {}): Promise<Setup> {
+  return ask<Setup>(`${api}/state`, narrow({}), options);
+}
+
+/** getBackups lists the iPhone backups this computer has already made. */
+export function getBackups(options: Cancellable = {}): Promise<BackupList> {
+  return ask<BackupList>(`${api}/backups`, narrow({}), options);
+}
+
+/**
+ * What every one of the three ways in may carry besides the file itself.
+ *
+ * Both are left out rather than sent empty. `into` absent means the workspace the
+ * server already showed, and sending one changes it for good, so a page that sent
+ * the value it was displaying would be reasserting a choice nobody made. `contacts`
+ * absent means the archive keeps the numbers it has.
+ */
+export interface Extras {
+  /** Where files should be written. Absent accepts the workspace `state` showed. */
+  into?: string | undefined;
+  /**
+   * One address book, as a path: a .vcf, or WhatsApp's own wa.db.
+   *
+   * Which of the two it is, is the server's problem and not the reader's. Nobody
+   * whose phone has died should have to know what wa.db is to get their mother's
+   * name back onto a conversation, so this is one field and never a choice.
+   */
+  contacts?: string | undefined;
+}
+
+/**
+ * filled keeps the fields somebody actually gave and drops the rest.
+ *
+ * Written out a field at a time rather than walked over, because walking an
+ * interface loses the types of its values and the whole point of this file is that
+ * nothing untyped is put into a request body.
+ */
+function filled({ into, contacts }: Extras): Record<string, string> {
+  const body: Record<string, string> = {};
+  if (into !== undefined && into !== "") body.into = into;
+  if (contacts !== undefined && contacts !== "") body.contacts = contacts;
+  return body;
+}
+
+/**
+ * openFile points the server at a file somebody already has.
+ *
+ * The server works out whether it is an Android database or an iPhone one; this
+ * page does not guess from the name, because a file somebody copied and renamed is
+ * exactly the case that has to keep working.
+ */
+export async function openFile(
+  path: string,
+  extras: Extras = {},
+  options: Cancellable = {},
+): Promise<Setup> {
+  return answer<Setup>(await tell(`${api}/open`, { path, ...filled(extras) }, options), options);
+}
+
+/** extract takes the messages out of an iPhone backup and puts them in a folder. */
+export async function extract(
+  backup: string,
+  extras: Extras = {},
+  options: Cancellable = {},
+): Promise<Setup> {
+  return answer<Setup>(
+    await tell(`${api}/extract`, { backup, ...filled(extras) }, options),
+    options,
+  );
+}
+
+/** What decrypt needs, named rather than ordered so the key cannot be passed by mistake. */
+export interface Decryption extends Extras {
+  /** Where the msgstore.db.crypt15 copied off the phone is. */
+  file: string;
+  /**
+   * The 64-digit key, or the path of a file holding it.
+   *
+   * Either way it exists in this program for the length of one request. It is never
+   * a query parameter, never stored, and never put anywhere an error message could
+   * pick it up. The component that collected it drops it the moment this is called.
+   */
+  key: string;
+}
+
+/** decrypt unlocks an Android backup into a folder. */
+export async function decrypt(
+  { file, key, ...extras }: Decryption,
+  options: Cancellable = {},
+): Promise<Setup> {
+  return answer<Setup>(
+    await tell(`${api}/decrypt`, { file, key, ...filled(extras) }, options),
+    options,
+  );
+}
+
+/**
+ * closeArchive puts the server back to holding nothing.
+ *
+ * The reply is not read. What matters is that the server has let go, and what is
+ * true afterwards is whatever the next `getState` says rather than whatever this
+ * one claimed.
+ */
+export async function closeArchive(options: Cancellable = {}): Promise<void> {
+  const response = await tell(`${api}/close`, {}, options);
+  if (!response.ok) {
+    throw new ArchiveError(response.status, await explanation(response));
+  }
 }

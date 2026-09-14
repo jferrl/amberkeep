@@ -39,7 +39,7 @@ func commands() []command {
 		{"prepare", "make a decrypted database quick to read", runPrepare},
 		{"export", "write the archive out as web pages, text and structured data", runExport},
 		{"search", "find messages anywhere in the archive", runSearch},
-		{"serve", "read the archive in a browser, on this machine only", runServe},
+		{"serve", "bring an archive in, and read it in a browser on this machine", runServe},
 	}
 }
 
@@ -82,7 +82,7 @@ func run(ctx context.Context, args []string) error {
 		usage(os.Stdout)
 		return nil
 	case "-v", "--version", "version":
-		fmt.Println("amberkeep " + version)
+		fmt.Println(about())
 		return nil
 	}
 
@@ -94,6 +94,17 @@ func run(ctx context.Context, args []string) error {
 
 	usage(os.Stderr)
 	return fmt.Errorf("there is no command called %q", args[0])
+}
+
+// about is what this program says when asked what it is.
+//
+// The licence and where to get the source are part of the answer rather than a
+// footnote: the AGPL asks that anybody running this can find the code it was built
+// from, and a version number on its own does not tell them.
+func about() string {
+	return "amberkeep " + version + "\n" +
+		"free software under the AGPL-3.0; the source is at github.com/jferrl/amberkeep\n" +
+		"not affiliated with, endorsed by, or connected to WhatsApp LLC or Meta Platforms, Inc."
 }
 
 func usage(w *os.File) {
@@ -109,6 +120,14 @@ Commands:
 	}
 	fmt.Fprint(w, `
 Run "amberkeep <command> --help" for what each one takes.
+
+If you would rather be walked through it:
+
+  amberkeep serve
+
+That opens a page that finds the backups on this computer, brings the
+messages out of one, and shows them. It writes to ~/Amberkeep and touches
+nothing else. The steps below are the same thing, one command at a time.
 
 Getting started, from an iPhone:
 

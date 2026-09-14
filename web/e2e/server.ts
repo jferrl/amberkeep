@@ -25,6 +25,10 @@ const startedWithin = 30_000;
 export interface Viewer {
   /** opening is the address the server printed, secret and all. */
   opening: string;
+  /** archive is where the archive was written, for a test that has to type it. */
+  archive?: string;
+  /** contacts is the address book beside it, which that same test has to type too. */
+  contacts?: string;
 }
 
 /**
@@ -35,7 +39,7 @@ export interface Viewer {
  * changes the archive: it is opened read-only and there is no way in through the
  * page to write to it.
  */
-export const test = base.extend<object, { viewer: Viewer }>({
+export const test = base.extend<object, { viewer: Viewer; wizard: Viewer }>({
   viewer: [
     // Playwright calls the second argument "use". It is named otherwise here
     // because a function called use, in a repository full of React, is read by
@@ -57,24 +61,49 @@ export const test = base.extend<object, { viewer: Viewer }>({
     },
     { scope: "worker" },
   ],
+
+  /**
+   * The same binary started the way somebody with a dead phone starts it: pointed at
+   * nothing at all.
+   *
+   * An archive is built anyway, because the one thing worth proving in a browser is
+   * that the whole wizard leads somewhere — that a path typed into a field ends with
+   * a conversation on the screen.
+   */
+  wizard: [
+    // eslint-disable-next-line no-empty-pattern -- required by Playwright's API
+    async ({}, run: (viewer: Viewer) => Promise<void>) => {
+      const archive = build();
+      const { server, address } = await start(archive, { open: false });
+
+      try {
+        await run({ opening: address, archive: archive.path, contacts: archive.contacts });
+      } finally {
+        server.kill();
+        archive.remove();
+      }
+    },
+    { scope: "worker" },
+  ],
 });
 
 export { expect } from "@playwright/test";
 
-/** start runs the binary and waits for it to print where it is listening. */
+/**
+ * start runs the binary and waits for it to print where it is listening.
+ *
+ * Without `open` it is started the way somebody who has nothing starts it, and the
+ * page it serves is the wizard rather than an archive.
+ */
 async function start(
   archive: Archive,
+  { open = true }: { open?: boolean } = {},
 ): Promise<{ server: ChildProcessByStdio<null, Readable, Readable>; address: string }> {
   const server: ChildProcessByStdio<null, Readable, Readable> = spawn(
     process.env.AMBERKEEP_BINARY ?? "../amberkeep",
     [
       "serve",
-      "--db",
-      archive.path,
-      "--contacts",
-      archive.contacts,
-      "--country",
-      "34",
+      ...(open ? ["--db", archive.path, "--contacts", archive.contacts, "--country", "34"] : []),
       "--no-open",
       "--no-search",
       "--port",

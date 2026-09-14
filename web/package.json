@@ -13,7 +13,7 @@
     "typecheck": "tsc -b --noEmit",
     "doctor": "react-doctor --no-score --no-supply-chain --blocking error -y",
     "e2e": "playwright test",
-    "e2e:build": "go build -o ../amberkeep ../cmd/amberkeep && playwright test"
+    "e2e:build": "(cd .. && go build -o amberkeep ./cmd/amberkeep) && playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.102.8",

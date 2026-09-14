@@ -112,8 +112,15 @@ func runExtract(ctx context.Context, args []string) error {
 	fmt.Printf("took %s out to %s (%s)\n", *what, abbreviate(path), humanSize(size))
 
 	if *pictures {
-		if err := extractPictures(ctx, archive, *out); err != nil {
+		taken, bytes, err := extractPictures(ctx, archive, *out)
+		switch {
+		case err != nil:
 			return err
+		case taken == 0:
+			fmt.Printf("this backup holds no pictures\n")
+		default:
+			fmt.Printf("took out %s as well (%s)\n",
+				plural(int(taken), "picture", "pictures"), humanSize(bytes))
 		}
 	}
 
@@ -136,21 +143,24 @@ const mediaPrefix = "Message/"
 // own gallery, and copying gigabytes to say what is already said helps nobody.
 const thumbnailSuffix = ".thumb"
 
-// extractPictures copies out the small copies of photographs.
+// extractPictures copies out the small copies of photographs, and reports how many
+// it took and how much they came to.
 //
 // This is the difference between an iPhone archive that shows a decade of pictures
 // and one that shows a decade of the words "image omitted". An Android database
 // keeps them inside itself; an iPhone store keeps only the paths.
-func extractPictures(ctx context.Context, archive *backupfs.Archive, out string) error {
+//
+// What to say about the result belongs to the caller, because the two callers say
+// it in different places: one to a terminal, one to somebody watching a wizard.
+func extractPictures(ctx context.Context, archive *backupfs.Archive, out string) (taken, bytes int64, err error) {
 	files, err := archive.Domain(ctx, whatsappDomain)
 	if err != nil {
-		return err
+		return 0, 0, err
 	}
 
-	var taken, bytes int64
 	for _, file := range files {
 		if err := ctx.Err(); err != nil {
-			return err
+			return taken, bytes, err
 		}
 		if file.IsDir || !strings.HasSuffix(file.RelativePath, thumbnailSuffix) {
 			continue
@@ -164,7 +174,7 @@ func extractPictures(ctx context.Context, archive *backupfs.Archive, out string)
 		// own once the backup it came from is gone.
 		destination := filepath.Join(out, filepath.FromSlash(where))
 		if err := os.MkdirAll(filepath.Dir(destination), 0o700); err != nil {
-			return fmt.Errorf("preparing somewhere for the pictures: %w", err)
+			return taken, bytes, fmt.Errorf("preparing somewhere for the pictures: %w", err)
 		}
 		if err := archive.Extract(ctx, destination, file); err != nil {
 			// One picture that cannot be copied is one picture missing, not a reason
@@ -175,13 +185,7 @@ func extractPictures(ctx context.Context, archive *backupfs.Archive, out string)
 		bytes += file.Size
 	}
 
-	if taken == 0 {
-		fmt.Printf("this backup holds no pictures\n")
-		return nil
-	}
-	fmt.Printf("took out %s as well (%s)\n",
-		plural(int(taken), "picture", "pictures"), humanSize(bytes))
-	return nil
+	return taken, bytes, nil
 }
 
 // firstNonEmpty returns the first value with anything in it.
