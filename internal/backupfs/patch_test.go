@@ -272,3 +272,74 @@ func TestPatchLeavesNothingBehindWhenItFails(t *testing.T) {
 		t.Error("it left half a backup behind, which looks exactly like a backup")
 	}
 }
+
+// The finished name means finished.
+//
+// A backup is recognised by four files at the top of a folder, and those are among
+// the first things copied. Anything that stops the process partway — a crash, a
+// laptop going to sleep, a control-C — would leave a folder Finder lists as a backup
+// and somebody can restore, holding a fraction of the payloads and no warning at all.
+// The error paths clean up after themselves; a signal does not, and cannot be made
+// to. So nothing is built under the finished name at all.
+
+func TestTheFinishedNameOnlyAppearsFinished(t *testing.T) {
+	t.Parallel()
+
+	from := backupHolding(t, buildSQLiteDB(t, "CREATE TABLE a (b)"), nil)
+	with := replacement(t, "CREATE TABLE a (b)")
+
+	t.Run("an interrupted copy leaves nothing at either name", func(t *testing.T) {
+		t.Parallel()
+
+		into := filepath.Join(t.TempDir(), "interrupted")
+		ctx, stop := context.WithCancel(context.Background())
+		stop()
+
+		if _, err := Patch(ctx, from, into,
+			Replacement{Domain: whatsApp, RelativePath: store, With: with}); err == nil {
+			t.Fatal("it finished a copy that was called off")
+		}
+		for _, path := range []string{into, into + incomplete} {
+			if _, err := os.Stat(path); err == nil {
+				t.Errorf("%s was left behind", filepath.Base(path))
+			}
+		}
+	})
+
+	t.Run("a finished copy leaves no unfinished one beside it", func(t *testing.T) {
+		t.Parallel()
+
+		into := filepath.Join(t.TempDir(), "finished")
+		if _, err := Patch(context.Background(), from, into,
+			Replacement{Domain: whatsApp, RelativePath: store, With: with}); err != nil {
+			t.Fatalf("Patch() failed: %v", err)
+		}
+		if _, err := os.Stat(into + incomplete); err == nil {
+			t.Error("the unfinished copy is still there beside the finished one")
+		}
+		if _, err := os.Stat(filepath.Join(into, "Manifest.db")); err != nil {
+			t.Errorf("the finished copy is not a backup: %v", err)
+		}
+	})
+
+	t.Run("the leavings of an earlier attempt are cleared rather than added to", func(t *testing.T) {
+		t.Parallel()
+
+		into := filepath.Join(t.TempDir(), "again")
+		// What a killed process leaves: the name, and some of a backup inside it.
+		if err := os.MkdirAll(filepath.Join(into+incomplete, "aa"), 0o700); err != nil {
+			t.Fatalf("preparing the fixture: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(into+incomplete, "aa", "junk"), []byte("half a backup"), 0o600); err != nil {
+			t.Fatalf("preparing the fixture: %v", err)
+		}
+
+		if _, err := Patch(context.Background(), from, into,
+			Replacement{Domain: whatsApp, RelativePath: store, With: with}); err != nil {
+			t.Fatalf("Patch() failed: %v", err)
+		}
+		if _, err := os.Stat(filepath.Join(into, "aa", "junk")); err == nil {
+			t.Error("what the earlier attempt left is inside the finished copy")
+		}
+	})
+}

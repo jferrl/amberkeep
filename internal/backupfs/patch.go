@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 )
 
@@ -96,30 +97,65 @@ func Patch(ctx context.Context, from, into string, replace Replacement) (Patched
 		return Patched{}, ErrWouldOverwrite.withCause(errors.New(into))
 	}
 
-	if err := copyTree(ctx, from, into); err != nil {
-		_ = os.RemoveAll(into) // #nosec G703 -- the half-made copy this call just made
-		return Patched{}, err
+	// Everything is built under a name nothing will mistake for a backup, and moved
+	// into place only once it is finished and checked.
+	//
+	// A backup is recognised by four files at the top of a folder, and they are
+	// among the first things copied. A process killed partway through — a crash, a
+	// laptop going to sleep, a control-C — would otherwise leave a folder Finder
+	// lists as a backup and somebody can restore, holding a fraction of the payloads
+	// and no warning at all. The error paths clean up; a signal does not, and cannot
+	// be made to. Renaming at the end is the only thing that makes the finished name
+	// mean finished.
+	making := into + incomplete
+	if err := os.RemoveAll(making); err != nil { // #nosec G703 -- the leavings of an earlier attempt
+		return Patched{}, wrapFSError("clearing an unfinished copy", err)
+	}
+
+	abandon := func(cause error) (Patched, error) {
+		_ = os.RemoveAll(making) // #nosec G703 -- the copy this call is abandoning
+		return Patched{}, cause
+	}
+
+	if err := copyTree(ctx, from, making); err != nil {
+		return abandon(err)
 	}
 
 	result := Patched{Path: into, Files: before, Was: original.Size}
-	if err := put(ctx, into, replace.With, original, &result); err != nil {
-		_ = os.RemoveAll(into) // #nosec G703 -- the copy this call is abandoning
-		return Patched{}, err
+	if err := put(ctx, making, replace.With, original, &result); err != nil {
+		return abandon(err)
 	}
 	if hasLog {
-		if err := empty(ctx, into, log, &result); err != nil {
-			_ = os.RemoveAll(into) // #nosec G703
-			return Patched{}, err
+		if err := empty(ctx, making, log, &result); err != nil {
+			return abandon(err)
 		}
 	}
-	if err := checkPatched(ctx, into, original, result); err != nil {
-		_ = os.RemoveAll(into) // #nosec G703
-		return Patched{}, err
+	if err := checkPatched(ctx, making, original, result); err != nil {
+		return abandon(err)
+	}
+
+	// The one moment the finished name comes into existence, and it comes into
+	// existence complete. On one filesystem this is atomic; across two it is not
+	// possible at all, which is why the destination is made beside the original.
+	if err := os.Rename(making, into); err != nil { // #nosec G703
+		// Across two filesystems a rename cannot work at all, and the message the
+		// operating system gives for that helps nobody.
+		if errors.Is(err, syscall.EXDEV) {
+			return abandon(ErrElsewhere.withCause(errors.New(filepath.Dir(into))))
+		}
+		return abandon(wrapFSError("putting the finished copy in place", err))
 	}
 
 	result.Took = time.Since(started)
 	return result, nil
 }
+
+// incomplete is what an unfinished copy is called.
+//
+// Chosen so that nothing mistakes it for a backup and so that somebody who finds one
+// knows what it is without being told. Finder looks for four files at the top of a
+// folder; it does not look at the folder's name, but a person does.
+const incomplete = ".amberkeep-unfinished"
 
 // sqliteHeader is what every SQLite file begins with.
 const sqliteHeader = "SQLite format 3\x00"

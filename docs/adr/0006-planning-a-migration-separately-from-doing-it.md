@@ -163,5 +163,21 @@ difference that makes somebody doubt both.
   which is the thing the plan was most worried about: a stale log replayed over the
   replaced contents. The code neutralises one when it is there and says so in the
   result; on this backup it never had to.
-- Still to come: the guided flow that hands the restore to Finder. Nothing here
-  touches a device and nothing later will either.
+- Nothing is built under the finished name. A backup is recognised by four files at
+  the top of a folder and those are among the first things copied, so a process killed
+  partway — a crash, a laptop sleeping, a control-C — would leave a folder Finder
+  lists as a backup and somebody can restore, holding a fraction of the payloads. The
+  error paths clean up; a signal does not and cannot be made to. The copy is built
+  under `.amberkeep-unfinished` and renamed at the end, which is atomic within one
+  filesystem and impossible across two — so a destination on another disk is refused
+  with a sentence saying why rather than an error from the operating system.
+- On idempotency, since it was asked: the reads already are, and the writes are
+  guarded by refusing concurrency outright rather than by deduplicating it. A busy
+  migration answers 409 and a destination that exists is refused, so there is no
+  duplicate to reconcile. For one person talking to a process on their own machine,
+  that is a stronger guarantee than an idempotency key and less to explain.
+- On durable workflows, likewise: no. Resuming a half-copied backup is real complexity
+  and re-running costs about two minutes. What mattered was never the lost progress —
+  it was the debris that looked finished, and that is what the rename fixes.
+- Still to come: the React screens for the browser flow. Nothing here touches a device
+  and nothing later will either.

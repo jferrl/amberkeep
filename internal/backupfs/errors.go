@@ -16,6 +16,7 @@ const (
 	GuidanceWouldOverwrite   = "backupfs.would-overwrite"
 	GuidanceNotADatabase     = "backupfs.not-a-database"
 	GuidanceUnfinished       = "backupfs.unfinished"
+	GuidanceElsewhere        = "backupfs.elsewhere"
 )
 
 // Error is what this package returns for problems a user can act on.
@@ -119,4 +120,14 @@ var (
 	ErrUnfinished = &Error{Guidance: GuidanceUnfinished,
 		msg: "that database still has a write-ahead log beside it, so the most recent " +
 			"changes are not in the file yet"}
+
+	// ErrElsewhere reports a destination on a different disk from the backup.
+	//
+	// The copy is built under a name nothing mistakes for a backup and moved into
+	// place only when it is finished, and that move is only instant — and only
+	// all-or-nothing — within one filesystem. Across two it cannot be done at all,
+	// and a folder that appears half-finished is the thing this exists to prevent.
+	ErrElsewhere = &Error{Guidance: GuidanceElsewhere,
+		msg: "the changed backup has to go on the same disk as the original, so that it " +
+			"appears only once it is complete"}
 )
