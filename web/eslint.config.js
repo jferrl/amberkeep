@@ -132,6 +132,13 @@ export default tseslint.config(
       // Already an error under strictTypeChecked. Stated again because it is the
       // rule most often relaxed "just here", and this is where that argument ends.
       "@typescript-eslint/no-explicit-any": "error",
+      // A leading underscore means "deliberately not read", which is already what
+      // TypeScript's own noUnusedParameters honours. Two tools disagreeing about the
+      // same convention only teaches people to silence both.
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+      ],
       // Upstream ships this as a warning. A dependency array that has gone
       // stale is a bug that shows up as a message list that will not refresh,
       // which is indistinguishable from data loss to the person reading it.
