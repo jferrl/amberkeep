@@ -109,7 +109,51 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      # Signing is wired up and dormant. With no secrets set this does nothing and
+      # the release is unsigned exactly as before; the day a certificate exists,
+      # adding the secrets is the whole change. Written now because the alternative
+      # is writing it under time pressure on the day somebody pays for one.
+      - name: Take up the signing identity
+        id: identity
+        if: matrix.os == 'macos-latest'
+        env:
+          CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${CERTIFICATE:-}" ]; then
+            echo "signing: no certificate configured, the application will be unsigned" >&2
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A keychain of its own, unlocked only for this run. The runner is
+          # discarded afterwards, but a certificate in the login keychain is a
+          # certificate every later step can use.
+          keychain="$RUNNER_TEMP/signing.keychain-db"
+          transient="$(openssl rand -base64 24)"
+          security create-keychain -p "$transient" "$keychain"
+          security set-keychain-settings -lut 900 "$keychain"
+          security unlock-keychain -p "$transient" "$keychain"
+
+          echo "$CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$transient" "$keychain"
+          security list-keychain -d user -s "$keychain" login.keychain-db
+          rm -f "$RUNNER_TEMP/certificate.p12"
+
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       - name: Build the application
+        env:
+          SIGNING_IDENTITY: ${{ steps.identity.outputs.signed == 'true' && secrets.MACOS_SIGNING_IDENTITY || '' }}
+          # An App Store Connect key rather than an Apple ID and an app-specific
+          # password: it is revocable on its own and is not somebody's account.
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -119,6 +163,14 @@ jobs:
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             ./desktop/build/bundle.sh "$PWD/Amberkeep.app"
 
+            # Over the ad-hoc signature the bundle script applies. The hardened
+            # runtime is not optional: notarisation refuses a bundle without it.
+            if [ -n "${SIGNING_IDENTITY:-}" ]; then
+              codesign --force --deep --timestamp --options runtime \
+                --sign "$SIGNING_IDENTITY" Amberkeep.app
+              codesign --verify --deep --strict --verbose=2 Amberkeep.app
+            fi
+
             # A disk image is how a Mac application is handed over, and the symlink
             # is the drag-to-install everybody expects to find inside one.
             staging="$(mktemp -d)"
@@ -127,6 +179,18 @@ jobs:
             cp LICENSE "$staging/"
             hdiutil create -volname Amberkeep -srcfolder "$staging" -ov -format UDZO \
               "dist/Amberkeep_${version}_macos.dmg"
+
+            # Notarisation is what actually removes the warning, and stapling is what
+            # makes the result work on a machine that is offline when it first opens
+            # the disk image.
+            if [ -n "${SIGNING_IDENTITY:-}" ] && [ -n "${ASC_KEY_ID:-}" ]; then
+              printf '%s' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc.p8"
+              xcrun notarytool submit "dist/Amberkeep_${version}_macos.dmg" \
+                --key "$RUNNER_TEMP/asc.p8" --key-id "$ASC_KEY_ID" \
+                --issuer "$ASC_ISSUER_ID" --wait
+              xcrun stapler staple "dist/Amberkeep_${version}_macos.dmg"
+              rm -f "$RUNNER_TEMP/asc.p8"
+            fi
           else
             mkdir -p build/windows
             # No cgo: Wails reaches Windows through WebView2 with pure Go bindings.
