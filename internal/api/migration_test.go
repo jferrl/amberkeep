@@ -1,9 +1,12 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -28,8 +31,11 @@ type mover struct {
 
 	failCheck, failPlan, failCarry error
 
-	// gate, when set, holds the work open so a test can look at a stage.
+	// gate, when set, holds planning open so a test can look at a stage.
 	gate chan struct{}
+	// carrying does the same for the step that writes, so a test can read the reply
+	// that started it before it has finished.
+	carrying chan struct{}
 
 	mu     sync.Mutex
 	asked  []string
@@ -64,6 +70,9 @@ func (m *mover) Plan(_ context.Context, ask MigrationRequest, _ Progress) (migra
 
 func (m *mover) Carry(_ context.Context, ask MigrationRequest, _ migrate.Plan, _ Progress) (Migrated, error) {
 	m.record("carry", ask)
+	if m.carrying != nil {
+		<-m.carrying
+	}
 	return m.done, m.failCarry
 }
 
@@ -282,5 +291,128 @@ func TestAServerWithoutAMigrator(t *testing.T) {
 				t.Errorf("POST %s returned %d, want %d", path, status, http.StatusNotImplemented)
 			}
 		})
+	}
+}
+
+// TestStartingWorkAnswersWithTheMigration covers the reply to the request that starts
+// something, which is not the same object as the reply to a poll.
+//
+// The page puts this answer straight where it keeps the migration and draws it, and
+// it only keeps polling while the stage is one that moves on its own. So an answer
+// carrying the import wizard's state instead — a different job, on a different
+// screen, with stages of its own — does not merely look wrong: the page stops asking
+// and leaves somebody on the form they just submitted while the server finishes the
+// work behind them. Three endpoints, and the same mistake in each is one shared line.
+func TestStartingWorkAnswersWithTheMigration(t *testing.T) {
+	t.Parallel()
+
+	// The stages a migration moves through on its own, which is what the page waits
+	// for. Any other stage in this answer is a page that has stopped waiting.
+	running := map[string]bool{
+		string(MigrationChecking): true,
+		string(MigrationPlanning): true,
+		string(MigrationWorking):  true,
+	}
+
+	starts := []struct {
+		name string
+		at   string
+		body map[string]string
+		// holds is the step to keep running, so the stage the reply carries is still
+		// the one it started rather than one that has already finished.
+		holds string
+		// after is what has to have happened before this one can be asked for.
+		after func(t *testing.T, handler http.Handler)
+	}{
+		{
+			name:  "looking at a backup",
+			at:    "/api/migration/check",
+			body:  map[string]string{"backup": "/backups/abc"},
+			holds: "plan",
+		},
+		{
+			name:  "working out what would move",
+			at:    "/api/migration/plan",
+			body:  map[string]string{"backup": "/backups/abc", "android": "/tmp/msgstore.db"},
+			holds: "plan",
+		},
+		{
+			name:  "doing it",
+			at:    "/api/migration/carry-out",
+			body:  map[string]string{"confirm": theWord},
+			holds: "carry",
+			after: func(t *testing.T, handler http.Handler) {
+				t.Helper()
+				post(t, handler, "/api/migration/plan", map[string]string{
+					"backup": "/backups/abc", "android": "/tmp/msgstore.db",
+				})
+				reaches(t, handler, string(MigrationPlanned))
+			},
+		},
+	}
+
+	for _, start := range starts {
+		t.Run(start.name, func(t *testing.T) {
+			t.Parallel()
+
+			gate := make(chan struct{})
+			move := &mover{plan: migrate.Plan{Adding: 1, Conversations: []migrate.Conversation{{Adding: 1}}}}
+			if start.holds == "carry" {
+				move.carrying = gate
+			} else {
+				move.gate = gate
+			}
+			handler := migrating(t, move)
+			t.Cleanup(func() { close(gate) })
+
+			if start.after != nil {
+				start.after(t, handler)
+			}
+
+			status, answer := post(t, handler, start.at, start.body)
+			if status != http.StatusAccepted {
+				t.Fatalf("the request was not accepted: %d", status)
+			}
+
+			stage, _ := answer["stage"].(string)
+			if !running[stage] {
+				t.Errorf("it answered with stage %q, which the page does not wait on; want one of checking, planning or working", stage)
+			}
+			// The wizard's state carries this and a migration never does, so its
+			// presence is the mistake itself rather than a symptom of it.
+			if _, wizard := answer["workspace"]; wizard {
+				t.Error("it answered with the import wizard's state, not the migration's")
+			}
+		})
+	}
+}
+
+// TestASecondMigrationIsRefusedInItsOwnWords covers what somebody is told when they
+// press twice. "Something is already being opened" is the wizard's sentence about a
+// different job, and a person reading it here has no idea what it refers to.
+func TestASecondMigrationIsRefusedInItsOwnWords(t *testing.T) {
+	t.Parallel()
+
+	gate := make(chan struct{})
+	handler := migrating(t, &mover{gate: gate, plan: migrate.Plan{Adding: 1}})
+	t.Cleanup(func() { close(gate) })
+
+	ask := map[string]string{"backup": "/backups/abc", "android": "/tmp/msgstore.db"}
+	post(t, handler, "/api/migration/plan", ask)
+	reaches(t, handler, string(MigrationPlanning))
+
+	recorder := httptest.NewRecorder()
+	body, err := json.Marshal(ask)
+	if err != nil {
+		t.Fatalf("Marshal() failed: %v", err)
+	}
+	request := httptest.NewRequest(http.MethodPost, "/api/migration/plan", bytes.NewReader(body))
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want %d", recorder.Code, http.StatusConflict)
+	}
+	if said := recorder.Body.String(); !strings.Contains(said, "migration") {
+		t.Errorf("it refused with %q, which does not say what is running", strings.TrimSpace(said))
 	}
 }

@@ -55,7 +55,7 @@ func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {
 			s.migration.checked(ready)
 		}()
 	}
-	s.begun(w, r, started)
+	s.beganMigrating(w, r, started)
 }
 
 // handlePlanMigration works out what would move. It writes nothing, and it stops.
@@ -89,7 +89,7 @@ func (s *server) handlePlanMigration(w http.ResponseWriter, r *http.Request) {
 			s.migration.planned(plan)
 		}()
 	}
-	s.begun(w, r, started)
+	s.beganMigrating(w, r, started)
 }
 
 // agreement is what somebody has to send to have anything written.
@@ -147,7 +147,7 @@ func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
 			s.migration.done(result)
 		}()
 	}
-	s.begun(w, r, started)
+	s.beganMigrating(w, r, started)
 }
 
 // handleForgetMigration goes back to the beginning.
@@ -158,6 +158,21 @@ func (s *server) handleForgetMigration(w http.ResponseWriter, r *http.Request) {
 	}
 	s.migration.forget()
 	write(w, r, s.migration.state())
+}
+
+// beganMigrating answers a request that asked for migration work to start.
+//
+// It is not the wizard's begun. That one answers with the import session's state,
+// which is a different job on a different screen: a page putting it where it keeps
+// the migration would be told the migration was "empty", a stage no migration is
+// ever in, and would then stop polling — leaving somebody on the form they had just
+// submitted while the server quietly finished the work behind them.
+func (s *server) beganMigrating(w http.ResponseWriter, r *http.Request, started bool) {
+	if !started {
+		http.Error(w, "a migration is already running", http.StatusConflict)
+		return
+	}
+	writeStatus(w, r, http.StatusAccepted, s.migration.state())
 }
 
 // acceptMigration reads a request and checks it, answering the caller when it cannot.
