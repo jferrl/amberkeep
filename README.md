@@ -26,13 +26,13 @@ search and export. The iPhone side and the desktop application are being built.
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
 | iPhone message reader | working, including replies and pictures no other tool recovers |
-| Export: web pages, text, JSON | working |
+| Export: web pages, text, JSON | working, in the browser and on the command line |
 | Full-text search | working, accent-insensitive |
 | Local viewer (`serve`) | working, React 19 and TypeScript, built into the binary |
 | Command-line tool | working |
 | Import wizard | working, in the browser and on the command line |
 | iPhone backup access | working, including backups Finder will not show you |
-| Desktop application | working on macOS and Windows; a window, a dock icon and native file pickers |
+| Desktop application | working on macOS and Windows; a window, a dock icon, a menu bar and native file pickers |
 | English and Spanish | working |
 | Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
 
