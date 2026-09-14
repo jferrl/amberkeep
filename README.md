@@ -23,7 +23,8 @@ search and export. The iPhone side and the desktop application are being built.
 | Full-text search | working, accent-insensitive |
 | Local viewer (`serve`) | working, React 19 and TypeScript, built into the binary |
 | Command-line tool | working |
-| iPhone backup access | next |
+| Import wizard | working on the engine side, interface being built |
+| iPhone backup access | working, including backups Finder will not show you |
 | Desktop application | planned |
 | English and Spanish | working |
 | Android to iPhone migration | planned |
@@ -49,6 +50,21 @@ And on a real iPhone store of 554 conversations and 161,026 messages:
 
 ## Using it
 
+If you do not already have a decrypted database, start here:
+
+```sh
+amberkeep serve
+```
+
+That opens a page with nothing in it yet. It finds the iPhone backups on this
+computer, or takes an Android `msgstore.db.crypt15` and the 64-digit key, brings the
+messages out, builds the search index, and shows them. It writes to `~/Amberkeep`
+and reads everything else without touching it. Every step says what it is doing
+while it runs, and every failure says what to do about it and lets you try again.
+
+The commands below are the same thing one step at a time, for anyone who would
+rather see each one.
+
 ```sh
 amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
 amberkeep prepare --db msgstore.db          # only if you decrypted it elsewhere
@@ -67,7 +83,8 @@ exporting a real archive from five and a half minutes to fifty-five seconds. Run
 you decrypted the database some other way; it adds only indexes, which hold no
 information that is not already in the file.
 
-`serve` opens the archive in a browser. It listens on the loopback address only, and
+`serve` opens the archive in a browser, or starts the wizard when you give it no
+`--db`. It listens on the loopback address only, and
 every request carries a secret made fresh at each launch, so nothing else on the
 computer can read the archive by finding the port. A conversation opens at its end
 and loads earlier messages as you scroll, which is what makes a conversation of
@@ -172,10 +189,18 @@ readers working for everyone. Never send message content.
 
 ## Licence
 
-AGPL-3.0. See [LICENSE](LICENSE).
+Copyright © 2026 Jorge Ferrero. AGPL-3.0-or-later; the full text is in
+[LICENSE](LICENSE), verbatim from [gnu.org](https://www.gnu.org/licenses/agpl-3.0.txt).
 
 The engine is free software so that anyone can verify what it does with their private
-messages. The desktop application built on top of it is a separate commercial product.
+messages. That is the whole reason for the choice: a program that asks to be trusted
+with somebody's entire history has no business being unreadable, and the AGPL is the
+licence that keeps it readable even when it is run as a service rather than shipped.
+
+`amberkeep serve` puts a browser in front of that engine, so the two notices the
+licence and Meta's trademark rules ask for are on screen in the program itself, not
+only here. The desktop application built on top of the engine is a separate commercial
+product.
 
 ## Prior art
 
