@@ -39,8 +39,16 @@ type ADB struct {
 	Binary string
 }
 
-// ErrNoADB reports that the Android tools are not installed.
-var ErrNoADB = errors.New("adb is not installed on this computer")
+var (
+	// ErrNoADB reports that the Android tools are not installed.
+	ErrNoADB = errors.New("adb is not installed on this computer")
+
+	// ErrUnusable reports Android tools that are installed and will not run. A
+	// half-installed SDK, a quarantined binary, a daemon that cannot start: all of
+	// them are the same thing to somebody reading a screen, which is that this way
+	// in is not available and the other one still is.
+	ErrUnusable = errors.New("the Android tools on this computer would not run")
+)
 
 // Find looks for adb where Android's own tooling puts it.
 func Find() (ADB, error) {
@@ -250,7 +258,12 @@ func (a ADB) read(ctx context.Context, args ...string) (string, error) {
 
 	out, err := exec.CommandContext(ctx, a.Binary, args...).Output() //nolint:gosec // a fixed argument list; see the package comment
 	if err != nil {
-		return "", fmt.Errorf("asking the phone: %w", err)
+		// Not the raw failure. adb reports a broken install as "signal: abort trap"
+		// and a missing one as a path error, and neither is a sentence anybody can
+		// act on — least of all somebody whose phone has just died. What they need
+		// to know is that this way in is unavailable, which the screen then acts on
+		// by not offering it.
+		return "", fmt.Errorf("%w: %s", ErrUnusable, a.Binary)
 	}
 	return string(out), nil
 }

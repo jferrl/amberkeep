@@ -52,6 +52,9 @@ export const Message = memo(function Message({
         className={cn(
           "min-w-0 max-w-[85%] rounded-2xl border px-3 py-1.5",
           "border-[var(--color-line)] break-words",
+          // The rule, not the fill, is what makes a bubble a shape. The fill says
+          // which side said it; the rule says where it starts and stops.
+          "ring-1 ring-[var(--color-line)] ring-inset",
           mine ? "bg-[var(--color-mine)]" : "bg-[var(--color-theirs)]",
           notice &&
             "max-w-[90%] border-dashed bg-transparent text-center text-[0.82rem] text-[var(--color-muted)]",

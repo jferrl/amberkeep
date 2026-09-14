@@ -140,15 +140,23 @@ describe("when it cannot help", () => {
     });
   });
 
-  it("says nothing when no phone is plugged in", async () => {
+  /**
+   * Nothing plugged in is not the same as nothing on offer.
+   *
+   * This used to render nothing, which meant somebody holding the phone this exists
+   * for could not discover the option: it only appeared once they had already
+   * guessed to plug the phone in. Being invisible until you no longer need it is
+   * not a feature.
+   */
+  it("invites the phone in when this computer can look and sees none", async () => {
     phones = { phones: [] };
 
-    const { container } = render(
-      <Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />,
-    );
-    await vi.waitFor(() => {
-      expect(container).toBeEmptyDOMElement();
-    });
+    render(<Plugged language="en" busy={false} chosen="" onChoose={() => undefined} />);
+
+    expect(await screen.findByText(/Plug the phone in/)).toBeInTheDocument();
+    expect(screen.getByText(/Many charging cables carry no data/)).toBeInTheDocument();
+    // And nothing to press, because there is nothing there yet.
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
   const stuck: { name: string; phone: Phone; says: RegExp }[] = [

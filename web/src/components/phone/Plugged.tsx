@@ -40,17 +40,24 @@ export function Plugged({
   const found = phones.data?.phones ?? [];
   const trouble = phones.data?.trouble;
 
-  // Nothing at all is the ordinary case on a computer that has never had Android
-  // tooling, and it is not a failure: the screen below still works. Said quietly.
-  if (trouble !== undefined || (found.length === 0 && !phones.isPending))
-    return null;
+  // A computer that has never had the Android tools says nothing: this genuinely is
+  // not on offer there, and explaining a thing that cannot happen is noise.
+  if (trouble !== undefined) return null;
+
+  // A computer that can look and sees nothing plugged in is a different case, and
+  // getting it wrong was the whole bug: somebody holding the phone this exists for
+  // could not discover the option, because it only appeared once they had already
+  // guessed to plug the phone in. So it says so, and waits.
+  const waiting = found.length === 0 && !phones.isPending;
 
   return (
     <section className="flex flex-col gap-3">
       <h2 className="m-0 flex items-center gap-2 text-sm font-semibold">
         <Smartphone aria-hidden className="size-4 text-[var(--color-accent)]" />
-        {t("phoneFound")}
+        {waiting ? t("phoneWaiting") : t("phoneFound")}
       </h2>
+
+      {waiting && <Say>{t("phoneWaitingHelp")}</Say>}
 
       {found.map((phone) => (
         <One

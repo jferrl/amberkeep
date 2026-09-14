@@ -240,5 +240,7 @@
   "oneConversation": "1 conversación",
   "oneMessage": "1 mensaje",
   "conversationsCount": "{count} conversaciones",
-  "messagesCount": "{count} mensajes"
+  "messagesCount": "{count} mensajes",
+  "phoneWaiting": "Conecta el teléfono y Amberkeep lo trae",
+  "phoneWaitingHelp": "Conecta el teléfono a este ordenador con un cable y desbloquéalo. Aparecerá aquí solo, y Amberkeep puede copiar la copia de seguridad por ti, así que no hará falta ninguno de los pasos de abajo. Muchos cables de carga no llevan datos: si no aparece nada, prueba con otro."
 }

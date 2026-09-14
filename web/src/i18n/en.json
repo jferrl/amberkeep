@@ -240,5 +240,7 @@
   "oneConversation": "1 conversation",
   "oneMessage": "1 message",
   "conversationsCount": "{count} conversations",
-  "messagesCount": "{count} messages"
+  "messagesCount": "{count} messages",
+  "phoneWaiting": "Plug the phone in and Amberkeep will fetch it",
+  "phoneWaitingHelp": "Connect the phone to this computer with a cable and unlock it. It will appear here on its own, and Amberkeep can copy the backup across for you — so none of the steps below are needed. Many charging cables carry no data, so if nothing appears, try a different one."
 }
