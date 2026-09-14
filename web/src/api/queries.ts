@@ -28,12 +28,14 @@ import {
   getArchive,
   getBackups,
   getChats,
+  getGuide,
   getMessages,
+  getMigration,
   getState,
   isArchiveError,
   search,
 } from "./client";
-import type { Chat, ChatList, SearchPage, Setup } from "./types";
+import type { Chat, ChatList, Migration, MigrationStage, SearchPage, Setup } from "./types";
 
 /** An answer that cannot go out of date while the server that gave it is running. */
 const neverStale = Number.POSITIVE_INFINITY;
@@ -82,6 +84,8 @@ const noImporter = 501;
 export const queryKeys = {
   state: ["state"] as const,
   backups: ["backups"] as const,
+  migration: ["migration"] as const,
+  guide: ["guide"] as const,
   archive: ["archive"] as const,
   chats: (q: string) => ["chats", q] as const,
   messages: (jid: string) => ["messages", jid] as const,
@@ -261,12 +265,12 @@ export function isMissingImporter(error: unknown): boolean {
  * field somebody left blank; the work failing arrives later as a stage of `failed`
  * with the server's own explanation and advice attached.
  */
-export interface Action {
+export interface Action<T = Setup> {
   /** True between asking and the server accepting. */
   busy: boolean;
   /** Why the request was refused, as opposed to why the work failed. */
   refused: string | undefined;
-  start: (work: () => Promise<Setup>) => void;
+  start: (work: () => Promise<T>) => void;
 }
 
 /**
@@ -346,4 +350,88 @@ export function useClose(): () => void {
         });
       });
   }, [queries]);
+}
+
+/**
+ * Moving a history onto a phone.
+ *
+ * Polled only while something is running, and — unlike everything else here — never
+ * refetched on its own otherwise. A migration that appeared to advance because a
+ * query refreshed would be a migration somebody did not ask to advance.
+ */
+export function migrationQuery() {
+  return queryOptions({
+    queryKey: queryKeys.migration,
+    queryFn: ({ signal }) => getMigration({ signal }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: (query) => (isRunning(query.state.data?.stage) ? pollEvery : false),
+  });
+}
+
+/** isRunning is the three stages that change on their own. */
+function isRunning(stage: MigrationStage | undefined): boolean {
+  return stage === "checking" || stage === "planning" || stage === "working";
+}
+
+/** useMigration is how far along a migration is. */
+export function useMigration() {
+  return useQuery(migrationQuery());
+}
+
+/**
+ * The guide, fetched once and kept.
+ *
+ * It cannot change while this page is open: it is compiled into the program serving
+ * the page. Asking for it again would be asking the same question of the same binary.
+ */
+export function guideQuery() {
+  return queryOptions({
+    queryKey: queryKeys.guide,
+    queryFn: ({ signal }) => getGuide({ signal }),
+    staleTime: neverStale,
+    gcTime: neverStale,
+  });
+}
+
+/** useGuide is what somebody has to be told, in the order they need it. */
+export function useGuide() {
+  return useQuery(guideQuery());
+}
+
+/**
+ * useMigrationStep runs one of the requests that moves a migration along.
+ *
+ * The reply is put straight into the cache, so the page draws the stage it asked for
+ * rather than the one from a poll a moment ago. Nothing is chained: each of these is
+ * called because somebody pressed something.
+ */
+export function useMigrationStep(): Action<Migration> {
+  const queries = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | undefined>(undefined);
+
+  const start = useCallback(
+    (work: () => Promise<Migration>) => {
+      setBusy(true);
+      setRefused(undefined);
+      void work().then(
+        (state) => {
+          queries.setQueryData(queryKeys.migration, state);
+          setBusy(false);
+        },
+        (cause: unknown) => {
+          setBusy(false);
+          if (isArchiveError(cause) && cause.status === alreadyRunning) {
+            void queries.refetchQueries({ queryKey: queryKeys.migration });
+            return;
+          }
+          setRefused(saidBy(cause));
+        },
+      );
+    },
+    [queries],
+  );
+
+  return { busy, refused, start };
 }

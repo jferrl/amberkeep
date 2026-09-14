@@ -423,3 +423,159 @@ export interface BackupList {
   backups: readonly Backup[];
   problem?: string;
 }
+
+/**
+ * How far along a migration is.
+ *
+ * Nothing moves from one of these to the next on its own. Checking does not begin
+ * planning, and a plan does not begin writing: each ends and waits to be asked for
+ * the next, because the thing at the end is somebody restoring a backup onto a phone
+ * they depend on, and a flow that carries people along is one they can reach the end
+ * of without having read anything.
+ */
+export type MigrationStage =
+  | "idle"
+  | "checking"
+  | "checked"
+  | "planning"
+  | "planned"
+  | "working"
+  | "done"
+  | "failed";
+
+/**
+ * One thing that was checked before anything else happens.
+ *
+ * `blocking` separates what has to be put right from what is worth knowing. The one
+ * that matters most — whether a safety backup was made and archived — can never pass,
+ * because nothing on this computer can see whether somebody did it. It is raised every
+ * time rather than left out for being uncheckable.
+ */
+export interface Finding {
+  /** The guided step that says what to do about it. */
+  step: string;
+  title: string;
+  passed: boolean;
+  blocking: boolean;
+  detail?: string;
+}
+
+/** Everything that was checked, and how much room a copy of the backup will take. */
+export interface Readiness {
+  findings: readonly Finding[];
+  needs?: number;
+}
+
+/**
+ * What would happen to one conversation.
+ *
+ * `adding`, `already_there` and `untranslatable` account for every message in it: the
+ * three add up to its total, so a missing message is a bug rather than a rounding.
+ * `into` is the conversation on the iPhone this would join, and its absence means one
+ * would be created.
+ */
+export interface MigrationConversation {
+  address: string;
+  name: string;
+  kind: string;
+  /** The address the iPhone will file this under, which is not always its own. */
+  destination: string;
+  into?: string;
+  session?: number;
+  /** Other conversations that turn out to be the same person and are written into this one. */
+  folded?: readonly string[];
+
+  adding: number;
+  already_there: number;
+  untranslatable: number;
+  as_placeholders: number;
+  on_phone_already: number;
+
+  earliest?: Timestamp;
+  latest?: Timestamp;
+  /** Why nothing would happen to it. Empty when something would. */
+  skipped?: string;
+}
+
+/**
+ * What a migration would do, worked out without doing any of it.
+ *
+ * This is the thing somebody reads and agrees to, so every number in it is one they
+ * could act on. `warnings` are the limitations in words rather than in counts, and
+ * include the one failure that looks exactly like success: somebody the two phones
+ * know by different names arriving twice.
+ */
+export interface MigrationPlan {
+  conversations: readonly MigrationConversation[];
+
+  adding: number;
+  already_there: number;
+  untranslatable: number;
+  as_placeholders: number;
+
+  merging: number;
+  creating: number;
+  untouched: number;
+
+  warnings?: readonly string[];
+  earliest?: Timestamp;
+  latest?: Timestamp;
+}
+
+/** A finished migration: a backup on disk, and a phone that has not been touched. */
+export interface Migrated {
+  /** The changed copy, ready for Finder to restore. */
+  backup: string;
+  added: number;
+  merged: number;
+  created: number;
+  /** How many consistency checks the result passed. */
+  checks: number;
+  /** How many files the copied backup holds, unchanged from the original. */
+  files: number;
+}
+
+/** How far along a migration is, and everything it has worked out so far. */
+export interface Migration {
+  stage: MigrationStage;
+  step?: SetupStep;
+  detail?: string;
+  guidance?: string;
+  backup?: string;
+  checks?: Readiness;
+  plan?: MigrationPlan;
+  result?: Migrated;
+}
+
+/**
+ * One thing somebody has to do or to know, and when.
+ *
+ * `critical` marks a step that loses something irreversibly if it is skipped. Three of
+ * them do, and they are shown differently for that reason; marking anything else would
+ * leave the mark meaning nothing. `body` and `expect` carry their own line breaks and
+ * are rendered as text, never as markup.
+ */
+export interface GuideStep {
+  id: string;
+  title: string;
+  body: string;
+  expect?: string;
+  minutes?: number;
+  critical?: boolean;
+}
+
+/** The steps of one part of the business, in the order they are needed. */
+export interface GuideStage {
+  stage: "before" | "restoring" | "after" | "wrong";
+  heading: string;
+  steps: readonly GuideStep[];
+}
+
+/**
+ * What somebody has to be told, served by the program rather than written into this
+ * page. Those sentences live in one place; a copy here would drift from the copy in Go
+ * the first time anybody corrected one.
+ */
+export interface Guide {
+  stages: readonly GuideStage[];
+}

@@ -18,7 +18,9 @@ import type {
   BackupList,
   ChatList,
   Cursor,
+  Guide,
   MessagePage,
+  Migration,
   SearchPage,
   Setup,
 } from "./types";
@@ -336,4 +338,83 @@ export async function closeArchive(options: Cancellable = {}): Promise<void> {
   if (!response.ok) {
     throw new ArchiveError(response.status, await explanation(response));
   }
+}
+
+/**
+ * Moving a history onto a phone.
+ *
+ * Five calls, and none of them leads to the next. The server will not begin planning
+ * because checking finished, and will not begin writing because a plan exists: each
+ * has to be asked for. That is deliberate, and this page must not paper over it by
+ * chaining them together — somebody who reaches the end without reading is the one
+ * outcome the whole design is arranged against.
+ */
+
+/** getMigration is how far along a migration is. The only thing that is polled. */
+export function getMigration(options: Cancellable = {}): Promise<Migration> {
+  return ask<Migration>(`${api}/migration`, narrow({}), options);
+}
+
+/**
+ * getGuide is what somebody has to be told, in the order they need it.
+ *
+ * Fetched rather than written into this page. The sentences live in the program, and
+ * a copy here would drift from that one the first time anybody corrected a word.
+ */
+export function getGuide(options: Cancellable = {}): Promise<Guide> {
+  return ask<Guide>(`${api}/migration/guide`, narrow({}), options);
+}
+
+/** checkBackup looks at a backup, and stops. */
+export async function checkBackup(backup: string, options: Cancellable = {}): Promise<Migration> {
+  return answer<Migration>(await tell(`${api}/migration/check`, { backup }, options), options);
+}
+
+/** What a migration needs to be told, beyond which backup and which archive. */
+export interface MigrationExtras {
+  contacts?: string;
+  pairing?: string;
+  groups?: boolean;
+  hidden?: boolean;
+  only?: readonly string[];
+}
+
+/** planMigration works out what would move. It writes nothing, and it stops. */
+export async function planMigration(
+  backup: string,
+  android: string,
+  extras: MigrationExtras = {},
+  options: Cancellable = {},
+): Promise<Migration> {
+  const body: Record<string, unknown> = { backup, android };
+  if (extras.contacts !== undefined && extras.contacts !== "") body.contacts = extras.contacts;
+  if (extras.pairing !== undefined && extras.pairing !== "") body.pairing = extras.pairing;
+  if (extras.groups === true) body.groups = true;
+  if (extras.hidden === true) body.hidden = true;
+  if (extras.only !== undefined && extras.only.length > 0) body.only = extras.only;
+
+  return answer<Migration>(await tell(`${api}/migration/plan`, body, options), options);
+}
+
+/**
+ * carryOut does it, and needs the word.
+ *
+ * The word is sent rather than a flag or a header, because the server checks it and
+ * refuses anything else. A button is a button somebody clicked; a word is a word they
+ * wrote, and this is the step that ends with a phone being written to.
+ */
+export async function carryOut(
+  confirm: string,
+  into?: string,
+  options: Cancellable = {},
+): Promise<Migration> {
+  const body: Record<string, unknown> = { confirm };
+  if (into !== undefined && into !== "") body.into = into;
+
+  return answer<Migration>(await tell(`${api}/migration/carry-out`, body, options), options);
+}
+
+/** forgetMigration goes back to the beginning, keeping nothing. */
+export async function forgetMigration(options: Cancellable = {}): Promise<Migration> {
+  return answer<Migration>(await tell(`${api}/migration/forget`, {}, options), options);
 }

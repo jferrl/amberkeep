@@ -71,8 +71,13 @@ type Plan struct {
 
 	// Earliest and Latest bound what would arrive, so a person can recognise their
 	// own history in the report rather than trusting a count.
-	Earliest time.Time `json:"earliest,omitempty"`
-	Latest   time.Time `json:"latest,omitempty"`
+	//
+	// omitzero, not omitempty: a struct is never empty to the JSON encoder, so a
+	// conversation with nothing to move reported the first of January in the year 1
+	// and a page would have shown it. The recorded replies caught that before any
+	// page existed to show it.
+	Earliest time.Time `json:"earliest,omitzero"`
+	Latest   time.Time `json:"latest,omitzero"`
 }
 
 // total adds the conversations up.
@@ -172,9 +177,10 @@ type Conversation struct {
 	// is the number a person will compare against afterwards.
 	OnPhoneAlready int `json:"on_phone_already"`
 
-	// Earliest and Latest bound what would arrive from this conversation.
-	Earliest time.Time `json:"earliest,omitempty"`
-	Latest   time.Time `json:"latest,omitempty"`
+	// Earliest and Latest bound what would arrive from this conversation. omitzero
+	// for the reason given on the same fields above.
+	Earliest time.Time `json:"earliest,omitzero"`
+	Latest   time.Time `json:"latest,omitzero"`
 
 	// Skipped says, in a sentence, why nothing would happen to this conversation.
 	// It is empty when something would.

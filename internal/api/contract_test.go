@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/migrate"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
 )
@@ -180,6 +181,64 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 			}}, "/api/backups"),
 		},
 		{
+			name: "nothing has been migrated yet",
+			file: "migration-idle.ts",
+			what: "GET /api/migration — nothing started. Every stage of a migration ends and\n" +
+				"waits to be asked for the next; none of them leads to the next on its own.",
+			reply: migrationState(&mover{}, nil),
+		},
+		{
+			name: "the backup has been looked at",
+			file: "migration-checked.ts",
+			what: "GET /api/migration — the checks are done and nothing else has happened. A\n" +
+				"finding that is not blocking is worth knowing; the one about the safety backup can\n" +
+				"never pass, because nothing here can see whether it was made.",
+			reply: migrationState(&mover{ready: recordedChecks}, func(t *testing.T, h http.Handler) []byte {
+				t.Helper()
+				begin(t, h, "/api/migration/check", map[string]string{"backup": "/backups/00008030-0011"})
+				return awaitMigration(t, h, string(MigrationChecked))
+			}),
+		},
+		{
+			name: "there is a plan to read",
+			file: "migration-planned.ts",
+			what: "GET /api/migration — what would move, which is the thing somebody agrees to.\n" +
+				"It stops here until they do.",
+			reply: migrationState(&mover{plan: recordedPlan}, func(t *testing.T, h http.Handler) []byte {
+				t.Helper()
+				begin(t, h, "/api/migration/plan", map[string]string{
+					"backup": "/backups/00008030-0011", "android": "/workspace/msgstore.db",
+				})
+				return awaitMigration(t, h, string(MigrationPlanned))
+			}),
+		},
+		{
+			name: "it is done",
+			file: "migration-done.ts",
+			what: "GET /api/migration — a backup on disk and a phone that has not been touched.\n" +
+				"Restoring it is Finder's job, and the guide is what says how.",
+			reply: migrationState(&mover{plan: recordedPlan, done: recordedResult},
+				func(t *testing.T, h http.Handler) []byte {
+					t.Helper()
+					begin(t, h, "/api/migration/plan", map[string]string{
+						"backup": "/backups/00008030-0011", "android": "/workspace/msgstore.db",
+					})
+					awaitMigration(t, h, string(MigrationPlanned))
+					begin(t, h, "/api/migration/carry-out", map[string]string{"confirm": theWord})
+					return awaitMigration(t, h, string(MigrationDone))
+				}),
+		},
+		{
+			name: "what somebody has to be told",
+			file: "migration-guide.ts",
+			what: "GET /api/migration/guide — the words, served rather than copied into the page,\n" +
+				"so that correcting a sentence corrects it everywhere.",
+			reply: migrationState(&mover{}, func(t *testing.T, h http.Handler) []byte {
+				t.Helper()
+				return get(t, h, "/api/migration/guide")
+			}),
+		},
+		{
 			// An empty list and a folder this program was not allowed to look in are
 			// the same emptiness and completely different situations.
 			name: "the backups could not be looked at",
@@ -194,6 +253,84 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			compare(t, tt.file, tt.what, tt.reply(t))
 		})
+	}
+}
+
+// What a migration says about itself, recorded so the page is checked against it.
+var (
+	recordedChecks = migrate.Readiness{
+		Needs: 4_912_345_678,
+		Findings: []migrate.Finding{
+			{Step: "encryption-off", Title: "The backup is not encrypted", Passed: true, Blocking: true},
+			{Step: "fresh-backup", Title: "The backup holds WhatsApp's messages", Passed: true, Blocking: true},
+			{Step: "fresh-backup", Title: "The backup is recent", Passed: true, Detail: "taken 2 hours ago"},
+			{Step: "power-and-space", Title: "There is room for a copy of the backup",
+				Passed: true, Detail: "it needs about 4.6 GB free"},
+			{Step: "safety-backup", Title: "A safety backup exists and has been archived",
+				Detail: "nothing here can see this; it is the only way back and it has to be done by hand"},
+		},
+	}
+
+	recordedPlan = migrate.Plan{
+		Adding: 34, AlreadyThere: 15, Untranslatable: 6, AsPlaceholders: 9,
+		Merging: 1, Creating: 0, Untouched: 553,
+		Earliest: start, Latest: start.Add(72 * time.Hour),
+		Conversations: []migrate.Conversation{
+			{
+				Address: ana.String(), Name: "Ana Lopez", Kind: "direct",
+				Destination: ana.String(), Into: ana.String(), Session: 1617,
+				Adding: 34, AlreadyThere: 15, Untranslatable: 6, AsPlaceholders: 9,
+				OnPhoneAlready: 15, Earliest: start, Latest: start.Add(72 * time.Hour),
+			},
+			{
+				Address: group.String(), Name: "Vermut del sabado", Kind: "group",
+				Destination: group.String(), Skipped: "groups were not included",
+			},
+		},
+		Warnings: []string{
+			"9 messages will arrive as a line of text saying what was sent, not as the " +
+				"picture, recording or file itself.",
+		},
+	}
+
+	recordedResult = Migrated{
+		Backup: "/backups/00008030-0011.amberkeep-20260914",
+		Added:  34, Merged: 1, Created: 0, Checks: 31, Files: 27352,
+	}
+)
+
+// migrationState records what the page polls, after doing whatever gets it there.
+func migrationState(move Migrator, reach func(*testing.T, http.Handler) []byte) func(*testing.T) []byte {
+	return func(t *testing.T) []byte {
+		t.Helper()
+
+		handler := migrating(t, move)
+		if reach == nil {
+			return get(t, handler, "/api/migration")
+		}
+		return reach(t, handler)
+	}
+}
+
+// awaitMigration polls until a migration reaches a stage and returns that reply.
+func awaitMigration(t *testing.T, handler http.Handler, stage string) []byte {
+	t.Helper()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		raw := get(t, handler, "/api/migration")
+
+		var body map[string]any
+		if err := json.Unmarshal(raw, &body); err != nil {
+			t.Fatalf("the state was not JSON: %v", err)
+		}
+		if body["stage"] == stage {
+			return raw
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the migration never reached %s: %s", stage, raw)
+		}
+		time.Sleep(time.Millisecond)
 	}
 }
 

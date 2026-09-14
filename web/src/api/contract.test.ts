@@ -6,12 +6,26 @@ import backupsReply from "./contract/backups";
 import chatsReply from "./contract/chats";
 import loadedMessageReply from "./contract/message-with-everything";
 import messagesReply from "./contract/messages";
+import migrationCheckedReply from "./contract/migration-checked";
+import migrationDoneReply from "./contract/migration-done";
+import migrationGuideReply from "./contract/migration-guide";
+import migrationIdleReply from "./contract/migration-idle";
+import migrationPlannedReply from "./contract/migration-planned";
 import searchReply from "./contract/search";
 import stateEmptyReply from "./contract/state-empty";
 import stateFailedReply from "./contract/state-failed";
 import stateReadyReply from "./contract/state-ready";
 import stateWorkingReply from "./contract/state-working";
-import type { Archive, BackupList, ChatList, MessagePage, SearchPage, Setup } from "./types";
+import type {
+  Archive,
+  BackupList,
+  ChatList,
+  Guide,
+  MessagePage,
+  Migration,
+  SearchPage,
+  Setup,
+} from "./types";
 
 /**
  * What the server actually sends, checked against what this page believes it sends.
@@ -213,5 +227,65 @@ describe("the backups on this computer", () => {
     const list = records<BackupList>()(backupsRefusedReply);
     expect(list.backups).toEqual([]);
     expect(list.problem).toBeTruthy();
+  });
+});
+
+describe("the migration", () => {
+  it("has done nothing yet", () => {
+    const idle = records<Migration>()(migrationIdleReply);
+    expect(idle.stage).toBe("idle");
+    expect(idle.plan).toBeUndefined();
+  });
+
+  it("stops at the checks", () => {
+    const checked = records<Migration>()(migrationCheckedReply);
+    expect(checked.stage).toBe("checked");
+    expect(checked.plan).toBeUndefined();
+
+    // The one that matters most can never pass, because nothing on this computer can
+    // see whether somebody made a safety backup. It is raised anyway, every time.
+    const safety = checked.checks?.findings.find((f) => f.step === "safety-backup");
+    expect(safety).toBeDefined();
+    expect(safety?.passed).toBe(false);
+    expect(safety?.blocking).toBe(false);
+  });
+
+  it("stops at the plan, with every message accounted for", () => {
+    const planned = records<Migration>()(migrationPlannedReply);
+    expect(planned.stage).toBe("planned");
+    expect(planned.result).toBeUndefined();
+
+    const plan = planned.plan;
+    expect(plan).toBeDefined();
+    for (const c of plan?.conversations ?? []) {
+      // A conversation nothing would happen to says why, and carries no dates: a
+      // zero time reaches a page as the first of January in the year 1.
+      if (c.adding === 0) {
+        expect(c.skipped).toBeTruthy();
+        expect(c.earliest).toBeUndefined();
+      }
+    }
+    expect(plan?.warnings?.length).toBeGreaterThan(0);
+  });
+
+  it("ends with a backup and a phone that was never touched", () => {
+    const done = records<Migration>()(migrationDoneReply);
+    expect(done.stage).toBe("done");
+    expect(done.result?.backup).toBeTruthy();
+    expect(done.result?.checks).toBeGreaterThan(0);
+  });
+
+  /** The words come from the program, so correcting one corrects it everywhere. */
+  it("carries the whole guide", () => {
+    const guide = records<Guide>()(migrationGuideReply);
+    expect(guide.stages).toHaveLength(4);
+
+    const steps = guide.stages.flatMap((s) => s.steps);
+    expect(steps.length).toBeGreaterThan(12);
+    expect(steps.filter((s) => s.critical).length).toBe(3);
+    for (const step of steps) {
+      expect(step.id).toBeTruthy();
+      expect(step.body).toBeTruthy();
+    }
   });
 });
