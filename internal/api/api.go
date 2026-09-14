@@ -149,6 +149,7 @@ type server struct {
 	// state it did not ask for.
 	migration *migration
 	migrator  Migrator
+	exports   *exporting
 
 	// background outlives the request that began a piece of work, so closing the tab
 	// halfway through a decryption does not leave a half-written file.
@@ -197,6 +198,7 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 
 	s := &server{
 		opts: opts, importer: opts.Importer, migrator: opts.Migrator,
+		exports:   newExporting(),
 		migration: newMigration(), background: ctx,
 	}
 
@@ -240,6 +242,12 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 
 	// Moving a history onto a phone. Nothing here moves from one stage to the next
 	// on its own, and the last one needs a word typed out.
+	// Writing the archive out. Only meaningful while one is open, which the handler
+	// checks rather than the route.
+	mux.HandleFunc("GET /api/export", s.handleExport)
+	mux.HandleFunc("POST /api/export", s.handleWriteExport)
+	mux.HandleFunc("POST /api/export/forget", s.handleForgetExport)
+
 	mux.HandleFunc("GET /api/migration", s.handleMigration)
 	mux.HandleFunc("GET /api/migration/guide", s.handleGuide)
 	mux.HandleFunc("POST /api/migration/check", s.handleCheck)

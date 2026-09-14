@@ -92,7 +92,9 @@ func runServe(ctx context.Context, args []string) error {
 	// use. This is the one place the distinction matters.
 	var archive api.Archive
 	if reader != nil {
-		archive = reader
+		// Wrapped rather than handed over raw, so an archive opened here is the same
+		// object as one the wizard opens — including being able to write itself out.
+		archive = app.Readable(reader, index)
 	}
 
 	// From here the server owns the archive and is what closes it. Until here it is

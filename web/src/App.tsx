@@ -1,8 +1,15 @@
 import { useCallback, useDeferredValue, useState } from "react";
 
 import type { Chat, Hit } from "@/api/types";
-import { useArchive, useChats, useClose, useSearch, useSetupState } from "@/api/queries";
+import {
+  useArchive,
+  useChats,
+  useClose,
+  useSearch,
+  useSetupState,
+} from "@/api/queries";
 import { Notices } from "@/components/Notices";
+import { Export } from "@/components/export/Export";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
 import { Button } from "@/components/ui/button";
@@ -21,8 +28,28 @@ import { cn } from "@/lib/utils";
  */
 export function App({ language }: { language: Language }) {
   const setup = useSetupState();
+  const [keeping, setKeeping] = useState(false);
 
-  if (setup.data?.stage === "ready") return <Browser language={language} />;
+  if (setup.data?.stage === "ready") {
+    // Writing the archive out takes the whole window rather than a dialog over the
+    // conversations. It is a job with its own progress and its own ending, and the
+    // list underneath it would be a list nobody is reading.
+    return keeping ? (
+      <Export
+        language={language}
+        onLeave={() => {
+          setKeeping(false);
+        }}
+      />
+    ) : (
+      <Browser
+        language={language}
+        onKeep={() => {
+          setKeeping(true);
+        }}
+      />
+    );
+  }
   if (setup.isPending) return <Waiting />;
 
   return (
@@ -40,7 +67,9 @@ export function App({ language }: { language: Language }) {
 /** The moment before the server has said what it is holding. */
 function Waiting() {
   const t = useT();
-  return <p className="p-12 text-center text-[var(--color-muted)]">{t("loading")}</p>;
+  return (
+    <p className="p-12 text-center text-[var(--color-muted)]">{t("loading")}</p>
+  );
 }
 
 /**
@@ -51,7 +80,13 @@ function Waiting() {
  * server, which is the whole reason it can be trusted with somebody's entire
  * message history.
  */
-function Browser({ language }: { language: Language }) {
+function Browser({
+  language,
+  onKeep,
+}: {
+  language: Language;
+  onKeep: () => void;
+}) {
   const t = useT();
   const [term, setTerm] = useState("");
   const [chat, setChat] = useState<Chat | undefined>(undefined);
@@ -71,7 +106,9 @@ function Browser({ language }: { language: Language }) {
 
   const openHit = useCallback(
     (hit: Hit) => {
-      const found = chats.data?.chats.find((c) => c.address === hit.chat_address);
+      const found = chats.data?.chats.find(
+        (c) => c.address === hit.chat_address,
+      );
       if (found !== undefined) setChat(found);
     },
     [chats.data?.chats],
@@ -92,10 +129,19 @@ function Browser({ language }: { language: Language }) {
             wrong file should not have to restart the program to open the right
             one. */}
         <div className="flex items-center justify-between gap-2 border-b border-[var(--color-line)] px-3.5 py-1.5">
-          <span className="text-xs text-[var(--color-muted)]">{t("readOnly")}</span>
-          <Button variant="quiet" size="sm" onClick={letGo}>
-            {t("closeArchive")}
-          </Button>
+          <span className="text-xs text-[var(--color-muted)]">
+            {t("readOnly")}
+          </span>
+          <div className="flex items-center gap-1">
+            {/* The thing most people came for. It was reachable only from a
+                terminal, which is to say not reachable by anybody who needed it. */}
+            <Button size="sm" onClick={onKeep}>
+              {t("exportAction")}
+            </Button>
+            <Button variant="quiet" size="sm" onClick={letGo}>
+              {t("closeArchive")}
+            </Button>
+          </div>
         </div>
 
         <Sidebar
@@ -117,7 +163,12 @@ function Browser({ language }: { language: Language }) {
         <Notices />
       </nav>
 
-      <section className={cn("flex min-h-0 min-w-0 flex-col", !reading && "hidden md:flex")}>
+      <section
+        className={cn(
+          "flex min-h-0 min-w-0 flex-col",
+          !reading && "hidden md:flex",
+        )}
+      >
         {chat === undefined ? (
           <Nothing />
         ) : (
@@ -140,9 +191,13 @@ function Nothing() {
   return (
     <>
       <header className="border-b border-[var(--color-line)] bg-[var(--color-surface)] px-4 py-2.5">
-        <h2 className="m-0 text-base font-semibold">{t("pickAConversation")}</h2>
+        <h2 className="m-0 text-base font-semibold">
+          {t("pickAConversation")}
+        </h2>
       </header>
-      <p className="flex-1 p-12 text-center text-[var(--color-muted)]">{t("pickToStart")}</p>
+      <p className="flex-1 p-12 text-center text-[var(--color-muted)]">
+        {t("pickToStart")}
+      </p>
     </>
   );
 }
@@ -168,7 +223,12 @@ function Reading({
   return (
     <>
       <div className="flex items-center gap-2 md:contents">
-        <Button variant="quiet" size="sm" className="ml-2 md:hidden" onClick={onBack}>
+        <Button
+          variant="quiet"
+          size="sm"
+          className="ml-2 md:hidden"
+          onClick={onBack}
+        >
           {t("backToList")}
         </Button>
         <div className="min-w-0 flex-1">

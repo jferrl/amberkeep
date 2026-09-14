@@ -429,3 +429,17 @@ func TakeStoreOut(ctx context.Context, backup, work string) (string, error) {
 
 	return archive.ExtractDatabase(ctx, work, WhatsAppDomain, ChatStorage)
 }
+
+// NoticeIdentifier answers whether a notice code is one the reader that produced
+// the archive can phrase, so an export can admit what it could not put into words
+// instead of leaving a consumer to guess.
+//
+// Only the Android reader has a verified table of these. An iPhone store records
+// its own codes and no reliable public source says what they mean, so nothing is
+// claimed for them rather than sentences being invented.
+func NoticeIdentifier(reader source.Archive) func(int) bool {
+	if reader.Platform() == "android" {
+		return android.IsIdentifiedNotice
+	}
+	return func(int) bool { return false }
+}

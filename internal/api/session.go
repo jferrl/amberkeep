@@ -43,6 +43,8 @@ const (
 	StepPreparing  Step = "preparing"
 	StepIndexing   Step = "indexing"
 	StepOpening    Step = "opening"
+	// StepWriting is producing files from an archive that is already open.
+	StepWriting Step = "writing"
 )
 
 // Progress is how work already running says what it is doing.

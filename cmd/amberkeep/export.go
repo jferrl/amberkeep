@@ -12,7 +12,6 @@ import (
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source"
-	"github.com/jferrl/amberkeep/internal/source/android"
 )
 
 // runExport writes the archive out in the formats the caller asked for.
@@ -81,7 +80,7 @@ func runExport(ctx context.Context, args []string) error {
 		Me:               *me,
 		IncludeNotices:   *notices,
 		Overwrite:        *force,
-		NoticeIdentified: noticeIdentifier(reader),
+		NoticeIdentified: app.NoticeIdentifier(reader),
 	}
 
 	var (
@@ -228,18 +227,4 @@ func parseZone(name string) (*time.Location, error) {
 		return nil, fmt.Errorf("there is no time zone called %q; use a name like Europe/Madrid: %w", name, err)
 	}
 	return loc, nil
-}
-
-// noticeIdentifier answers whether a notice code is one the reader that produced
-// the archive can phrase, so an export can admit what it could not put into words
-// instead of leaving a consumer to guess.
-//
-// Only the Android reader has a verified table of these. An iPhone store records
-// its own codes and no reliable public source says what they mean, so nothing is
-// claimed for them rather than sentences being invented.
-func noticeIdentifier(reader source.Archive) func(int) bool {
-	if reader.Platform() == "android" {
-		return android.IsIdentifiedNotice
-	}
-	return func(int) bool { return false }
 }

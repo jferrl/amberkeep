@@ -363,7 +363,9 @@ export type SetupStep =
   | "decrypting"
   | "preparing"
   | "indexing"
-  | "opening";
+  | "opening"
+  /** Producing files from an archive that is already open. */
+  | "writing";
 
 /**
  * What the server is doing, and where it will put what it makes.
@@ -588,3 +590,35 @@ export interface GuideStage {
 export interface Guide {
   stages: readonly GuideStage[];
 }
+
+/** How far along writing an archive out is. */
+export type ExportStage = "idle" | "writing" | "done" | "failed";
+
+/** What an export produced. */
+export interface Exported {
+  /** The folder to go and look in. */
+  into: string;
+  conversations: number;
+  messages: number;
+  bytes: number;
+  formats: readonly string[];
+}
+
+/**
+ * Writing the archive out.
+ *
+ * The same shape as the import and the migration: work runs on the server, one thing
+ * says how far along it is, and this page asks that one thing. An archive of a
+ * million messages takes about a minute, which is long enough that silence would
+ * look like a program that had stopped.
+ */
+export interface Export {
+  stage: ExportStage;
+  step?: SetupStep;
+  detail?: string;
+  guidance?: string;
+  result?: Exported;
+}
+
+/** The ways an archive can be written out. */
+export type Format = "html" | "text" | "json";

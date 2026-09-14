@@ -235,6 +235,17 @@ func addressBook(contacts string) (book, whatsApp string) {
 // They are one thing to everybody above: an index belongs to the archive it was
 // built from and is worthless without it, so closing one and leaving the other open
 // would leave a handle behind every time somebody tried a second backup.
+// Readable wraps an archive so the server can both read it and write it out.
+//
+// An archive opened from the command line was handed over raw, while one the wizard
+// opened arrived wrapped. They behaved the same for reading, so nothing noticed —
+// until the page could write an archive out, at which point the same program could
+// export the archive it had imported and not the one it had been started with. One
+// way in, so the two are the same object.
+func Readable(archive source.Archive, index *search.Index) api.Archive {
+	return readable{Archive: archive, index: index}
+}
+
 type readable struct {
 	source.Archive
 	index *search.Index

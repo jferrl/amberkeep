@@ -27,6 +27,7 @@ import {
   closeArchive,
   getArchive,
   getBackups,
+  getExport,
   getChats,
   getGuide,
   getMessages,
@@ -35,7 +36,15 @@ import {
   isArchiveError,
   search,
 } from "./client";
-import type { Chat, ChatList, Migration, MigrationStage, SearchPage, Setup } from "./types";
+import type {
+  Chat,
+  ChatList,
+  Export,
+  Migration,
+  MigrationStage,
+  SearchPage,
+  Setup,
+} from "./types";
 import { situationOf, type Situation } from "@/lib/backups";
 
 /** An answer that cannot go out of date while the server that gave it is running. */
@@ -83,6 +92,7 @@ const noImporter = 501;
  * is a prefix rather than a guess at how the pieces were joined.
  */
 export const queryKeys = {
+  exporting: ["export"] as const,
   state: ["state"] as const,
   backups: ["backups"] as const,
   migration: ["migration"] as const,
@@ -454,6 +464,54 @@ export function useMigrationStep(): Action<Migration> {
             void queries.refetchQueries({ queryKey: queryKeys.migration });
             return;
           }
+          setRefused(saidBy(cause));
+        },
+      );
+    },
+    [queries],
+  );
+
+  return { busy, refused, start };
+}
+
+/** Where the export's state is kept. */
+export function exportQuery() {
+  return queryOptions({
+    queryKey: queryKeys.exporting,
+    queryFn: ({ signal }) => getExport({ signal }),
+    staleTime: 0,
+    gcTime: 0,
+    refetchInterval: (query) => (query.state.data?.stage === "writing" ? pollEvery : false),
+  });
+}
+
+/** useExport is how far along writing the archive out is. */
+export function useExport() {
+  return useQuery(exportQuery());
+}
+
+/**
+ * useExportStep runs the request that starts an export, or clears a finished one.
+ *
+ * The reply goes straight into the cache, so the screen draws the stage it asked for
+ * rather than the one a poll happened to catch a moment ago.
+ */
+export function useExportStep(): Action<Export> {
+  const queries = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [refused, setRefused] = useState<string | undefined>(undefined);
+
+  const start = useCallback(
+    (work: () => Promise<Export>) => {
+      setBusy(true);
+      setRefused(undefined);
+      void work().then(
+        (state) => {
+          queries.setQueryData(queryKeys.exporting, state);
+          setBusy(false);
+        },
+        (cause: unknown) => {
+          setBusy(false);
           setRefused(saidBy(cause));
         },
       );

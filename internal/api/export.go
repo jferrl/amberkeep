@@ -1,0 +1,202 @@
+package api
+
+import (
+	"context"
+	"net/http"
+	"sync"
+	"time"
+)
+
+// Writing the archive out, from a browser.
+//
+// The command has been able to do this from the beginning and the page could not,
+// which put the most ordinary thing somebody wants — a copy of their own history
+// they can keep, print or hand to a solicitor — behind a terminal. The shape follows
+// the import: work runs in the background, one thing says what is happening, and the
+// page asks that one thing.
+//
+// Unlike a migration this writes nothing anybody depends on. It produces files in a
+// folder and touches no original and no device, so it does not need the word typed
+// out, and it may be asked for again as often as somebody likes.
+
+// ExportStage is how far along an export is.
+type ExportStage string
+
+// The stages.
+const (
+	// ExportIdle is nothing asked for yet.
+	ExportIdle ExportStage = "idle"
+	// ExportWriting is writing files.
+	ExportWriting ExportStage = "writing"
+	// ExportDone is a folder of files, and where it is.
+	ExportDone ExportStage = "done"
+	// ExportFailed is what went wrong, and what to do about it.
+	ExportFailed ExportStage = "failed"
+)
+
+// ExportRequest is what a page asks for.
+type ExportRequest struct {
+	// Into is the folder the files go in. Empty means the workspace.
+	Into string `json:"into"`
+	// Formats are the ones wanted: html, text, json.
+	Formats []string `json:"formats"`
+	// Only names the conversations to write, by address. Empty means all of them.
+	Only []string `json:"only,omitempty"`
+	// Groups includes group conversations. Ignored when Only names them.
+	Groups bool `json:"groups"`
+	// Notices writes what WhatsApp did as well as what people said.
+	Notices bool `json:"notices"`
+
+	// Me and Location come from how the server was started, not from the page: they
+	// are how every other part of this archive is already being read, and an export
+	// that disagreed with the screen it was started from would be a different
+	// archive wearing the same name.
+	Me       string         `json:"-"`
+	Location *time.Location `json:"-"`
+}
+
+// Exported is what an export produced.
+type Exported struct {
+	// Into is the folder to go and look in.
+	Into          string   `json:"into"`
+	Conversations int      `json:"conversations"`
+	Messages      int      `json:"messages"`
+	Bytes         int64    `json:"bytes"`
+	Formats       []string `json:"formats"`
+}
+
+// Exportable is an archive that can write itself out.
+//
+// A separate interface rather than more of Archive, because an archive that cannot
+// do this is still a perfectly good archive to read — and because widening the one
+// every caller implements, to add something only one of them needs, is how an
+// interface stops being a seam and starts being a list.
+type Exportable interface {
+	Export(ctx context.Context, ask ExportRequest, say Progress) (Exported, error)
+}
+
+// Export is how far along an export is, and what it produced.
+type Export struct {
+	Stage  ExportStage `json:"stage"`
+	Step   Step        `json:"step,omitempty"`
+	Detail string      `json:"detail,omitempty"`
+	// Guidance is the several lines of what to do about a failure.
+	Guidance string    `json:"guidance,omitempty"`
+	Result   *Exported `json:"result,omitempty"`
+}
+
+// exporting holds how far along the one export is.
+//
+// One at a time, like everything else here: two exports into the same folder would
+// race over the same filenames, and the page has nowhere to show a second one.
+type exporting struct {
+	mu    sync.Mutex
+	state Export
+}
+
+func newExporting() *exporting { return &exporting{state: Export{Stage: ExportIdle}} }
+
+func (e *exporting) now() Export {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.state
+}
+
+// begin starts an export, reporting whether it did. It does not when one is running.
+func (e *exporting) begin() bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.state.Stage == ExportWriting {
+		return false
+	}
+	e.state = Export{Stage: ExportWriting, Step: StepWriting, Detail: "Starting."}
+	return true
+}
+
+func (e *exporting) progress(step Step, detail string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.state.Stage != ExportWriting {
+		return
+	}
+	e.state.Step, e.state.Detail = step, detail
+}
+
+func (e *exporting) done(result Exported) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.state = Export{Stage: ExportDone, Result: &result}
+}
+
+func (e *exporting) failed(detail, guidance string) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	e.state = Export{Stage: ExportFailed, Detail: detail, Guidance: guidance}
+}
+
+func (e *exporting) forget() {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.state.Stage == ExportWriting {
+		return
+	}
+	e.state = Export{Stage: ExportIdle}
+}
+
+// handleExport says how far along an export is. The only thing the page polls.
+func (s *server) handleExport(w http.ResponseWriter, r *http.Request) {
+	write(w, r, s.exports.now())
+}
+
+// handleWriteExport starts one.
+func (s *server) handleWriteExport(w http.ResponseWriter, r *http.Request) {
+	open, ok := s.reading(w)
+	if !ok {
+		return
+	}
+	out, can := open.archive.(Exportable)
+	if !can {
+		http.Error(w, "this archive cannot be written out", http.StatusNotImplemented)
+		return
+	}
+
+	var ask ExportRequest
+	if !readRequest(w, r, &ask) {
+		return
+	}
+	if len(ask.Formats) == 0 {
+		http.Error(w, "say which formats to write: html, text or json", http.StatusBadRequest)
+		return
+	}
+	if ask.Into == "" {
+		ask.Into = s.opts.Workspace
+	}
+	ask.Me, ask.Location = s.opts.Me, s.opts.Location
+
+	if !s.exports.begin() {
+		http.Error(w, "an export is already running", http.StatusConflict)
+		return
+	}
+
+	// The work outlives the request that asked for it: an archive of a million
+	// messages takes a minute, and somebody who closes the tab halfway through
+	// should come back to a finished folder rather than half of one.
+	//nolint:contextcheck // see above
+	go func() {
+		ctx := context.WithoutCancel(s.background)
+		result, err := out.Export(ctx, ask, Progress(s.exports.progress))
+		if err != nil {
+			s.exports.failed(sentence(err), s.advise(err))
+			return
+		}
+		s.exports.done(result)
+	}()
+
+	writeStatus(w, r, http.StatusAccepted, s.exports.now())
+}
+
+// handleForgetExport clears a finished export so the screen can be used again.
+func (s *server) handleForgetExport(w http.ResponseWriter, r *http.Request) {
+	s.exports.forget()
+	write(w, r, s.exports.now())
+}

@@ -15,6 +15,7 @@
 
 import type {
   Archive,
+  Export,
   BackupList,
   ChatList,
   Cursor,
@@ -417,4 +418,37 @@ export async function carryOut(
 /** forgetMigration goes back to the beginning, keeping nothing. */
 export async function forgetMigration(options: Cancellable = {}): Promise<Migration> {
   return answer<Migration>(await tell(`${api}/migration/forget`, {}, options), options);
+}
+
+/** getExport is how far along writing the archive out is. The only thing polled. */
+export function getExport(options: Cancellable = {}): Promise<Export> {
+  return ask<Export>(`${api}/export`, narrow({}), options);
+}
+
+/** What an export needs to be told. */
+export interface Writing {
+  into?: string;
+  formats: readonly string[];
+  /** The conversations wanted, by address. Empty means all of them. */
+  only?: readonly string[];
+  groups?: boolean;
+  notices?: boolean;
+}
+
+/** writeArchive starts writing the archive out and stops. */
+export async function writeArchive(ask: Writing, options: Cancellable = {}): Promise<Export> {
+  const body: Record<string, unknown> = {
+    formats: ask.formats,
+    groups: ask.groups ?? true,
+    notices: ask.notices ?? false,
+  };
+  if (ask.into !== undefined && ask.into !== "") body.into = ask.into;
+  if (ask.only !== undefined && ask.only.length > 0) body.only = ask.only;
+
+  return answer<Export>(await tell(`${api}/export`, body, options), options);
+}
+
+/** forgetExport clears a finished export so the screen can be used again. */
+export async function forgetExport(options: Cancellable = {}): Promise<Export> {
+  return answer<Export>(await tell(`${api}/export/forget`, {}, options), options);
 }
