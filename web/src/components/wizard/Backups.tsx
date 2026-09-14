@@ -208,7 +208,7 @@ function Problem({ said }: { said: string }) {
   const advice = rest.join("\n\n").trim();
 
   return (
-    <Aside heading={t("backupsProblem")}>
+    <Aside heading={t("backupsProblem")} tone="blocker">
       <p role="alert" className="m-0 font-medium">
         {sentence ?? said}
       </p>

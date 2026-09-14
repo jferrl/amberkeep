@@ -8,6 +8,8 @@
 	<string>Amberkeep</string>
 	<key>CFBundleExecutable</key>
 	<string>amberkeep</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
 	<key>CFBundleIdentifier</key>
 	<string>net.amberkeep.desktop</string>
 	<key>CFBundlePackageType</key>

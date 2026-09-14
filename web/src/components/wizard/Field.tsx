@@ -132,7 +132,7 @@ export function Field({
         <p
           id={problem}
           role="alert"
-          className="m-0 text-sm font-medium text-[var(--color-accent)]"
+          className="m-0 text-[0.8125rem] font-medium text-[var(--color-alarm)]"
         >
           {wrong}
         </p>

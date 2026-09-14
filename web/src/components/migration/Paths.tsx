@@ -73,7 +73,7 @@ export function MigrationPaths({
       }
       onBack={onBack}
     >
-      <Aside heading={t("migrateUnproven")}>
+      <Aside heading={t("migrateUnproven")} tone="warning">
         <Say>{t("migrateUnprovenHelp")}</Say>
       </Aside>
 
@@ -168,13 +168,13 @@ function Choice({
   const note = useId();
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex items-start gap-3 py-1">
       <input
         id={box}
         type="checkbox"
         checked={on}
         aria-describedby={note}
-        className="mt-1 accent-[var(--color-accent)]"
+        className="mt-0.5 size-4 shrink-0 accent-[var(--color-accent)]"
         onChange={(event) => {
           onChange(event.target.checked);
         }}

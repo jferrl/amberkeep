@@ -28,6 +28,19 @@
   --color-ink: oklch(0.19 0.005 75);
   --color-muted: oklch(0.475 0.009 75);
   --color-line: oklch(0.915 0.005 75);
+  /* The edge of something you can operate — an input, a button at rest. WCAG 1.4.11
+     asks 3:1 for those, and a divider's weight does not reach it: the old border was
+     1.29:1, which is a hairline you cannot see the boundary of. The value is set a
+     little past 3:1 on purpose: the build rounds these to whole percents, and one
+     landing on 2.98 is a rule nobody notices failing. Dividers keep
+     --color-line, because a rule between two rows is decoration and is exempt. */
+  --color-edge: oklch(0.655 0.008 75);
+
+  /* Something that blocks. Deliberately not the accent: that already means focus
+     ring, progress, "chosen" and "do not skip this", and a hue with five meanings
+     has none. Checked at 4.6:1 on its own wash. */
+  --color-alarm: oklch(0.505 0.175 27);
+  --color-alarm-wash: oklch(0.972 0.018 27);
   --color-accent: oklch(0.545 0.12 60);
 
   /* A message somebody sent, and one they received. Both neutral: the green every
@@ -51,6 +64,9 @@
       --color-ink: oklch(0.955 0.004 75);
       --color-muted: oklch(0.70 0.012 75);
       --color-line: oklch(0.285 0.010 75);
+      --color-edge: oklch(0.495 0.012 75);
+      --color-alarm: oklch(0.70 0.155 25);
+      --color-alarm-wash: oklch(0.235 0.035 25);
       --color-accent: oklch(0.775 0.115 68);
 
       --color-mine: oklch(0.245 0.018 70);

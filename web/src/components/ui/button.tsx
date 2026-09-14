@@ -27,11 +27,23 @@ const styles = cva(
          */
         primary:
           "bg-[var(--color-ink)] text-[var(--color-bg)] hover:opacity-90 active:opacity-100",
+        /**
+         * The step that writes.
+         *
+         * Exactly one button in this program ends with a file being produced that
+         * somebody will restore onto a phone. It was drawn as `primary`, which is
+         * also what "Next" is drawn as, so the most consequential control looked
+         * exactly like the most harmless one.
+         */
+        commit:
+          "bg-[var(--color-alarm)] text-[var(--color-bg)] hover:opacity-90 active:opacity-100",
         default:
-          "border border-[var(--color-line)] bg-[var(--color-bg)] hover:bg-[var(--color-surface)] " +
+          "border border-[var(--color-edge)] bg-[var(--color-bg)] hover:bg-[var(--color-surface)] " +
           "hover:border-[var(--color-muted)]",
         ghost: "hover:bg-[var(--color-surface)]",
-        quiet: "text-[var(--color-muted)] hover:text-[var(--color-ink)]",
+        quiet:
+          "text-[var(--color-muted)] underline decoration-[var(--color-edge)] underline-offset-4 " +
+          "hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]",
       },
       size: {
         default: "h-8 px-3",

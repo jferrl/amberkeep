@@ -49,9 +49,7 @@ export function Trouble({
 
       {state.guidance !== undefined && (
         <div className="flex flex-col gap-1.5">
-          <h2 className="m-0 text-xs font-semibold tracking-wide text-[var(--color-muted)] uppercase">
-            {t("failedGuidance")}
-          </h2>
+          <h2 className="m-0 text-sm font-semibold">{t("failedGuidance")}</h2>
           <pre className="m-0 overflow-x-auto bg-[var(--color-surface)] p-3 font-sans text-sm whitespace-pre-wrap">
             {state.guidance}
           </pre>

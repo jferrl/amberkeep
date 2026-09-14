@@ -18,6 +18,19 @@ rm -rf "$out"
 mkdir -p "$out/Contents/MacOS" "$out/Contents/Resources"
 cp "$here/build/darwin/Info.plist" "$out/Contents/Info.plist"
 
+# The icon, rendered from the brand mark rather than committed as a binary. It needs
+# a browser to turn SVG into PNG, which the frontend already has; without one the
+# bundle still builds and simply has no icon, so a machine that cannot render is not
+# a machine that cannot build.
+iconset="$(mktemp -d)/amberkeep.iconset"
+if [ -d "$here/../web/node_modules/@playwright/test" ]; then
+	(cd "$here/../web" && node scripts/app-icon.mjs "$here/../docs/brand" "$iconset")
+	iconutil -c icns "$iconset" -o "$out/Contents/Resources/icon.icns"
+	echo "icon: $out/Contents/Resources/icon.icns"
+else
+	echo "icon: skipped (no playwright in web/; run npm install there)" >&2
+fi
+
 CGO_ENABLED=1 go build -C "$here" -tags desktop,production -trimpath \
 	-ldflags "-s -w" -o "$out/Contents/MacOS/amberkeep" ./...
 

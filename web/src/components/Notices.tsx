@@ -16,9 +16,11 @@ export function Notices() {
   const t = useT();
 
   return (
-    <footer className="border-t border-[var(--color-line)] px-3.5 py-2 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
-      <p className="m-0">{t("notAffiliated")}</p>
-      <p className="m-0 mt-1">{t("freeSoftware")}</p>
+    <footer className="border-t border-[var(--color-line)] px-5 py-2.5 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
+      <div className="mx-auto max-w-2xl">
+        <p className="m-0">{t("notAffiliated")}</p>
+        <p className="m-0 mt-1">{t("freeSoftware")}</p>
+      </div>
     </footer>
   );
 }

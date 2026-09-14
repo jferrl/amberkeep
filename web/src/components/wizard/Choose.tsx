@@ -87,7 +87,7 @@ export function Choose({
           >
             <button
               type="button"
-              className="group flex w-full items-center gap-4 rounded-md px-3 py-4 text-left transition-colors hover:bg-[var(--color-surface)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
+              className="group flex w-full items-center gap-4 rounded-md py-4 pr-3 text-left transition-colors hover:bg-[var(--color-surface)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)]"
               onClick={() => {
                 onChoose(route);
               }}

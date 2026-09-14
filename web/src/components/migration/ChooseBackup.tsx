@@ -146,7 +146,7 @@ function Nothing({ situation, said }: { situation: Situation; said: string }) {
       const [sentence, ...rest] = said.split(/\n{2,}/);
       const advice = rest.join("\n\n").trim();
       return (
-        <Aside heading={t("backupsProblem")}>
+        <Aside heading={t("backupsProblem")} tone="blocker">
           <p role="alert" className="m-0 font-medium">
             {sentence ?? said}
           </p>

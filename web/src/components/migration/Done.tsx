@@ -64,7 +64,7 @@ export function MigrationDone({
         </div>
       )}
 
-      <Aside heading={t("migrateUnproven")}>
+      <Aside heading={t("migrateUnproven")} tone="warning">
         <Say>{t("migrateUnprovenHelp")}</Say>
       </Aside>
 

@@ -241,7 +241,9 @@ describe("the journey", () => {
     });
 
     await user.type(await screen.findByLabelText("Type migrate"), "migrate");
-    await user.click(screen.getByRole("button", { name: "Do it" }));
+    await user.click(
+      screen.getByRole("button", { name: "Write the changed backup" }),
+    );
     expect(sentTo("/api/migration/carry-out")).toEqual({ confirm: "migrate" });
 
     expect(
@@ -298,30 +300,54 @@ describe("the journey", () => {
 });
 
 describe("the word", () => {
-  /** Nothing but the word itself opens the button that writes. */
-  const attempts: { name: string; typed: string; opens: boolean }[] = [
-    { name: "nothing typed leaves it shut", typed: "", opens: false },
-    { name: "half of it leaves it shut", typed: "migr", opens: false },
-    { name: "another word leaves it shut", typed: "yes", opens: false },
-    { name: "the word opens it", typed: "migrate", opens: true },
+  /**
+   * Nothing but the word itself sends anything.
+   *
+   * The button is reachable whatever is typed, and refuses with a sentence. It used
+   * to sit dimmed instead, which meant a capital letter produced a screen where
+   * nothing happened and nothing said why — the exact thing this program argues
+   * against two files away, where it refuses to draw a button it cannot honour.
+   */
+  const attempts: { name: string; typed: string; sends: boolean }[] = [
+    { name: "nothing typed sends nothing", typed: "", sends: false },
+    { name: "half of it sends nothing", typed: "migr", sends: false },
+    { name: "another word sends nothing", typed: "yes", sends: false },
+    { name: "the wrong case sends nothing", typed: "Migrate", sends: false },
+    { name: "the word sends it", typed: "migrate", sends: true },
     {
-      name: "the word with spaces round it opens it",
+      name: "the word with spaces round it sends it",
       typed: "  migrate  ",
-      opens: true,
+      sends: true,
     },
   ];
 
-  it.each(attempts)("$name", async ({ typed, opens }) => {
+  it.each(attempts)("$name", async ({ typed, sends }) => {
     const user = userEvent.setup();
     now = planned();
+    replies["/api/migration/carry-out"] = () => answer({ stage: "working" });
 
     show();
     const box = await screen.findByLabelText("Type migrate");
     if (typed !== "") await user.type(box, typed);
 
-    const button = screen.getByRole("button", { name: "Do it" });
-    if (opens) expect(button).toBeEnabled();
-    else expect(button).toBeDisabled();
+    // Always reachable. What it does depends on what was typed.
+    const button = screen.getByRole("button", {
+      name: "Write the changed backup",
+    });
+    expect(button).toBeEnabled();
+    await user.click(button);
+
+    if (sends) {
+      expect(sentTo("/api/migration/carry-out")).toEqual({
+        confirm: "migrate",
+      });
+    } else {
+      expect(addressesAsked()).not.toContain("/api/migration/carry-out");
+      // And it says so, rather than doing nothing visible.
+      expect(
+        await screen.findByText(/That is not the word/),
+      ).toBeInTheDocument();
+    }
   });
 
   it("writes nothing while the word is wrong, however hard the form is pushed", async () => {

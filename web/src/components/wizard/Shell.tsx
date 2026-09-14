@@ -115,7 +115,7 @@ function Progress({
     <div className="flex items-center gap-3">
       {total !== undefined && (
         <div
-          className="flex h-0.5 w-20 gap-0.5 overflow-hidden rounded-full"
+          className="flex h-1 w-24 gap-0.5 overflow-hidden rounded-full"
           // One element, one label. Twenty divs each announcing themselves is how a
           // progress bar becomes unreadable to everything except eyes.
           role="img"
@@ -159,23 +159,55 @@ export function Say({ children }: { children: ReactNode }) {
  * course before they act rather than after.
  */
 export function Expect({ children }: { children: ReactNode }) {
+  const t = useT();
+
+  // No box. A preview of the next screen is the quietest thing on this one, and it
+  // was wearing the same container as a blocking failure.
   return (
-    <p className="m-0 rounded-md bg-[var(--color-surface)] px-3 py-2 text-[0.8125rem] text-[var(--color-muted)] ring-1 ring-[var(--color-line)] ring-inset">
+    <p className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
+      <span className="font-medium text-[var(--color-ink)]">
+        {t("expectLabel")}{" "}
+      </span>
       {children}
     </p>
   );
 }
 
+/**
+ * How much a box wants to be believed.
+ *
+ * One treatment carried four meanings: a helpful tip about a phone, a permanent
+ * disclaimer about what this program has never been proved to do, a check that
+ * blocks the next step, and a failure that has just happened. Four boxes, one grey,
+ * two of them stacked adjacently on the screen where somebody hands over their
+ * history. A reader had no way to tell which was which without reading all of them.
+ *
+ * Three tones, and the difference is structural rather than only coloured: a note is
+ * unmarked, a warning is ringed in the accent, and a blocker is filled. That way it
+ * survives a printout, and it survives whoever cannot tell the amber from the grey.
+ */
+export type Tone = "note" | "warning" | "blocker";
+
+const tones: Record<Tone, string> = {
+  note: "bg-[var(--color-surface)] ring-[var(--color-line)]",
+  warning: "bg-[var(--color-surface)] ring-[var(--color-accent)]",
+  blocker: "bg-[var(--color-alarm-wash)] ring-[var(--color-alarm)]",
+};
+
 /** A box of advice beside something that went wrong or cannot be used. */
 export function Aside({
   heading,
+  tone = "note",
   children,
 }: {
   heading?: string;
+  tone?: Tone;
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-[var(--color-surface)] p-4 text-[0.8125rem] ring-1 ring-[var(--color-line)] ring-inset">
+    <div
+      className={`flex flex-col gap-2 rounded-lg p-4 text-[0.8125rem] ring-1 ring-inset ${tones[tone]}`}
+    >
       {heading !== undefined && (
         <p className="m-0 text-sm font-semibold">{heading}</p>
       )}

@@ -55,7 +55,7 @@ export function MigrationChecks({
       </ul>
 
       {blockers.length > 0 && (
-        <Aside heading={t("migrateChecksBlocked")}>
+        <Aside heading={t("migrateChecksBlocked")} tone="blocker">
           {blockers.map((blocker) => {
             const step = before.find((one) => one.id === blocker.step);
             return step === undefined ? (

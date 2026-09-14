@@ -43,9 +43,7 @@ export function Step({ step, number }: { step: GuideStep; number: number }) {
   return (
     <article
       className={
-        critical
-          ? "rounded-lg border border-[var(--color-accent)] p-4"
-          : "border-l-2 border-[var(--color-line)] pl-4"
+        critical ? "rounded-lg p-4 ring-1 ring-[var(--color-accent)]" : "py-1"
       }
     >
       <h3 className="m-0 flex flex-wrap items-baseline gap-2 text-sm font-semibold">

@@ -14,7 +14,14 @@ import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
 import { count, dayOf } from "@/lib/format";
 
-/** The word somebody has to type. The server accepts nothing else. */
+/**
+ * What the server is sent when somebody agrees. It accepts nothing else.
+ *
+ * This is the wire value, not the word on screen. A Spanish reader was being asked
+ * to type an English word at the one gate whose whole purpose is deliberate
+ * comprehension — copying five letters you do not read is the opposite of the thing
+ * being asked for. They type a word they understand; this is what travels.
+ */
 export const theWord = "migrate";
 
 /**
@@ -46,11 +53,22 @@ export function MigrationPlanned({
 }) {
   const t = useT();
   const [typed, setTyped] = useState("");
+  const [wrong, setWrong] = useState<string | undefined>(undefined);
   const plan = state.plan;
+
+  // The word in the reader's own language. The server's word is sent regardless.
+  const said = t("confirmWord");
 
   const agree = (event: SyntheticEvent) => {
     event.preventDefault();
-    if (typed.trim() === theWord) onCarryOut();
+    if (typed.trim() === said) {
+      onCarryOut();
+      return;
+    }
+    // Said rather than silently refused. This screen's own sibling argues that a
+    // control somebody can reach and not use is a promise the screen cannot keep,
+    // and a button that just stays dim on a capital letter is exactly that.
+    setWrong(t("migrateAgreeWrong", { word: said }));
   };
 
   if (plan === undefined || plan.adding === 0) {
@@ -77,7 +95,7 @@ export function MigrationPlanned({
       <Totals plan={plan} language={language} />
 
       {plan.warnings !== undefined && plan.warnings.length > 0 && (
-        <Aside heading={t("migrateChecksBlocked")}>
+        <Aside heading={t("migrateChecksBlocked")} tone="warning">
           {plan.warnings.map((warning) => (
             <Say key={warning}>{warning}</Say>
           ))}
@@ -86,9 +104,23 @@ export function MigrationPlanned({
 
       <LeftOut conversations={plan.conversations} />
 
+      {/*
+        The warning this program leads with, on the one screen where it was missing.
+        It was shown before anybody had invested anything, and again after it was
+        already done, and not at the moment consent is actually given.
+      */}
+      <Aside heading={t("migrateUnproven")} tone="warning">
+        <Say>{t("migrateUnprovenHelp")}</Say>
+      </Aside>
+
       <form className="flex flex-col gap-4" onSubmit={agree}>
         <h2 className="m-0 text-sm font-semibold">{t("migrateAgreeTitle")}</h2>
-        <Say>{t("migrateAgreeHelp", { word: theWord })}</Say>
+
+        {/* What is about to be read and written, named again. It was chosen two
+            screens ago and has not been on screen since. */}
+        {state.backup !== undefined && (
+          <Say>{t("migrateAgreeChosen", { backup: state.backup })}</Say>
+        )}
 
         <Field
           label={t("migrateIntoLabel")}
@@ -97,19 +129,22 @@ export function MigrationPlanned({
           value={into}
           onChange={onInto}
         />
+
+        <Say>{t("migrateAgreeHelp", { word: said })}</Say>
         <Field
-          label={t("migrateAgreeLabel", { word: theWord })}
+          label={t("migrateAgreeLabel", { word: said })}
           value={typed}
+          wrong={wrong}
           autoComplete="off"
-          onChange={setTyped}
+          onChange={(value) => {
+            setWrong(undefined);
+            setTyped(value);
+          }}
         />
 
         <div>
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={busy || typed.trim() !== theWord}
-          >
+          {/* Not the same button as "Next". This is the one that writes. */}
+          <Button variant="commit" type="submit" disabled={busy}>
             {t("migrateCarryOut")}
           </Button>
         </div>
