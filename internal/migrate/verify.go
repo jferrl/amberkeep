@@ -567,14 +567,24 @@ func (v *verifier) counts() {
 		v.r.add("no added message credits somebody from another conversation", ok && crossed == 0)
 	}
 
-	// The same message twice is the failure this whole feature is judged on.
+	// The same message twice in the same conversation is the failure this whole
+	// feature is judged on.
+	//
+	// Within a conversation, not across the store. WhatsApp's identifier for a
+	// message is unique to the conversation it is in, not globally: the same one
+	// appears in somebody's own chat and in a group, legitimately and often. On a
+	// real archive that is 32,664 identifiers shared between exactly two
+	// conversations each, and none repeated inside one. The prototype's validator
+	// asked the global question and got away with it because the migration it was
+	// run against touched a single conversation.
 	before, okBefore := v.scalar(
-		"SELECT count(*) FROM (SELECT ZSTANZAID FROM original.ZWAMESSAGE WHERE ZSTANZAID IS NOT NULL " +
-			"GROUP BY 1 HAVING count(*) > 1)")
+		"SELECT count(*) FROM (SELECT ZCHATSESSION, ZSTANZAID FROM original.ZWAMESSAGE " +
+			"WHERE ZSTANZAID IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1)")
 	after, okAfter := v.scalar(
-		"SELECT count(*) FROM (SELECT ZSTANZAID FROM main.ZWAMESSAGE WHERE ZSTANZAID IS NOT NULL " +
-			"GROUP BY 1 HAVING count(*) > 1)")
-	v.r.add("no message appears twice that did not already", okBefore && okAfter && after <= before,
+		"SELECT count(*) FROM (SELECT ZCHATSESSION, ZSTANZAID FROM main.ZWAMESSAGE " +
+			"WHERE ZSTANZAID IS NOT NULL GROUP BY 1, 2 HAVING count(*) > 1)")
+	v.r.add("no message appears twice in a conversation that did not already",
+		okBefore && okAfter && after <= before,
 		fmt.Sprintf("%d duplicated before, %d after", before, after))
 
 	blank, ok := v.scalar(

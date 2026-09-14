@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -310,6 +311,104 @@ func TestAStoreThisCannotWriteInto(t *testing.T) {
 			}
 			if !errorIs(err, tt.want) {
 				t.Errorf("refused with %v, want %v", err, tt.want)
+			}
+		})
+	}
+}
+
+// TestTwoConversationsThatAreOnePerson covers the case that produced somebody twice
+// in a real conversation list.
+//
+// The Android archive knows them behind a hidden identity and by their number, in two
+// separate conversations. The iPhone has one entry. Both have to be written into it.
+func TestTwoConversationsThatAreOnePerson(t *testing.T) {
+	t.Parallel()
+
+	p := buildPhone(t)
+	p.holds(t, ana.String(), 0, "K1")
+	p.wal(t)
+
+	// The archive knows the hidden identity stands for Ana's number.
+	from := history(said(1, "K1", 0, "one"), said(2, "K2", 1, "two")).
+		with(model.Chat{ID: 9, JID: hiden, Kind: model.ChatDirect, Name: "Ana Lopez"},
+			said(90, "K9", 5, "sent while hidden"))
+	from.directory.Alias(hiden, ana)
+
+	plan, err := Build(context.Background(), from, p.open(t, ""), Options{})
+	if err != nil {
+		t.Fatalf("Build() failed: %v", err)
+	}
+
+	if plan.Merging != 1 || plan.Creating != 0 {
+		t.Fatalf("merging=%d creating=%d, want them recognised as one person",
+			plan.Merging, plan.Creating)
+	}
+	if plan.Adding != 2 {
+		t.Errorf("adding=%d, want the two the phone does not have", plan.Adding)
+	}
+
+	var folded int
+	for _, c := range plan.Conversations {
+		folded += len(c.Folded)
+	}
+	if folded != 1 {
+		t.Fatalf("%d conversations were folded in, want the hidden one", folded)
+	}
+	if said := strings.Join(plan.Warnings, "\n"); !strings.Contains(said, "same person the iPhone already has") {
+		t.Errorf("the fold is not mentioned in the warnings:\n%s", said)
+	}
+
+	// And writing it puts everything in one conversation rather than two.
+	into := filepath.Join(t.TempDir(), "migrated.sqlite")
+	result, err := Apply(context.Background(), from, p.path, into, plan)
+	if err != nil {
+		t.Fatalf("Apply() failed: %v", err)
+	}
+	report, err := Verify(context.Background(), p.path, result.Path, plan)
+	if err != nil {
+		t.Fatalf("Verify() failed: %v", err)
+	}
+	for _, c := range report.Failures() {
+		t.Errorf("what was written fails %q: %s", c.Name, c.Detail)
+	}
+}
+
+// TestItSaysWhenItCannotTellPeopleApart is the warning for the failure that looks
+// like success: the same person arriving twice under two different addresses, where
+// nothing downstream can notice.
+func TestItSaysWhenItCannotTellPeopleApart(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		pairing bool
+		want    bool
+	}{
+		{name: "without WhatsApp's own record of who is who", want: true},
+		{name: "with it", pairing: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			p := buildPhone(t)
+			p.holds(t, "99887766554433@lid", 0, "K1")
+
+			pairing := ""
+			if tt.pairing {
+				pairing = p.pairs(t, "99887766554433", "34600111222")
+			}
+
+			plan, err := Build(context.Background(), history(said(1, "K2", 0, "one")),
+				p.open(t, pairing), Options{})
+			if err != nil {
+				t.Fatalf("Build() failed: %v", err)
+			}
+
+			warned := strings.Contains(strings.Join(plan.Warnings, "\n"), "hidden identity")
+			if warned != tt.want {
+				t.Errorf("warned = %v, want %v; warnings were %v", warned, tt.want, plan.Warnings)
 			}
 		})
 	}

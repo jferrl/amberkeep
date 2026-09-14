@@ -245,6 +245,27 @@ func (t *Target) Session(address string) (Session, bool) {
 // Sessions is how many conversations the phone holds.
 func (t *Target) Sessions() int { return len(t.sessions) }
 
+// Pairings is how many hidden identities this phone has a number for.
+//
+// Zero is the dangerous case, not an empty one: a conversation the iPhone files under
+// a hidden identifier and the Android files under a number cannot then be recognised
+// as the same person, and the migration adds them a second time. Nothing about the
+// result looks wrong — the two entries have different addresses — so this has to be
+// said before anybody agrees to it.
+func (t *Target) Pairings() int { return len(t.lidOf) }
+
+// Hidden is how many of the phone's own conversations are filed under a hidden
+// identifier, which is what makes a missing pairing file matter or not.
+func (t *Target) Hidden() int {
+	var n int
+	for address := range t.sessions {
+		if strings.HasSuffix(address, "@lid") {
+			n++
+		}
+	}
+	return n
+}
+
 // Knows reports whether a conversation already holds a message.
 //
 // WhatsApp's own identifier is what is compared, because it is the same on both

@@ -108,7 +108,7 @@ func TestEveryCheckCatchesWhatItIsFor(t *testing.T) {
 		{
 			name:    "the same message is added twice",
 			harm:    "UPDATE ZWAMESSAGE SET ZSTANZAID = 'NEW1' WHERE ZSTANZAID = 'NEW2'",
-			catches: "no message appears twice",
+			catches: "no message appears twice in a conversation",
 		},
 		{
 			name:    "somebody ends up in the list twice",

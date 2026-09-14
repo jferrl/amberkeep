@@ -1,10 +1,13 @@
 package migrate
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -183,6 +186,7 @@ func TestARealMigrationAddsUp(t *testing.T) {
 // still being used. It is the only artefact in existence known to be right, so if a
 // check here fails on it, the check is what to doubt.
 //
+//	AMBERKEEP_REAL_INTO            where to write a migration, to look at afterwards
 //	AMBERKEEP_REAL_ORIGINAL_STORE  the pristine ChatStorage.sqlite it started from
 //	AMBERKEEP_REAL_MIGRATED_STORE  what the Python prototype produced from it
 func TestTheOraclesOwnOutputPasses(t *testing.T) {
@@ -229,5 +233,64 @@ func TestTheOraclesOwnOutputPasses(t *testing.T) {
 	t.Logf("%s; added %v", report.Summary(), report.Added)
 	for _, c := range report.Failures() {
 		t.Errorf("a migration that was restored to a real phone fails %q: %s", c.Name, c.Detail)
+	}
+}
+
+// TestARealMigrationCanBeWrittenAndChecked is the whole pipeline on real data: plan
+// it, write it, and put the result through every check.
+//
+// This is the closest thing to the real operation that exists without a phone in it.
+// It writes into a temporary directory and touches neither the archive nor the store.
+func TestARealMigrationCanBeWrittenAndChecked(t *testing.T) {
+	from, _ := realSides(t)
+	storePath := os.Getenv("AMBERKEEP_REAL_CHATSTORAGE")
+
+	to, err := OpenTarget(t.Context(), storePath, os.Getenv("AMBERKEEP_REAL_LIDPAIRS"))
+	if err != nil {
+		t.Fatalf("opening the iPhone store: %v", err)
+	}
+	defer func() { _ = to.Close() }()
+
+	opts := Options{Groups: true}
+	plan, err := Build(t.Context(), from, to, opts)
+	if err != nil {
+		t.Fatalf("Build() failed: %v", err)
+	}
+	t.Logf("plan: %s", plan.Summary())
+
+	before, err := os.ReadFile(storePath) // #nosec G304 -- operator-supplied
+	if err != nil {
+		t.Fatalf("reading the store: %v", err)
+	}
+
+	// Somewhere durable when asked for, because the useful thing to do with a
+	// failure on real data is to go and look at what was written.
+	into := filepath.Join(t.TempDir(), "ChatStorage.migrated.sqlite")
+	if durable := os.Getenv("AMBERKEEP_REAL_INTO"); durable != "" {
+		into = durable
+	}
+	result, err := Apply(t.Context(), from, storePath, into, plan)
+	if err != nil {
+		t.Fatalf("Apply() failed: %v", err)
+	}
+	t.Logf("wrote %d messages into %d conversations (%d new) in %s, %d conventions copied from the store",
+		result.Added, result.Merged+result.Created, result.Created,
+		result.Took.Round(time.Second), result.Sampled)
+
+	report, err := Verify(t.Context(), storePath, result.Path, plan)
+	if err != nil {
+		t.Fatalf("Verify() failed: %v", err)
+	}
+	t.Logf("checks: %s; added %v", report.Summary(), report.Added)
+	for _, c := range report.Failures() {
+		t.Errorf("what was written fails %q: %s", c.Name, c.Detail)
+	}
+
+	after, err := os.ReadFile(storePath) // #nosec G304 -- operator-supplied
+	if err != nil {
+		t.Fatalf("reading the store: %v", err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Error("the phone's own store was changed")
 	}
 }

@@ -68,6 +68,12 @@ func Build(ctx context.Context, from Source, to *Target, opts Options) (Plan, er
 	plan := Plan{Conversations: make([]Conversation, 0, len(chats))}
 	touchedSessions := make(map[int64]bool)
 
+	// Which destination each conversation claimed, and what it has already counted
+	// there. Two source conversations can be one person on the iPhone, and the
+	// second must join the first rather than become a second entry in the list.
+	claimed := make(map[string]int, len(chats))
+	seen := make(map[string]map[string]struct{}, len(chats))
+
 	for _, chat := range chats {
 		if err := ctx.Err(); err != nil {
 			return Plan{}, err
@@ -84,15 +90,24 @@ func Build(ctx context.Context, from Source, to *Target, opts Options) (Plan, er
 
 		// Where it would land. A conversation the phone already has is merged into;
 		// anything else is created.
-		address := names.Resolve(chat.JID).String()
-		if chat.Kind == model.ChatGroup {
-			address = chat.JID.String()
-		}
-		if session, found := to.Session(address); found {
+		c.Destination = destinationOf(chat, names)
+		if session, found := to.Session(c.Destination); found {
 			c.Into, c.Session, c.OnPhoneAlready = session.Address, session.PK, session.Messages
 		}
 
-		if err := count(ctx, from, to, chat, &c, &plan); err != nil {
+		// Somebody the iPhone already has under this address, from an earlier
+		// conversation in this same run. Fold rather than create them twice.
+		if at, taken := claimed[c.Destination]; taken {
+			into := &plan.Conversations[at]
+			into.Folded = append(into.Folded, c.Address)
+			if err := count(ctx, from, to, chat, into, seen[c.Destination]); err != nil {
+				return Plan{}, err
+			}
+			continue
+		}
+		seen[c.Destination] = make(map[string]struct{}, 1024)
+
+		if err := count(ctx, from, to, chat, &c, seen[c.Destination]); err != nil {
 			return Plan{}, err
 		}
 
@@ -107,12 +122,14 @@ func Build(ctx context.Context, from Source, to *Target, opts Options) (Plan, er
 		default:
 			plan.Creating++
 		}
+		claimed[c.Destination] = len(plan.Conversations)
 		plan.Conversations = append(plan.Conversations, c)
 	}
 
+	plan.total()
 	plan.Untouched = to.Sessions() - len(touchedSessions)
 	sortBySize(plan.Conversations)
-	plan.Warnings = warningsFor(plan, opts)
+	plan.Warnings = warningsFor(plan, opts, to)
 	return plan, nil
 }
 
@@ -144,15 +161,27 @@ func consider(chat model.Chat, names *model.Directory, opts Options) (Conversati
 	return c, true
 }
 
-// count walks one conversation and accounts for every message in it.
-func count(ctx context.Context, from Source, to *Target, chat model.Chat,
-	c *Conversation, plan *Plan,
-) error {
-	// Identifiers seen in this conversation itself. A source can hold the same
-	// message twice — a backup restored over another — and adding it twice would be
-	// this program's own doing rather than something it inherited.
-	seen := make(map[string]struct{}, 1024)
+// destinationOf is the address the iPhone will file a conversation under.
+//
+// A group is filed under its own address on both phones. A person may be known by a
+// number on one and by a hidden identifier on the other, and the resolved form is
+// what has to be matched against, or the same person arrives twice.
+func destinationOf(chat model.Chat, names *model.Directory) string {
+	if chat.Kind == model.ChatGroup {
+		return chat.JID.String()
+	}
+	return names.Resolve(chat.JID).String()
+}
 
+// count walks one conversation and accounts for every message in it.
+//
+// seen is the identifiers already counted towards this destination, and belongs to
+// the caller because two source conversations can feed one: a message in both must
+// be counted once, or the plan promises more than the writing will do and the writing
+// is thrown away for breaking a promise it kept.
+func count(ctx context.Context, from Source, to *Target, chat model.Chat,
+	c *Conversation, seen map[string]struct{},
+) error {
 	for m, err := range from.Messages(ctx, chat) {
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", c.Name, err)
@@ -185,19 +214,14 @@ func count(ctx context.Context, from Source, to *Target, chat model.Chat,
 			c.AsPlaceholders++
 		}
 		if !m.SentAt.IsZero() {
-			if plan.Earliest.IsZero() || m.SentAt.Before(plan.Earliest) {
-				plan.Earliest = m.SentAt
+			if c.Earliest.IsZero() || m.SentAt.Before(c.Earliest) {
+				c.Earliest = m.SentAt
 			}
-			if m.SentAt.After(plan.Latest) {
-				plan.Latest = m.SentAt
+			if m.SentAt.After(c.Latest) {
+				c.Latest = m.SentAt
 			}
 		}
 	}
-
-	plan.Adding += c.Adding
-	plan.AlreadyThere += c.AlreadyThere
-	plan.Untranslatable += c.Untranslatable
-	plan.AsPlaceholders += c.AsPlaceholders
 	return nil
 }
 
@@ -231,8 +255,31 @@ func sortBySize(conversations []Conversation) {
 }
 
 // warningsFor is what somebody has to read before agreeing.
-func warningsFor(plan Plan, opts Options) []string {
+func warningsFor(plan Plan, opts Options, to *Target) []string {
 	var out []string
+
+	// The one that produces a wrong result which looks entirely right. WhatsApp files
+	// some people under a hidden identifier rather than a number, and which of the two
+	// it uses can differ between the phones. Its own record of which is which lives in
+	// a second file; without that file the two cannot be matched, so the same person
+	// arrives a second time — under a different address, so nothing downstream can
+	// notice, and nobody finds out until they look at their own conversation list.
+	if hidden := to.Hidden(); hidden > 0 && to.Pairings() == 0 {
+		out = append(out, fmt.Sprintf(
+			"The iPhone files %s under a hidden identity rather than a phone number, and "+
+				"WhatsApp's own record of which is which was not supplied. Anybody in that "+
+				"position who is known by their number on the Android will arrive as a second "+
+				"conversation rather than joining the one already there. Supply LID.sqlite from "+
+				"the same backup to avoid it.",
+			plural(hidden, "conversation", "conversations")))
+	}
+
+	if folded := countFolded(plan); folded > 0 {
+		out = append(out, fmt.Sprintf(
+			"%s turned out to be the same person the iPhone already has under another name, "+
+				"and will be written into the conversation that is already there rather than "+
+				"added beside it.", plural(folded, "conversation", "conversations")))
+	}
 
 	if plan.AsPlaceholders > 0 {
 		out = append(out, fmt.Sprintf(
@@ -258,6 +305,15 @@ func warningsFor(plan Plan, opts Options) []string {
 			plural(groups, "group", "groups")))
 	}
 	return out
+}
+
+// countFolded counts the source conversations written into another.
+func countFolded(plan Plan) int {
+	var n int
+	for _, c := range plan.Conversations {
+		n += len(c.Folded)
+	}
+	return n
 }
 
 // countSkipped counts the conversations skipped for one reason.

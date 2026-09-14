@@ -75,6 +75,32 @@ type Plan struct {
 	Latest   time.Time `json:"latest,omitempty"`
 }
 
+// total adds the conversations up.
+//
+// Counted here rather than as the conversations are walked, because one conversation
+// can be walked more than once — two source conversations that turn out to be the
+// same person on the iPhone are counted into one entry — and adding a running total
+// on each pass counts the earlier passes again. It did, and the writer caught it by
+// refusing to stand behind a store that did not match the plan.
+func (p *Plan) total() {
+	p.Adding, p.AlreadyThere, p.Untranslatable, p.AsPlaceholders = 0, 0, 0, 0
+	p.Earliest, p.Latest = time.Time{}, time.Time{}
+
+	for _, c := range p.Conversations {
+		p.Adding += c.Adding
+		p.AlreadyThere += c.AlreadyThere
+		p.Untranslatable += c.Untranslatable
+		p.AsPlaceholders += c.AsPlaceholders
+
+		if !c.Earliest.IsZero() && (p.Earliest.IsZero() || c.Earliest.Before(p.Earliest)) {
+			p.Earliest = c.Earliest
+		}
+		if c.Latest.After(p.Latest) {
+			p.Latest = c.Latest
+		}
+	}
+}
+
 // Empty reports whether the plan would write nothing at all.
 func (p Plan) Empty() bool { return p.Adding == 0 }
 
@@ -109,6 +135,19 @@ type Conversation struct {
 	// Kind is "direct" or "group".
 	Kind string `json:"kind"`
 
+	// Destination is the address the iPhone will file this under, which is not always
+	// the address the Android archive files it under: one phone can know somebody by
+	// their number and the other by a hidden identifier.
+	Destination string `json:"destination"`
+
+	// Folded is other Android conversations that turn out to be the same person on
+	// the iPhone and are written into this one.
+	//
+	// Rare and real: on an archive of 4,286 conversations there was one. Left alone
+	// it produces the same person twice in the conversation list, which is the exact
+	// failure this whole feature is judged on.
+	Folded []string `json:"folded,omitempty"`
+
 	// Into is the iPhone conversation this would be merged into, when there is one.
 	// Empty means a conversation would be created.
 	Into string `json:"into,omitempty"`
@@ -128,6 +167,10 @@ type Conversation struct {
 	// OnPhoneAlready is how many messages the iPhone conversation holds now, which
 	// is the number a person will compare against afterwards.
 	OnPhoneAlready int `json:"on_phone_already"`
+
+	// Earliest and Latest bound what would arrive from this conversation.
+	Earliest time.Time `json:"earliest,omitempty"`
+	Latest   time.Time `json:"latest,omitempty"`
 
 	// Skipped says, in a sentence, why nothing would happen to this conversation.
 	// It is empty when something would.

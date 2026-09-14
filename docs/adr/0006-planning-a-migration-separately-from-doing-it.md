@@ -109,6 +109,41 @@ difference that makes somebody doubt both.
   that equality is safe beats an inference about what the field means, and a check
   that blocks work already known to be good is worse than no check, because it teaches
   people to ignore the report.
-- Still to come, in this order: applying a plan to a copy, putting the result back
-  into a copy of a backup, and the guided flow that hands the restore to Finder.
-  Nothing here touches a device and nothing later will either.
+- The writer came third, and is held to the plan rather than trusted: it counts what
+  it writes and refuses to hand back a store whose totals differ from the plan
+  somebody agreed to, deleting it rather than reporting it. That refusal caught a real
+  bug within the hour — the plan's running totals were added on each pass over a
+  conversation, so a conversation counted twice had its earlier pass counted again.
+  The plan is now totalled once, from its own conversations.
+- It writes only into a copy, in one transaction, and never over anything that already
+  exists: the file most likely to be at that path is the last attempt, which somebody
+  may still need. Identifiers come from Core Data's own counter, or from the highest
+  row actually present when the counter has fallen behind it — a store where those
+  disagree would otherwise have this hand out an identifier already in use, and the
+  row written with it replaces one that was there.
+- The values WhatsApp fills its own rows with — flags, statuses, a spotlight code —
+  are sampled from the store being written into rather than written down here. They
+  are documented nowhere, and the store was written by the version of WhatsApp that
+  will read it back. On a real store eight of them are copied; the fallbacks are what
+  the prototype found in a 2026 store and are a last resort, not a default.
+- On the real archive: 1,093,822 messages into 850 conversations, 829 of them new, in
+  1 minute 21 seconds, and all 3,427 checks pass.
+- Two things only real data produced. The check for a message appearing twice asked
+  the question of the whole store, and WhatsApp's message identifier is unique to a
+  conversation rather than globally: 32,664 identifiers are shared between exactly two
+  conversations each, and none is repeated inside one. It asks per conversation now.
+  And the planner matched a conversation on its resolved address while the writer filed
+  it under the raw one, so a person the iPhone knows by a hidden identifier and the
+  Android knows by number was created a second time under the identifier the phone was
+  already using. Both now use the resolved address.
+- That second fix moves a harder problem into the open rather than solving it. Two
+  source conversations that are one person are now folded into one, which is what the
+  archive showed: on 4,286 conversations there was one such pair. But when the iPhone
+  files somebody under a hidden identity and WhatsApp's own record of which identity is
+  which number was not supplied, the two cannot be matched at all, and the person
+  arrives twice under two different addresses — where no check can see it, because
+  nothing about the result is wrong. That is now a warning on the plan, named and
+  counted, because it is the one failure here that looks exactly like success.
+- Still to come: putting the result back into a copy of a backup, and the guided flow
+  that hands the restore to Finder. Nothing here touches a device and nothing later
+  will either.
