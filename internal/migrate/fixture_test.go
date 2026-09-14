@@ -1,0 +1,228 @@
+package migrate
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"iter"
+	"path/filepath"
+	"testing"
+	"time"
+
+	_ "modernc.org/sqlite"
+
+	"github.com/jferrl/amberkeep/internal/model"
+)
+
+// The two sides of a migration, small enough to reason about.
+//
+// The iPhone store is written as a real SQLite file rather than mocked, because what
+// is being tested is a decision made by reading one: a stand-in would prove that the
+// planner agrees with the stand-in.
+
+var (
+	ana   = model.ParseJID("34600111222@s.whatsapp.net")
+	luis  = model.ParseJID("34600333444@s.whatsapp.net")
+	hiden = model.ParseJID("99887766554433@lid")
+	group = model.ParseJID("120363001@g.us")
+	start = time.Date(2019, 6, 14, 9, 0, 0, 0, time.UTC)
+)
+
+// phone is an iPhone store as a test builds one.
+type phone struct {
+	path     string
+	sessions map[string]int64
+	nextPK   int64
+}
+
+// buildPhone writes the smallest store this package will agree to write into.
+func buildPhone(t *testing.T) *phone {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "ChatStorage.sqlite")
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatalf("creating the store: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	schema := `
+CREATE TABLE Z_PRIMARYKEY (Z_ENT INTEGER PRIMARY KEY, Z_NAME VARCHAR, Z_SUPER INTEGER, Z_MAX INTEGER);
+CREATE TABLE ZWACHATSESSION (
+	Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, Z_OPT INTEGER, ZSESSIONTYPE INTEGER,
+	ZMESSAGECOUNTER INTEGER, ZREMOVED INTEGER, ZLASTMESSAGE INTEGER, ZLASTMESSAGEDATE TIMESTAMP,
+	ZGROUPINFO INTEGER, ZCONTACTJID VARCHAR, ZPARTNERNAME VARCHAR, ZLASTMESSAGETEXT VARCHAR);
+CREATE TABLE ZWAMESSAGE (
+	Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, Z_OPT INTEGER, ZCHATSESSION INTEGER,
+	ZSORT INTEGER, ZISFROMME INTEGER, ZMESSAGETYPE INTEGER, ZMESSAGEDATE TIMESTAMP,
+	ZSTANZAID VARCHAR, ZTEXT VARCHAR, ZFROMJID VARCHAR, ZTOJID VARCHAR, ZLASTSESSION INTEGER);
+CREATE TABLE ZWAGROUPMEMBER (Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, ZCHATSESSION INTEGER, ZMEMBERJID VARCHAR);
+CREATE TABLE ZWAGROUPINFO (Z_PK INTEGER PRIMARY KEY, Z_ENT INTEGER, ZCHATSESSION INTEGER);
+INSERT INTO Z_PRIMARYKEY (Z_ENT, Z_NAME, Z_SUPER, Z_MAX) VALUES
+	(1,'WAChatSession',0,0), (2,'WAMessage',0,0), (3,'WAGroupMember',0,0), (4,'WAGroupInfo',0,0);`
+	if _, err := db.Exec(schema); err != nil {
+		t.Fatalf("creating the schema: %v", err)
+	}
+	return &phone{path: path, sessions: map[string]int64{}, nextPK: 1}
+}
+
+// holds puts a conversation on the phone, with messages already in it.
+func (p *phone) holds(t *testing.T, address string, kind int, ids ...string) int64 {
+	t.Helper()
+
+	db, err := sql.Open("sqlite", "file:"+p.path)
+	if err != nil {
+		t.Fatalf("opening the store: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	session := p.nextPK
+	p.nextPK++
+	if _, err := db.Exec(
+		`INSERT INTO ZWACHATSESSION (Z_PK, Z_ENT, ZSESSIONTYPE, ZMESSAGECOUNTER, ZREMOVED, ZCONTACTJID)
+		 VALUES (?, 1, ?, ?, 0, ?)`, session, kind, len(ids)+1, address); err != nil {
+		t.Fatalf("adding a conversation: %v", err)
+	}
+	for i, id := range ids {
+		if _, err := db.Exec(
+			`INSERT INTO ZWAMESSAGE (Z_PK, Z_ENT, ZCHATSESSION, ZSORT, ZISFROMME, ZMESSAGEDATE, ZSTANZAID, ZTEXT)
+			 VALUES (?, 2, ?, ?, 0, ?, ?, ?)`,
+			p.nextPK, session, i+1, float64(i), id, "already here"); err != nil {
+			t.Fatalf("adding a message: %v", err)
+		}
+		p.nextPK++
+	}
+	p.sessions[address] = session
+	return session
+}
+
+// pairs writes the file WhatsApp uses to remember which hidden identity is which
+// number, so a conversation filed under one on this phone and the other on the
+// Android can still be recognised as the same person.
+func (p *phone) pairs(t *testing.T, lid, number string) string {
+	t.Helper()
+
+	path := filepath.Join(filepath.Dir(p.path), "LID.sqlite")
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatalf("creating the pairing file: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if _, err := db.Exec(
+		`CREATE TABLE ZWAPHONENUMBERLIDPAIR (Z_PK INTEGER PRIMARY KEY, ZLID VARCHAR, ZPHONENUMBER VARCHAR);
+		 INSERT INTO ZWAPHONENUMBERLIDPAIR (ZLID, ZPHONENUMBER) VALUES (?, ?)`, lid, number); err != nil {
+		t.Fatalf("writing the pairing: %v", err)
+	}
+	return path
+}
+
+// open returns the store as a migration target.
+func (p *phone) open(t *testing.T, pairing string) *Target {
+	t.Helper()
+
+	target, err := OpenTarget(context.Background(), p.path, pairing)
+	if err != nil {
+		t.Fatalf("opening the store: %v", err)
+	}
+	t.Cleanup(func() { _ = target.Close() })
+	return target
+}
+
+// android is the history being moved, held in memory.
+type android struct {
+	chats     []model.Chat
+	messages  map[int64][]model.Message
+	directory *model.Directory
+}
+
+func (a *android) Chats(context.Context) ([]model.Chat, error) { return a.chats, nil }
+func (a *android) Directory() *model.Directory                 { return a.directory }
+
+func (a *android) Messages(_ context.Context, chat model.Chat) iter.Seq2[model.Message, error] {
+	return func(yield func(model.Message, error) bool) {
+		for _, m := range a.messages[chat.ID] {
+			if !yield(m, nil) {
+				return
+			}
+		}
+	}
+}
+
+// said builds one ordinary message.
+func said(id int64, key string, minutes int, text string) model.Message {
+	return model.Message{
+		ID: id, Key: key, Kind: model.KindText, Sender: ana, Text: text,
+		SentAt: start.Add(time.Duration(minutes) * time.Minute),
+	}
+}
+
+// sent builds one message of some other kind, which is how the untranslatable and
+// the placeholders get into a fixture.
+func sent(id int64, key string, minutes int, kind model.Kind) model.Message {
+	m := said(id, key, minutes, "")
+	m.Kind = kind
+	if kind == model.KindImage {
+		m.Attachment = &model.Attachment{}
+	}
+	return m
+}
+
+// history builds an Android side with one direct conversation of n messages.
+func history(messages ...model.Message) *android {
+	directory := model.NewDirectory()
+	directory.Add(model.Contact{JID: ana, Name: "Ana Lopez"})
+	directory.Add(model.Contact{JID: luis, Name: "Luis"})
+
+	chat := model.Chat{
+		ID: 1, JID: ana, Kind: model.ChatDirect, Name: "Ana Lopez",
+		Messages: len(messages), LastAt: start.Add(time.Hour),
+	}
+	return &android{
+		chats:     []model.Chat{chat},
+		messages:  map[int64][]model.Message{1: messages},
+		directory: directory,
+	}
+}
+
+// with adds another conversation to an Android side.
+func (a *android) with(chat model.Chat, messages ...model.Message) *android {
+	chat.Messages = len(messages)
+	a.chats = append(a.chats, chat)
+	a.messages[chat.ID] = messages
+	return a
+}
+
+// accounted checks the promise the whole report rests on: every message in the
+// source is counted once and once only.
+func accounted(t *testing.T, plan Plan, total int) {
+	t.Helper()
+
+	if got := plan.Adding + plan.AlreadyThere + plan.Untranslatable; got != total {
+		t.Errorf("the plan accounts for %d messages, and the source holds %d: %s",
+			got, total, fmt.Sprintf("adding=%d already=%d untranslatable=%d",
+				plan.Adding, plan.AlreadyThere, plan.Untranslatable))
+	}
+}
+
+// writeStore puts an arbitrary schema on disk, for the cases where the point is
+// that this package refuses it.
+func writeStore(t *testing.T, schema string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), "ChatStorage.sqlite")
+	db, err := sql.Open("sqlite", "file:"+path)
+	if err != nil {
+		t.Fatalf("creating the store: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	if _, err := db.Exec(schema); err != nil {
+		t.Fatalf("creating the schema: %v", err)
+	}
+	return path
+}
+
+// errorIs is errors.Is, named so the tests read as sentences.
+func errorIs(err, want error) bool { return errors.Is(err, want) }

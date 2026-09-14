@@ -55,7 +55,13 @@ own format, with nothing neutral to move them to.
 - **Fixtures are synthetic or structure-only.** Real message content never enters this
   repository. Tests that need real data read a path from an environment variable and
   skip without it: `AMBERKEEP_REAL_MSGSTORE`, `AMBERKEEP_REAL_CHATSTORAGE`,
-  `AMBERKEEP_REAL_BACKUP`, `AMBERKEEP_GOLDEN_CRYPT15`.
+  `AMBERKEEP_REAL_BACKUP`, `AMBERKEEP_GOLDEN_CRYPT15`, `AMBERKEEP_REAL_LIDPAIRS`,
+  `AMBERKEEP_ORACLE_REPORT`.
+- **The migration is checked against the Python prototype.** It is the only thing that
+  has ever produced the right answer on a real phone, so it is the oracle. Point
+  `AMBERKEEP_ORACLE_REPORT` at one or more of its reports, comma-separated and in the
+  order they were run — a single step of a multi-step run is a partial answer, and
+  comparing against one looks exactly like a bug in this code.
 - **Fuzz every parser that reads untrusted bytes.** The crypt15 header, the iPhone
   reply protobuf, the MBFile plist. They read files this project did not write.
 - **A regression test must be checked against the unfixed code.** Break the fix, watch

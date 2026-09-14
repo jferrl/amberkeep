@@ -267,3 +267,38 @@ func TestRenderingWithoutNames(t *testing.T) {
 		t.Errorf("name() for the owner = %q", got)
 	}
 }
+
+// TestLineIsTheOneWording covers the entry point three packages now share. A
+// photograph described one way in an export and another way on a phone is the sort
+// of difference that makes somebody doubt both.
+func TestLineIsTheOneWording(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		give model.Message
+		want string
+	}{
+		{name: "plain words", give: model.Message{Kind: model.KindText, Text: "hello there"}, want: "hello there"},
+		{
+			name: "a file that is no longer here",
+			give: model.Message{Kind: model.KindImage, Attachment: &model.Attachment{}},
+			want: "<image omitted>",
+		},
+		{
+			name: "a file with something written beside it",
+			give: model.Message{Kind: model.KindImage, Text: "look at this", Attachment: &model.Attachment{}},
+			want: "<image omitted> look at this",
+		},
+		{name: "a message taken back", give: model.Message{Kind: model.KindDeleted}, want: "This message was deleted"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := Line(tt.give, Options{}); got != tt.want {
+				t.Errorf("Line() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

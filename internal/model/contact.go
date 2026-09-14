@@ -121,6 +121,21 @@ func (d *Directory) Alias(hidden, phone JID) {
 	d.reverse[phone.String()] = hidden
 }
 
+// Resolve returns the phone address a hidden identifier stands for, or the address
+// unchanged when there is nothing to resolve it to.
+//
+// Names do not need this — Lookup already follows the link in both directions — but
+// anything that has to decide whether two addresses are the same person does. A
+// migration is the case that matters: one phone can file a conversation under a
+// number and the other under a hidden identifier, and treating those as two people
+// turns a merge into a duplicate.
+func (d *Directory) Resolve(j JID) JID {
+	if phone, ok := d.aliases[j.String()]; ok {
+		return phone
+	}
+	return j
+}
+
 // SetOwner records who this archive belongs to, so their own messages can be
 // labelled without pretending they are a contact.
 func (d *Directory) SetOwner(c Contact) { d.owner = c }

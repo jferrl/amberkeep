@@ -20,6 +20,21 @@ import (
 // direction marks WhatsApp scatters through its exports, which break every parser
 // that meets them.
 
+// Line is a message as one line of readable text.
+//
+// It is exported because three things now need the same words and none of them
+// should have its own: the text export writes them to a file, the viewer shows them
+// beside the recovered picture, and a migration puts them into an iPhone's store
+// where the file that was sent cannot follow. A photograph that arrives on the phone
+// described one way and appears in an export described another way is the sort of
+// difference that makes somebody doubt both.
+//
+// It is the message alone — no timestamp, no sender — because each caller puts those
+// in its own shape.
+func Line(m model.Message, opts Options) string {
+	return newRenderer(opts.Names, opts.withDefaults()).body(m)
+}
+
 // renderer turns messages into readable lines in one time zone and one language.
 type renderer struct {
 	dir *model.Directory
