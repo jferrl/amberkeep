@@ -25,6 +25,17 @@ would not.
 
 Flat fill throughout. No gradient, no highlight.
 
+The amber is **the interface's accent token, not a colour of its own**, and it follows
+the theme: `oklch(0.545 0.12 60)` on a light ground, `oklch(0.775 0.115 68)` on a dark
+one. A favicon sits on the browser's own tab strip, which is light or dark with the
+system, so one fixed amber is wrong on one of them. The pair is carried inside each
+SVG by a `prefers-color-scheme` query, with hex first and `oklch()` second so a browser
+that does not know the newer syntax still takes the right colour.
+
+That also means the mark cannot drift from the product. Change the accent in
+`web/src/styles.css` and these five files have to be changed with it — which is a
+smaller trap than two ambers that look the same in a screenshot and not on a screen.
+
 ## The brief, for whoever draws the real one
 
 Binding, from the naming rules in the product plan:
