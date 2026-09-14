@@ -67,6 +67,10 @@ func run() error {
 
 	pick := &Picker{}
 
+	// The menu reaches the page, so it needs the running application the same way
+	// the pickers do. Both get it at startup, which is the first moment there is one.
+	var running context.Context
+
 	return wails.Run(&options.App{
 		Title:  "Amberkeep",
 		Width:  1100,
@@ -84,7 +88,12 @@ func run() error {
 		// nothing in web/ knows which of the two it is running in.
 		AssetServer: &assetserver.Options{Handler: server},
 
-		OnStartup:  pick.opened,
+		Menu: menus(asking(&running)),
+
+		OnStartup: func(ctx context.Context) {
+			running = ctx
+			pick.opened(ctx)
+		},
 		OnShutdown: func(context.Context) { _ = server.Close() },
 		Bind:       []any{pick},
 

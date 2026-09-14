@@ -29,14 +29,18 @@ interface Bridge {
 function bridge(): Bridge | undefined {
   if (typeof window === "undefined") return undefined;
 
-  const bound = (window as { go?: { main?: { Picker?: unknown } } }).go?.main?.Picker;
+  const bound = (window as { go?: { main?: { Picker?: unknown } } }).go?.main
+    ?.Picker;
   if (bound === undefined || bound === null) return undefined;
 
   // Checked rather than asserted: this comes from outside the bundle, and a version
   // of the window that binds something different should leave the text field working
   // rather than throw on the first click.
   const maybe = bound as Partial<Bridge>;
-  if (typeof maybe.ChooseFolder !== "function" || typeof maybe.ChooseFile !== "function") {
+  if (
+    typeof maybe.ChooseFolder !== "function" ||
+    typeof maybe.ChooseFile !== "function"
+  ) {
     return undefined;
   }
   return maybe as Bridge;
@@ -66,4 +70,42 @@ export async function choose(what: Picking, title: string): Promise<string> {
   } catch {
     return "";
   }
+}
+
+/** What a menu item can ask the page to do. */
+export type Asked = "keep" | "close";
+
+/**
+ * asking listens for the window's menu, and reports how to stop.
+ *
+ * The menu cannot do the work itself: the window and the browser run the same
+ * screens, and a menu that opened its own would be a second implementation of one
+ * that already exists. So it says what was chosen and the page decides what that
+ * means on whichever screen it is showing.
+ *
+ * In a browser there is no menu and this does nothing, which is why it reports a way
+ * to stop rather than throwing: the caller unsubscribes on the way out either way.
+ */
+export function asking(hear: (what: Asked) => void): () => void {
+  if (typeof window === "undefined") return () => undefined;
+
+  const wails = (
+    window as { runtime?: { EventsOn?: unknown; EventsOff?: unknown } }
+  ).runtime;
+  if (typeof wails?.EventsOn !== "function") return () => undefined;
+
+  const on = wails.EventsOn as (
+    name: string,
+    handler: (...args: unknown[]) => void,
+  ) => void;
+  on("amberkeep:menu", (...args: unknown[]) => {
+    const what = args[0];
+    if (what === "keep" || what === "close") hear(what);
+  });
+
+  return () => {
+    const off = wails.EventsOff;
+    if (typeof off === "function")
+      (off as (name: string) => void)("amberkeep:menu");
+  };
 }

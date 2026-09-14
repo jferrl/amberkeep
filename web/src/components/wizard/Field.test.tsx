@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Field } from "@/components/wizard/Field";
+import { asking } from "@/lib/desktop";
 import { render } from "@/test/render";
 
 /**
@@ -224,5 +225,60 @@ describe("when the window is not what this page expects", () => {
     expect(screen.getByLabelText("The iPhone backup folder")).toHaveValue(
       "/Backups/typed-by-hand",
     );
+  });
+});
+
+describe("the window's menu", () => {
+  /**
+   * The menu bar is not decoration. Without an Edit menu a macOS webview has no
+   * standard editing selectors and paste does not work, and the one thing this
+   * program asks anybody to paste is a sixty-four character key read off a phone.
+   * That part is the window's; this is the part the page has to hold up.
+   */
+  it("does nothing, and unsubscribes from nothing, in a browser", () => {
+    const heard: string[] = [];
+    const stop = asking((what) => heard.push(what));
+
+    expect(heard).toEqual([]);
+    // The caller unsubscribes on the way out whether or not there was a menu.
+    expect(() => {
+      stop();
+    }).not.toThrow();
+  });
+
+  it("hears what a menu item asked for", () => {
+    const handlers: Record<string, (...args: unknown[]) => void> = {};
+    vi.stubGlobal("runtime", {
+      EventsOn: (name: string, handler: (...args: unknown[]) => void) => {
+        handlers[name] = handler;
+      },
+      EventsOff: () => undefined,
+    });
+
+    const heard: string[] = [];
+    asking((what) => heard.push(what));
+
+    handlers["amberkeep:menu"]?.("keep");
+    handlers["amberkeep:menu"]?.("close");
+    expect(heard).toEqual(["keep", "close"]);
+  });
+
+  /** The event carries whatever Go sent. Anything unrecognised is not acted on. */
+  it("ignores anything it does not recognise", () => {
+    const handlers: Record<string, (...args: unknown[]) => void> = {};
+    vi.stubGlobal("runtime", {
+      EventsOn: (name: string, handler: (...args: unknown[]) => void) => {
+        handlers[name] = handler;
+      },
+      EventsOff: () => undefined,
+    });
+
+    const heard: string[] = [];
+    asking((what) => heard.push(what));
+
+    handlers["amberkeep:menu"]?.("delete-everything");
+    handlers["amberkeep:menu"]?.(undefined);
+    handlers["amberkeep:menu"]?.();
+    expect(heard).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 
 import type { Chat, Hit } from "@/api/types";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/api/queries";
 import { Notices } from "@/components/Notices";
 import { Export } from "@/components/export/Export";
+import { asking } from "@/lib/desktop";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,18 @@ import { cn } from "@/lib/utils";
 export function App({ language }: { language: Language }) {
   const setup = useSetupState();
   const [keeping, setKeeping] = useState(false);
+  const closing = useClose();
+
+  // The window's menu, when there is a window. In a browser this subscribes to
+  // nothing and unsubscribes from nothing.
+  useEffect(
+    () =>
+      asking((what) => {
+        if (what === "keep") setKeeping(true);
+        if (what === "close") closing();
+      }),
+    [closing],
+  );
 
   if (setup.data?.stage === "ready") {
     // Writing the archive out takes the whole window rather than a dialog over the
