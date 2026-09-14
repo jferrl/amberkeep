@@ -116,6 +116,7 @@ Getting started, from an iPhone:
      backup" switched off.
   2. amberkeep backups
   3. amberkeep extract --backup <the folder it printed> --out .
+     This brings the message store out and the pictures with it.
   4. amberkeep serve   --db ChatStorage.sqlite
 
 Getting started, from an Android phone:

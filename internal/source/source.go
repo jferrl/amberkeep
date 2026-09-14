@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"iter"
 	"net/url"
+	"path/filepath"
 
 	_ "modernc.org/sqlite" // registers the pure-Go SQLite driver
 
@@ -100,7 +101,18 @@ func Open(ctx context.Context, path string) (Archive, error) {
 
 	switch {
 	case tables["ZWAMESSAGE"], tables["ZWACHATSESSION"]:
-		reader, err := ios.Open(ctx, path)
+		// An iPhone store holds no pictures, only paths to them, and those paths are
+		// relative. Relative to what is not written down anywhere, and the only
+		// sensible answer is the store itself, which is also what `amberkeep extract`
+		// arranges: the pictures land beside the store in the shape the paths expect.
+		// A store copied out on its own simply has none, and the archive says so by
+		// showing no photographs rather than by failing.
+		var options []ios.Option
+		if media, found := ios.MediaIn(filepath.Dir(path)); found {
+			options = append(options, ios.WithMedia(media))
+		}
+
+		reader, err := ios.Open(ctx, path, options...)
 		if err != nil {
 			return nil, err
 		}

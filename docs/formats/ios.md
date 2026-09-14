@@ -413,10 +413,48 @@ no picture inside itself. `ZXMPPTHUMBPATH` is a path, populated on 9,941 rows, a
 the image is a file in the backup. `ZMETADATA` averages 203 bytes, far too small to
 hold a picture.
 
-An Android archive embeds 12,510 recoverable previews of pictures whose original
-files are long gone. An iPhone store embeds none. Recovering iPhone thumbnails means
-extracting the files those paths name from the backup, which this project does not
-do yet.
+So an iPhone archive read from the store alone shows no photographs at all, where
+the same person's Android archive shows twelve thousand. Getting them means going
+into the backup.
+
+### Where the pictures actually are
+
+**CONFIRMED, and written down nowhere else we could find.**
+
+The store records a picture as a relative path and never says what it is relative
+to:
+
+```
+Media/<conversation>/5/e/5ed9e4c9-1baa-4fe9-9ed6-290af18e186f.thumb
+```
+
+Hashing that against a real backup's index finds nothing. The backup files the same
+picture one directory further in, under `Message/`:
+
+```
+domain       AppDomainGroup-group.net.whatsapp.WhatsApp.shared
+relativePath Message/Media/<conversation>/5/e/<name>.thumb
+```
+
+With that prefix, on a real device:
+
+| | Paths in the store | Resolve in the backup | Size |
+|---|---|---|---|
+| Thumbnails (`.thumb`) | 9,941 | 9,422, or 94% | 13.9 MB |
+| Full files | 11,477 | 10,953, or 95% | 5.7 GB |
+
+Every thumbnail sampled was a JPEG. The ones that do not resolve are files the
+backup did not carry, which is ordinary: a backup is a moment, and media is pruned.
+
+This project takes the thumbnails and not the full files. Thirteen megabytes is
+nothing to carry and is the difference between an archive that shows a decade of
+photographs and one that shows a decade of the words "image omitted". The full files
+are five thousand times larger, are already in the phone's own gallery, and copying
+gigabytes to say what is already said helps nobody. Anybody who wants them has the
+same two facts above.
+
+The message types that carry a thumbnail path, on a real device: 1 (6,657), 7
+(1,285), 2 (919), 38 (485), 11 (224), 5 (153), 8 (150), 39 (55).
 
 ## 9. Replies, which are not where you would look
 
@@ -565,11 +603,12 @@ one. Nothing named for them exists. An Android archive records who reacted to wh
 with which emoji; an iPhone store does not, and this is a limitation to publish
 rather than a gap to paper over.
 
-**Embedded picture previews.** The store holds paths, not images. See section 8.
-
-**Media files.** Photographs, videos, voice notes and documents are files in the
-backup, not rows in the database. Their names, sizes and durations survive here; the
-files themselves must be extracted separately.
+**Media files at full size.** Photographs, videos, voice notes and documents are
+files in the backup rather than rows in the database, and this project does not copy
+them: 5.7 GB against 13.9 MB of thumbnails, for pictures already in the phone's
+gallery. Their names, sizes and durations survive in the store, the small copies are
+recovered, and section 8 says exactly where the originals are for anybody who wants
+them.
 
 **Voice-note transcriptions.** Not stored locally, on either platform.
 
@@ -594,7 +633,7 @@ For anybody reading both documents.
 | Names | needs an address-book export; about half resolve | already inside; essentially all resolve |
 | Replies | `message_quoted`, a proper table | a protobuf beside the message |
 | Reactions | recoverable | not stored |
-| Embedded previews | 12,510 pictures on one archive | none; paths only |
+| Where the pictures are | inside the database, 12,510 on one archive | in the backup, 9,422 on one device |
 | Notice codes | a verified table for most | UNKNOWN |
 | Status feed | one, at `status@broadcast` | one per person, hundreds of them |
 

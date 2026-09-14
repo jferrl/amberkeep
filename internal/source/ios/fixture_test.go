@@ -9,6 +9,8 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+
+	"github.com/jferrl/amberkeep/internal/model"
 )
 
 // The fixture is a real Core Data store built from the schema a real iPhone had,
@@ -21,6 +23,16 @@ const (
 	sessionGroup = 2
 	sessionEmpty = 3
 	sessionMuted = 4 // a status feed, which an archive leaves out
+)
+
+// The message carrying a photograph, and where the store says the picture is.
+//
+// The path is relative and the store never says what to, which is the whole of the
+// difficulty: it is relative to the store itself, and `amberkeep extract` is what
+// puts the pictures there.
+const (
+	msgWithPicture   = 13
+	fixtureThumbPath = "Media/34600111222@s.whatsapp.net/5/e/one.thumb"
 )
 
 // Addresses. The numbers are invented and belong to nobody.
@@ -180,6 +192,14 @@ func buildFixture(t *testing.T) string {
 	exec(`INSERT INTO ZWAMESSAGEDATAITEM (Z_PK, ZTYPE, ZMESSAGE, ZTITLE, ZSUMMARY, ZMATCHEDTEXT)
 	      VALUES (1, 0, 11, 'Casa Blanca', 'A small restaurant', 'https://example.org/casa')`)
 
+	// A photograph whose picture lives outside the store, which is the only way an
+	// iPhone keeps one.
+	exec(`INSERT INTO ZWAMEDIAITEM (Z_PK, ZMESSAGE, ZVCARDSTRING, ZXMPPTHUMBPATH, ZFILESIZE)
+	      VALUES (16, ?, 'image/jpeg', ?, 51234)`, msgWithPicture, fixtureThumbPath)
+	exec(`INSERT INTO ZWAMESSAGE (Z_PK, ZCHATSESSION, ZISFROMME, ZMESSAGETYPE, ZSORT, ZMESSAGEDATE, ZSTANZAID, ZMEDIAITEM)
+	      VALUES (?, ?, 0, 1, 800, ?, 'DDDD3333EEEE4444', 16)`,
+		msgWithPicture, sessionGroup, at(2019, 6, 15, 12, 20))
+
 	// A status update, which an archive leaves out.
 	exec(`INSERT INTO ZWAMESSAGE (Z_PK, ZCHATSESSION, ZISFROMME, ZMESSAGETYPE, ZSORT, ZMESSAGEDATE, ZTEXT, ZSTANZAID)
 	      VALUES (12, ?, 0, 0, 100, ?, 'a status nobody archives', 'EEEE1111FFFF2222')`,
@@ -221,16 +241,50 @@ func appendVarint(dst []byte, v uint64) []byte {
 	return append(dst, byte(v))
 }
 
-// openFixture opens a freshly built store.
+// openFixture opens a freshly built store, with no pictures to go with it.
 func openFixture(t *testing.T) *Reader {
 	t.Helper()
+	return openFixtureWith(t, nil)
+}
 
-	r, err := Open(context.Background(), buildFixture(t))
+// openFixtureWith opens a freshly built store alongside somewhere to find its
+// pictures, which an iPhone store never holds itself.
+func openFixtureWith(t *testing.T, media Media) *Reader {
+	t.Helper()
+
+	var options []Option
+	if media != nil {
+		options = append(options, WithMedia(media))
+	}
+
+	r, err := Open(context.Background(), buildFixture(t), options...)
 	if err != nil {
 		t.Fatalf("Open() failed: %v", err)
 	}
 	t.Cleanup(func() { _ = r.Close() })
 	return r
+}
+
+// messagesByID reads the whole fixture, keyed by message.
+func messagesByID(t *testing.T, r *Reader) map[int64]model.Message {
+	t.Helper()
+
+	ctx := context.Background()
+	chats, err := r.Chats(ctx)
+	if err != nil {
+		t.Fatalf("Chats() failed: %v", err)
+	}
+
+	out := make(map[int64]model.Message)
+	for _, chat := range chats {
+		for m, err := range r.Messages(ctx, chat) {
+			if err != nil {
+				t.Fatalf("Messages() failed: %v", err)
+			}
+			out[m.ID] = m
+		}
+	}
+	return out
 }
 
 // buildBare writes a database with the given schema and nothing in it, for the

@@ -256,8 +256,8 @@ func TestMessages(t *testing.T) {
 				if len(one) != 4 {
 					t.Errorf("the conversation yielded %d messages, want 4", len(one))
 				}
-				if len(many) != 7 {
-					t.Errorf("the group yielded %d messages, want 7", len(many))
+				if len(many) != 8 {
+					t.Errorf("the group yielded %d messages, want 8", len(many))
 				}
 			},
 		},

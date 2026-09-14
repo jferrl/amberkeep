@@ -18,7 +18,7 @@ search and export. The iPhone side and the desktop application are being built.
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
-| iPhone message reader | working, including replies no other tool recovers |
+| iPhone message reader | working, including replies and pictures no other tool recovers |
 | Export: web pages, text, JSON | working |
 | Full-text search | working, accent-insensitive |
 | Local viewer (`serve`) | working, React 19 and TypeScript, built into the binary |
@@ -40,10 +40,11 @@ Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a
 
 And on a real iPhone store of 554 conversations and 161,026 messages:
 
-| Step | Time |
+| Step | Result |
 |---|---|
+| take the store and its pictures out of a backup | 2.3 s, 9,430 pictures |
 | read every message | 0.9 s |
-| export every conversation as web pages | 3 s |
+| export every conversation as web pages | 3 s, 9,404 pictures shown |
 | page backwards through a 32,935-message conversation | 0.19 s |
 
 ## Using it

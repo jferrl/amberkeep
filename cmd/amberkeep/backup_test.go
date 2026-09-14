@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"database/sql"
@@ -37,6 +38,26 @@ func TestExtractTakesTheStoreOutOfABackup(t *testing.T) {
 	t.Run("what came out can be read", func(t *testing.T) {
 		if err := run(context.Background(), []string{"inspect", "--db", store}); err != nil {
 			t.Errorf("the extracted store could not be read: %v", err)
+		}
+	})
+
+	t.Run("the pictures come out beside it", func(t *testing.T) {
+		// An iPhone store holds only the paths. Without this an archive read from one
+		// shows no photographs at all.
+		picture := filepath.Join(out, "Media", "a", "b", "one.thumb")
+		contents, err := os.ReadFile(picture)
+		if err != nil {
+			t.Fatalf("the picture was not taken out: %v", err)
+		}
+		if !bytes.Equal(contents, onePixelJPEG) {
+			t.Error("what came out is not the picture that was put in")
+		}
+	})
+
+	t.Run("and reach the messages they belong to", func(t *testing.T) {
+		// inspect --full is what counts them, and it reads every message.
+		if err := run(context.Background(), []string{"inspect", "--db", store, "--full"}); err != nil {
+			t.Errorf("reading the extracted archive failed: %v", err)
 		}
 	})
 
@@ -170,26 +191,6 @@ func buildBackupWithAStore(t *testing.T, parent string) string {
 		t.Fatalf("creating the backup folder: %v", err)
 	}
 
-	// The store itself, which the backup keeps under a hash of where it lives.
-	store := filepath.Join(parent, "ChatStorage.sqlite")
-	buildTinyStore(t, store)
-	contents, err := os.ReadFile(store)
-	if err != nil {
-		t.Fatalf("reading the store: %v", err)
-	}
-
-	const domain = "AppDomainGroup-group.net.whatsapp.WhatsApp.shared"
-	sum := sha1.Sum([]byte(domain + "-ChatStorage.sqlite")) // #nosec G401 -- Apple's own naming scheme
-	fileID := hex.EncodeToString(sum[:])
-
-	shard := filepath.Join(backup, fileID[:2])
-	if err := os.MkdirAll(shard, 0o700); err != nil {
-		t.Fatalf("creating the shard folder: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(shard, fileID), contents, 0o600); err != nil {
-		t.Fatalf("writing the stored file: %v", err)
-	}
-
 	manifest, err := sql.Open("sqlite", "file:"+filepath.Join(backup, "Manifest.db"))
 	if err != nil {
 		t.Fatalf("creating the manifest: %v", err)
@@ -198,11 +199,42 @@ func buildBackupWithAStore(t *testing.T, parent string) string {
 		`CREATE TABLE Files (fileID TEXT PRIMARY KEY, domain TEXT, relativePath TEXT, flags INTEGER, file BLOB)`); err != nil {
 		t.Fatalf("creating the Files table: %v", err)
 	}
-	if _, err := manifest.Exec(
-		`INSERT INTO Files (fileID, domain, relativePath, flags, file) VALUES (?, ?, ?, 1, ?)`,
-		fileID, domain, "ChatStorage.sqlite", mbFileRecord(t, int64(len(contents)))); err != nil {
-		t.Fatalf("recording the store: %v", err)
+
+	// file puts one file into the backup the way Apple does: the bytes under a hash
+	// of where they belong, and a row in the index saying what that hash means.
+	file := func(relativePath string, contents []byte) {
+		t.Helper()
+
+		sum := sha1.Sum([]byte(whatsappDomain + "-" + relativePath)) // #nosec G401 -- Apple's own naming scheme
+		fileID := hex.EncodeToString(sum[:])
+
+		shard := filepath.Join(backup, fileID[:2])
+		if err := os.MkdirAll(shard, 0o700); err != nil {
+			t.Fatalf("creating the shard folder: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(shard, fileID), contents, 0o600); err != nil {
+			t.Fatalf("writing the stored file: %v", err)
+		}
+		if _, err := manifest.Exec(
+			`INSERT INTO Files (fileID, domain, relativePath, flags, file) VALUES (?, ?, ?, 1, ?)`,
+			fileID, whatsappDomain, relativePath, mbFileRecord(t, int64(len(contents)))); err != nil {
+			t.Fatalf("recording %s: %v", relativePath, err)
+		}
 	}
+
+	store := filepath.Join(parent, "ChatStorage.sqlite")
+	buildTinyStore(t, store)
+	contents, err := os.ReadFile(store)
+	if err != nil {
+		t.Fatalf("reading the store: %v", err)
+	}
+	file(chatStorage, contents)
+
+	// A picture, filed the way a backup files one. The store records it as
+	// "Media/..." and the backup keeps it one directory further in, under Message/,
+	// which is the offset nothing documents and everything depends on.
+	file("Message/"+thumbInStore, onePixelJPEG)
+
 	if err := manifest.Close(); err != nil {
 		t.Fatalf("closing the manifest: %v", err)
 	}
@@ -256,6 +288,12 @@ func mbFileRecord(t *testing.T, size int64) []byte {
 	return data
 }
 
+// thumbInStore is where the store says its one picture is, and onePixelJPEG is what
+// is actually there. What it depicts does not matter; that it arrives does.
+const thumbInStore = "Media/a/b/one.thumb"
+
+var onePixelJPEG = []byte{0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0xff, 0xd9}
+
 // buildTinyStore writes the smallest iPhone message store the reader will accept.
 func buildTinyStore(t *testing.T, path string) {
 	t.Helper()
@@ -270,9 +308,14 @@ func buildTinyStore(t *testing.T, path string) {
 CREATE TABLE ZWACHATSESSION (Z_PK INTEGER PRIMARY KEY, ZSESSIONTYPE INTEGER, ZCONTACTJID VARCHAR,
 	ZPARTNERNAME VARCHAR, ZLASTMESSAGEDATE TIMESTAMP, ZARCHIVED INTEGER);
 CREATE TABLE ZWAMESSAGE (Z_PK INTEGER PRIMARY KEY, ZCHATSESSION INTEGER, ZISFROMME INTEGER,
-	ZMESSAGETYPE INTEGER, ZSORT INTEGER, ZMESSAGEDATE TIMESTAMP, ZTEXT VARCHAR, ZSTANZAID VARCHAR);
+	ZMESSAGETYPE INTEGER, ZSORT INTEGER, ZMESSAGEDATE TIMESTAMP, ZTEXT VARCHAR, ZSTANZAID VARCHAR,
+	ZMEDIAITEM INTEGER);
+CREATE TABLE ZWAMEDIAITEM (Z_PK INTEGER PRIMARY KEY, ZMESSAGE INTEGER, ZVCARDSTRING VARCHAR,
+	ZXMPPTHUMBPATH VARCHAR, ZFILESIZE INTEGER);
 INSERT INTO ZWACHATSESSION VALUES (1, 0, '34600111222@s.whatsapp.net', 'Ana Lopez', 580000000, 0);
-INSERT INTO ZWAMESSAGE VALUES (1, 1, 0, 0, 100, 580000000, 'hello there', 'AAAA1111BBBB2222');`); err != nil {
+INSERT INTO ZWAMESSAGE VALUES (1, 1, 0, 0, 100, 580000000, 'hello there', 'AAAA1111BBBB2222', NULL);
+INSERT INTO ZWAMEDIAITEM VALUES (1, 2, 'image/jpeg', '` + thumbInStore + `', 12);
+INSERT INTO ZWAMESSAGE VALUES (2, 1, 0, 1, 200, 580000100, 'look at this', 'AAAA3333BBBB4444', 1);`); err != nil {
 		t.Fatalf("populating the store: %v", err)
 	}
 	if err := db.Close(); err != nil {

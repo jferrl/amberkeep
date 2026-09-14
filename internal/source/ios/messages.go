@@ -122,15 +122,11 @@ func (r *Reader) read(ctx context.Context, chat model.Chat, from model.Cursor, l
 		}
 	}
 
-	query := fmt.Sprintf(`
-		SELECT m.Z_PK, m.ZISFROMME, m.ZMESSAGEDATE, m.ZMESSAGETYPE, m.ZTEXT,
-		       %s, %s, %s, %s, %s, %s,
-		       %s, %s, %s, %s, %s, %s, %s, %s, %s
-		FROM %s m
-		LEFT JOIN %s mi ON mi.Z_PK = m.ZMEDIAITEM
-		WHERE m.ZCHATSESSION = :chat AND (%s)
-		ORDER BY %s
-		LIMIT :limit`,
+	// The columns are listed rather than interpolated one by one. A format string
+	// with nineteen verbs in it is one somebody adds a column to and gets wrong, and
+	// the scan below has to stay in step with this order.
+	columns := []string{
+		"m.Z_PK", "m.ZISFROMME", "m.ZMESSAGEDATE", "m.ZMESSAGETYPE", "m.ZTEXT",
 		r.schema.columnAs(tableMessage, "m", "ZSTANZAID"),
 		r.schema.columnAs(tableMessage, "m", "ZFROMJID"),
 		r.schema.columnAs(tableMessage, "m", "ZGROUPMEMBER"),
@@ -146,7 +142,17 @@ func (r *Reader) read(ctx context.Context, chat model.Chat, from model.Cursor, l
 		r.schema.columnAs(tableMedia, "mi", "ZLONGITUDE"),
 		r.schema.columnAs(tableMedia, "mi", "ZMEDIALOCALPATH"),
 		r.schema.columnAs(tableMedia, "mi", "ZMETADATA"),
-		tableMessage, tableMedia, bound, order)
+		r.schema.columnAs(tableMedia, "mi", "ZXMPPTHUMBPATH"),
+	}
+
+	query := fmt.Sprintf(`
+		SELECT %s
+		FROM %s m
+		LEFT JOIN %s mi ON mi.Z_PK = m.ZMEDIAITEM
+		WHERE m.ZCHATSESSION = :chat AND (%s)
+		ORDER BY %s
+		LIMIT :limit`,
+		strings.Join(columns, ", "), tableMessage, tableMedia, bound, order)
 
 	rows, err := r.db.QueryContext(ctx, query,
 		sql.Named("at", at), sql.Named("id", id),
@@ -193,13 +199,16 @@ type messageRow struct {
 	longitude sql.NullFloat64
 	localPath sql.NullString
 	metadata  []byte
+	// thumbPath names a picture that lives outside the store. It is the only way an
+	// iPhone archive shows a photograph at all; see media.go.
+	thumbPath sql.NullString
 }
 
 func (row *messageRow) scan(rows *sql.Rows) error {
 	return rows.Scan(&row.pk, &row.fromMe, &row.sentAt, &row.kind, &row.text,
 		&row.stanza, &row.fromJID, &row.member, &row.pushName, &row.starred, &row.eventType,
 		&row.mediaType, &row.vcardName, &row.title, &row.fileSize, &row.duration,
-		&row.latitude, &row.longitude, &row.localPath, &row.metadata)
+		&row.latitude, &row.longitude, &row.localPath, &row.metadata, &row.thumbPath)
 }
 
 // messageOf turns one row into a message.
@@ -294,6 +303,8 @@ func (r *Reader) attachContent(m *model.Message, row messageRow, sourceType int)
 		}
 	}
 
+	r.attachPicture(m, row)
+
 	// A reply names what it answers in the protobuf beside it, whatever kind of
 	// message it is.
 	if len(row.metadata) > 0 {
@@ -305,6 +316,30 @@ func (r *Reader) attachContent(m *model.Message, row messageRow, sourceType int)
 			}
 		}
 	}
+}
+
+// attachPicture fetches the small copy of a photograph that survived its file.
+//
+// An iPhone store holds only the path; whoever opened the reader decides whether
+// anything can follow it. A picture that cannot be found is not an error: a backup
+// can be incomplete, and on a real device 519 of 9,941 paths led nowhere.
+//
+// The attachment is created when there is none, because the picture is worth more
+// than the row that should have described it: a message whose media row is missing
+// is exactly the case where the surviving image matters most.
+func (r *Reader) attachPicture(m *model.Message, row messageRow) {
+	if r.media == nil || !row.thumbPath.Valid || row.thumbPath.String == "" {
+		return
+	}
+	picture, found := r.media.ReadFile(row.thumbPath.String)
+	if !found || len(picture) == 0 {
+		return
+	}
+
+	if m.Attachment == nil {
+		m.Attachment = &model.Attachment{}
+	}
+	m.Attachment.Preview = model.Thumbnail{Data: picture}
 }
 
 // The numeric types this reader treats specially. The rest are decided by kindOf.

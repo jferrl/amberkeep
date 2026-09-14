@@ -84,6 +84,11 @@ type Reader struct {
 	db     *sql.DB
 	schema schema
 
+	// media supplies the pictures the store refers to but does not hold. It is nil
+	// when nobody offered any, which is the ordinary case for a store copied out on
+	// its own; an archive read that way simply shows no photographs.
+	media Media
+
 	directory *model.Directory
 	// sessions maps a session row to the conversation it stands for, because every
 	// message names its conversation by row rather than by address.
@@ -93,11 +98,22 @@ type Reader struct {
 	members map[int64]model.JID
 }
 
+// Option changes how a store is read.
+type Option func(*Reader)
+
+// WithMedia supplies the pictures the store refers to but does not contain.
+//
+// Without it an iPhone archive shows no photographs at all, because the store keeps
+// only the paths. See media.go.
+func WithMedia(m Media) Option {
+	return func(r *Reader) { r.media = m }
+}
+
 // Open reads the store at path. The file is opened read-only, so the caller's
 // original is safe even if it is the only copy in existence.
 //
 // The caller closes the reader.
-func Open(ctx context.Context, path string) (*Reader, error) {
+func Open(ctx context.Context, path string, options ...Option) (*Reader, error) {
 	// query_only is belt and braces alongside the read-only mode: neither this code
 	// nor the driver's own bookkeeping may write to a file we were handed.
 	dsn := "file:" + url.PathEscape(path) +
@@ -131,6 +147,9 @@ func Open(ctx context.Context, path string) (*Reader, error) {
 	}
 
 	r := &Reader{db: db, schema: s, directory: model.NewDirectory()}
+	for _, option := range options {
+		option(r)
+	}
 	if err := r.loadDirectory(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
