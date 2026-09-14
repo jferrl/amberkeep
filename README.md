@@ -30,11 +30,18 @@ search and export. The iPhone side and the desktop application are being built.
 | Full-text search | working, accent-insensitive |
 | Local viewer (`serve`) | working, React 19 and TypeScript, built into the binary |
 | Command-line tool | working |
-| Import wizard | working on the engine side, interface being built |
+| Import wizard | working, in the browser and on the command line |
 | iPhone backup access | working, including backups Finder will not show you |
 | Desktop application | planned |
 | English and Spanish | working |
-| Android to iPhone migration | engine working end to end, guided by `amberkeep migrate` |
+| Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
+
+**No backup Amberkeep has produced has ever been restored to a phone.** The migration
+plans, writes and checks itself — twenty-one consistency checks over the result, and a
+copied backup differing from the original in exactly the two files it meant to change —
+but the last step, restoring that backup with Finder onto a real iPhone, has not been
+done. Everything before it is tested; that is not the same thing. The program says so on
+every screen and on every run, and says it here too.
 
 Measured on one real archive of 4,286 conversations and 1,121,482 messages, on a laptop:
 
