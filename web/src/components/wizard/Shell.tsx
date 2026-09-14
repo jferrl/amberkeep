@@ -16,6 +16,7 @@ import { useT } from "@/i18n";
 export function Shell({
   step,
   total,
+  wayOn = true,
   heading,
   lead,
   trouble,
@@ -24,6 +25,16 @@ export function Shell({
 }: {
   step: number;
   total?: number | undefined;
+  /**
+   * Whether this screen has a next one.
+   *
+   * A count says "you are part of the way through something", which on a screen
+   * nobody can get past is untrue at the moment somebody is most likely to close the
+   * window. The screen that finds no backup, or is refused permission to look, is
+   * one of those: it reported "Step 2 of 2" beside instructions to go and use System
+   * Settings.
+   */
+  wayOn?: boolean;
   heading: string;
   lead?: string | undefined;
   /**
@@ -56,7 +67,7 @@ export function Shell({
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-7 px-5 py-10">
       <div className="flex flex-col gap-3">
-        <Progress step={step} total={total} />
+        {wayOn && <Progress step={step} total={total} />}
         <div className="flex flex-col gap-2">
           <h1
             ref={title}

@@ -49,6 +49,10 @@ export function Backups({
     <Shell
       step={2}
       total={2}
+      // Four of the five things this screen can be are dead ends: no importer, a
+      // folder it was refused, nowhere to look, and nothing found. None of them has
+      // a next step, so none of them gets a count promising one.
+      wayOn={situation === "some" || situation === "looking"}
       heading={t("backupsTitle")}
       lead={situation === "some" ? t("backupsHelp") : undefined}
       trouble={

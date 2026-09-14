@@ -1200,3 +1200,57 @@ describe("what a form says is wrong", () => {
     expect(posted.filter((one) => one.at.startsWith("/api/decrypt"))).toHaveLength(0);
   });
 });
+
+/**
+ * A step count promises a next step. Four of the five things the backup screen can
+ * be have no next step, and it was promising one on all of them — beside
+ * instructions to go and change a setting in System Settings, at the exact moment
+ * somebody is most likely to close the window.
+ */
+describe("what a dead end says", () => {
+  const ends: { name: string; list: () => void; says: RegExp }[] = [
+    {
+      name: "when it was refused permission to look",
+      list: () => {
+        backups = { backups: [], looked: ["/somewhere"], problem: "Not allowed to read that." };
+      },
+      says: /Not allowed to read that/,
+    },
+    {
+      name: "when there are none to find",
+      list: () => {
+        backups = { backups: [], looked: ["/somewhere"] };
+      },
+      says: /No iPhone backup was found/,
+    },
+  ];
+
+  it.each(ends)("$name, it does not claim to be part of the way through", async ({ list, says }) => {
+    const user = userEvent.setup();
+    list();
+    render(<App language="en" />);
+
+    await chooseRoute(user, /My iPhone is backed up/);
+    expect(await screen.findByText(says)).toBeInTheDocument();
+    expect(screen.queryByText(/Step 2 of 2/)).not.toBeInTheDocument();
+  });
+
+  it("still counts the steps when there is somewhere to go", async () => {
+    const user = userEvent.setup();
+    backups = {
+      backups: [
+        {
+          path: "/Backups/00008110-aaa",
+          device_name: "Ana's iPhone",
+          encrypted: false,
+        },
+      ],
+      looked: ["/somewhere"],
+    };
+    render(<App language="en" />);
+
+    await chooseRoute(user, /My iPhone is backed up/);
+    expect(await screen.findByRole("button", { name: "Use this backup" })).toBeInTheDocument();
+    expect(screen.getByText(/Step 2 of 2/)).toBeInTheDocument();
+  });
+});
