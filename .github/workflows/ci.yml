@@ -27,7 +27,13 @@ jobs:
         env:
           CGO_ENABLED: 0
       - name: Test with race detector
-        run: go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic
+        # -coverpkg=./... because this program's tests do not sit one-to-one with the
+        # packages they exercise: the command's tests drive whole journeys through
+        # internal/app, internal/source and internal/export. Without it Go credits a
+        # package only for its own tests, so moving a file between packages changes
+        # the number while changing nothing about what is tested. The figure this
+        # produces is not comparable with one measured without the flag.
+        run: go test ./... -race -count=1 -coverpkg=./... -coverprofile=coverage.out -covermode=atomic
       - name: Enforce coverage gate
         if: matrix.os == 'ubuntu-latest'
         shell: bash
