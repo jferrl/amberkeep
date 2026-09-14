@@ -379,7 +379,11 @@ func linkify(s string) template.HTML {
 
 		url := strings.TrimRight(s[at[0]:at[1]], trailing)
 		escaped := html.EscapeString(url)
-		b.WriteString(`<a href="` + escaped + `" rel="noreferrer noopener">` + escaped + `</a>`)
+		b.WriteString(`<a href="`)
+		b.WriteString(escaped)
+		b.WriteString(`" rel="noreferrer noopener">`)
+		b.WriteString(escaped)
+		b.WriteString(`</a>`)
 		// Whatever was trimmed is punctuation belonging to the sentence.
 		b.WriteString(html.EscapeString(s[at[0]+len(url) : at[1]]))
 		last = at[1]

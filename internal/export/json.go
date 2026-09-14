@@ -277,7 +277,7 @@ func ChatValue(c model.Chat, opts Options) any {
 }
 
 // jsonChat converts a conversation.
-func jsonChat(c model.Chat, r renderer) chatJSON {
+func jsonChat(c model.Chat, _ renderer) chatJSON {
 	out := chatJSON{
 		ID:          c.ID,
 		Address:     c.JID.String(),
