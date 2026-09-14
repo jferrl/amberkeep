@@ -181,6 +181,14 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 			}}, "/api/backups"),
 		},
 		{
+			name: "a computer with nowhere for a backup to be",
+			file: "backups-nowhere.ts",
+			what: "GET /api/backups — on a platform Apple ships no Finder, iTunes or Apple Devices\n" +
+				"for. `looked` is empty, which is how the page tells \"you have not made one yet\"\n" +
+				"from \"nothing here can make one\" — the same empty list, and different advice.",
+			reply: recording(&helper{nowhere: true}, "/api/backups"),
+		},
+		{
 			name: "nothing has been migrated yet",
 			file: "migration-idle.ts",
 			what: "GET /api/migration — nothing started. Every stage of a migration ends and\n" +

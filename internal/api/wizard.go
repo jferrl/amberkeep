@@ -42,7 +42,14 @@ func (s *server) handleBackups(w http.ResponseWriter, r *http.Request) {
 		backups = []Backup{}
 	}
 
-	body := map[string]any{"backups": backups}
+	// Where it looked, so an empty list can be read correctly. Nowhere to look and
+	// nothing found there are the same empty list and different situations.
+	looked := s.importer.Locations()
+	if looked == nil {
+		looked = []string{}
+	}
+
+	body := map[string]any{"backups": backups, "looked": looked}
 	if problem != "" {
 		body["problem"] = problem
 	}

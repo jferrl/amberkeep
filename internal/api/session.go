@@ -219,6 +219,12 @@ type Importer interface {
 	// very different things to somebody looking at the screen.
 	Backups() (backups []Backup, problem string)
 
+	// Locations reports where this platform's Apple software puts backups. Empty
+	// means there is nowhere to look, not that nothing was found: Apple ships no
+	// Finder, iTunes or Apple Devices for Linux, so a page told only that the list
+	// was empty would go on to explain how to make one in Finder.
+	Locations() []string
+
 	// Open reads an archive that is already readable, working out for itself which
 	// kind it is. Building the search index happens here, which is why it reports
 	// progress: it is the longest wait in the whole wizard.

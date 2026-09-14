@@ -43,6 +43,10 @@ type importer struct {
 // what was found in the other; on macOS a refusal is nearly always Full Disk Access,
 // which is a thing somebody can go and fix, so it is worth saying rather than
 // showing an empty list and letting them conclude their backup is gone.
+// Locations reports where Apple's own software puts backups on this platform, which
+// is nowhere at all on the ones Apple ships nothing for.
+func (i importer) Locations() []string { return backupfs.Locations() }
+
 func (i importer) Backups() (backups []api.Backup, problem string) {
 	found, err := backupfs.Backups()
 

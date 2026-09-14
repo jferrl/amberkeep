@@ -29,5 +29,8 @@ export default {
       "path": "/Volumes/Backups/01234567-89ab",
       "encrypted": false
     }
+  ],
+  "looked": [
+    "/Users/someone/Library/Application Support/MobileSync/Backup"
   ]
 } as const;

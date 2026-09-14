@@ -268,6 +268,7 @@ export function useOfferedBackups(): { situation: Situation; problem: string | u
       problem,
       backups.isPending,
       backups.data?.backups.length ?? 0,
+      backups.data?.looked,
     ),
     problem,
   };

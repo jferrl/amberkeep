@@ -11,5 +11,8 @@
  */
 export default {
   "backups": [],
+  "looked": [
+    "/Users/someone/Library/Application Support/MobileSync/Backup"
+  ],
   "problem": "the backup could not be read because of a permissions restriction; on macOS, grant access in System Settings > Privacy & Security > Full Disk Access\n\nAdd your terminal, or whichever program is running this, then try again."
 } as const;

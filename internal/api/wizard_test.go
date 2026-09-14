@@ -27,6 +27,9 @@ import (
 type helper struct {
 	backups []Backup
 	problem string
+	// nowhere makes this a platform Apple ships nothing for, where there is no
+	// folder to look in rather than no backup in the folder.
+	nowhere bool
 
 	// produces is what a finished piece of work hands back, and opens is the
 	// archive reading that path is to give.
@@ -53,6 +56,13 @@ type helper struct {
 }
 
 func (h *helper) Backups() (backups []Backup, problem string) { return h.backups, h.problem }
+
+func (h *helper) Locations() []string {
+	if h.nowhere {
+		return nil
+	}
+	return []string{"/Users/someone/Library/Application Support/MobileSync/Backup"}
+}
 
 func (h *helper) record(what string, values ...string) {
 	h.mu.Lock()
@@ -666,4 +676,48 @@ func slicesContain(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+// TestTheBackupsReplySaysWhereItLooked covers the difference between having made no
+// backup and being on a computer that cannot make one.
+//
+// Both are an empty list. Apple ships no Finder, iTunes or Apple Devices for Linux,
+// so a page told only that the list was empty goes on to explain how to make a
+// backup in Finder, on a machine that has never had one.
+func TestTheBackupsReplySaysWhereItLooked(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		stub  *helper
+		empty bool
+	}{
+		{
+			name:  "a computer Apple's software runs on says where it looked",
+			stub:  &helper{},
+			empty: false,
+		},
+		{
+			name:  "one it does not says it looked nowhere",
+			stub:  &helper{nowhere: true},
+			empty: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			handler := wizard(t, tt.stub)
+			body := ask(t, handler, "/api/backups")
+
+			looked, ok := body["looked"].([]any)
+			if !ok {
+				t.Fatalf("the reply did not say where it looked: %v", body["looked"])
+			}
+			if got := len(looked) == 0; got != tt.empty {
+				t.Errorf("looked has %d entries; want empty = %v", len(looked), tt.empty)
+			}
+		})
+	}
 }

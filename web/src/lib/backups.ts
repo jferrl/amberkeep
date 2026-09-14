@@ -15,14 +15,16 @@ import { shortDate, timeOfDay } from "@/lib/format";
 /**
  * What a screen showing backups is actually showing, which is one of five things.
  *
- * Three of them are a kind of nothing and they are said differently on purpose. A
+ * Four of them are a kind of nothing and they are said differently on purpose. A
  * build without an importer has nothing to look with; a folder that could not be
  * read is a permission somebody can grant, and on macOS that is almost always what
- * this is; an empty folder means there really is no backup and one has to be made.
- * Collapsing the three into an empty list is how somebody concludes their history
- * is gone.
+ * this is; nowhere to look at all is a platform Apple ships nothing for, where the
+ * answer is another computer rather than anything on this one; and an empty folder
+ * means there really is no backup and one has to be made. Collapsing the four into
+ * an empty list is how somebody concludes their history is gone — or is told to
+ * open Finder on a machine that has never had one.
  */
-export type Situation = "noImporter" | "problem" | "looking" | "none" | "some";
+export type Situation = "noImporter" | "problem" | "looking" | "nowhere" | "none" | "some";
 
 /**
  * situationOf decides which of the five a screen is showing.
@@ -36,11 +38,16 @@ export function situationOf(
   problem: string | undefined,
   pending: boolean,
   count: number,
+  /** Where the program looked. Empty means there was nowhere to look. */
+  looked: readonly string[] | undefined,
 ): Situation {
   if (missingImporter) return "noImporter";
   if (problem !== undefined) return "problem";
   if (pending) return "looking";
-  return count === 0 ? "none" : "some";
+  if (count > 0) return "some";
+  // Undefined rather than empty is an older server that did not say where it
+  // looked; assuming it looked somewhere keeps the message it used to give.
+  return looked?.length === 0 ? "nowhere" : "none";
 }
 
 /** nameOf is what the phone called itself, or the plainest thing that is still true. */

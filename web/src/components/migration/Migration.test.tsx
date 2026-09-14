@@ -509,10 +509,22 @@ describe("choosing a backup rather than typing one", () => {
   const withoutAList: { name: string; list: () => BackupList | undefined; says: RegExp }[] = [
     {
       name: "when the folder could not be read",
-      list: () => ({ backups: [], problem: "Amberkeep may not read that folder." }),
+      list: () => ({ backups: [], looked: ["/somewhere"], problem: "Amberkeep may not read that folder." }),
       says: /may not read that folder/,
     },
-    { name: "when there are none", list: () => ({ backups: [] }), says: /No iPhone backup was found/ },
+    {
+      name: "when there are none",
+      list: () => ({ backups: [], looked: ["/Users/someone/…/MobileSync/Backup"] }),
+      says: /No iPhone backup was found/,
+    },
+    {
+      // Apple ships no Finder, iTunes or Apple Devices for Linux, so "no backup was
+      // found, here is how to make one in Finder" is an instruction nobody there can
+      // follow. Same empty list, different thing to say.
+      name: "when this computer has nowhere for one to be",
+      list: () => ({ backups: [], looked: [] }),
+      says: /cannot make or restore an iPhone backup/,
+    },
   ];
 
   /**

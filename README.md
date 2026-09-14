@@ -36,6 +36,12 @@ search and export. The iPhone side and the desktop application are being built.
 | English and Spanish | working |
 | Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
 
+**The migration needs a Mac or a Windows PC**, because restoring a backup onto an
+iPhone is done by Apple's own software — Finder, iTunes or the Apple Devices app —
+and Apple ships none of it for Linux. On Linux, Amberkeep reads Android backups,
+searches and exports them, and opens an iPhone backup folder copied from another
+machine; it will also produce a changed backup, but something else has to restore it.
+
 **No backup Amberkeep has produced has ever been restored to a phone.** The migration
 plans, writes and checks itself — twenty-one consistency checks over the result, and a
 copied backup differing from the original in exactly the two files it meant to change —

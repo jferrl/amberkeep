@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import archiveReply from "./contract/archive";
+import backupsNowhereReply from "./contract/backups-nowhere";
 import backupsRefusedReply from "./contract/backups-refused";
 import backupsReply from "./contract/backups";
 import chatsReply from "./contract/chats";
@@ -227,6 +228,25 @@ describe("the backups on this computer", () => {
     const list = records<BackupList>()(backupsRefusedReply);
     expect(list.backups).toEqual([]);
     expect(list.problem).toBeTruthy();
+  });
+
+  /**
+   * And a third emptiness: a computer with nowhere for a backup to be.
+   *
+   * Apple ships no Finder, iTunes or Apple Devices for Linux. Told only that the
+   * list was empty, the page goes on to explain how to make a backup in Finder — an
+   * instruction nobody there can follow. `looked` is what tells them apart, and it
+   * has to arrive as an empty array rather than be left out.
+   */
+  it("says it looked nowhere, which is not the same as finding nothing", () => {
+    const nowhere = records<BackupList>()(backupsNowhereReply);
+    expect(nowhere.backups).toEqual([]);
+    expect(nowhere.problem).toBeUndefined();
+    expect(nowhere.looked).toEqual([]);
+
+    // Where Apple's software does run, the places it looked are named.
+    const searched = records<BackupList>()(backupsReply);
+    expect(searched.looked?.length).toBeGreaterThan(0);
   });
 });
 

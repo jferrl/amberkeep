@@ -179,6 +179,18 @@ function Nothing({ situation, said }: { situation: Situation; said: string }) {
         </Aside>
       );
 
+    // Apple ships no Finder, iTunes or Apple Devices for this platform, so there is
+    // nowhere for a backup to be and nothing here that could restore one. Saying
+    // "no backup was found, open Finder" to somebody on Linux is a dead end dressed
+    // up as an instruction.
+    case "nowhere":
+      return (
+        <Aside heading={t("backupsNowhere")}>
+          <Say>{t("backupsNowhereHelp")}</Say>
+          <Say>{t("migrateRestoreElsewhere")}</Say>
+        </Aside>
+      );
+
     // A build without the part that reads backups cannot migrate at all, so this
     // screen is unreachable in one. Said rather than left blank all the same.
     default:

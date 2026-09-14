@@ -1,4 +1,4 @@
-import { isMissingImporter, useBackups } from "@/api/queries";
+import { useBackups, useOfferedBackups } from "@/api/queries";
 import type { Backup, Setup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Trouble } from "@/components/wizard/Failure";
@@ -6,7 +6,7 @@ import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Where } from "@/components/wizard/Where";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
-import { describe, nameOf, situationOf, type Situation } from "@/lib/backups";
+import { describe, nameOf, type Situation } from "@/lib/backups";
 
 /**
  * The iPhone backups this computer has already made.
@@ -42,17 +42,8 @@ export function Backups({
 }) {
   const t = useT();
   const backups = useBackups();
-
-  // A refusal by the server and a folder it was not allowed to read are the same
-  // thing to the person reading this screen: something stopped it looking.
-  const problem = backups.data?.problem ?? backups.error?.message;
+  const { situation, problem } = useOfferedBackups();
   const found = backups.data?.backups ?? [];
-  const situation = situationOf(
-    isMissingImporter(backups.error),
-    problem,
-    backups.isPending,
-    found.length,
-  );
 
   return (
     <Shell
@@ -110,6 +101,8 @@ function Instead({
       return <Problem said={said} />;
     case "looking":
       return <Say>{t("backupsReading")}</Say>;
+    case "nowhere":
+      return <Nowhere onInstead={onInstead} />;
     default:
       return <NoBackups />;
   }
@@ -210,6 +203,28 @@ function Problem({ said }: { said: string }) {
         </pre>
       )}
     </Aside>
+  );
+}
+
+/**
+ * Nowhere to look, which is not the same as nothing found.
+ *
+ * Apple ships no Finder, iTunes or Apple Devices for this platform, so telling
+ * somebody to connect the iPhone and open Finder would be an instruction they
+ * cannot follow. Opening a file they already have is the way on.
+ */
+function Nowhere({ onInstead }: { onInstead: () => void }) {
+  const t = useT();
+
+  return (
+    <>
+      <Aside heading={t("backupsNowhere")}>
+        <Say>{t("backupsNowhereHelp")}</Say>
+      </Aside>
+      <div>
+        <Button onClick={onInstead}>{t("openAFileInstead")}</Button>
+      </div>
+    </>
   );
 }
 

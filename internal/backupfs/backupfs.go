@@ -59,6 +59,16 @@ type Backup struct {
 // real locations are fixed by the operating system, not passed as a parameter.
 var canonicalDirsFunc = canonicalDirs
 
+// Locations reports the folders Apple's own software puts backups in on this
+// platform, whether or not any of them exists yet.
+//
+// It is empty on every platform Apple ships nothing for, which is the difference
+// between "you have not made a backup yet" and "nothing on this computer can make
+// one". Those are the same empty list and completely different things to tell
+// somebody: the first is a thing to go and do, the second is a reason to go and use
+// another computer.
+func Locations() []string { return canonicalDirsFunc() }
+
 // Backups reports every backup found in the canonical folders for this platform,
 // most recently backed up first. A missing canonical folder (no Apple software has
 // ever run on this machine, or its backup feature has never been used) is not an

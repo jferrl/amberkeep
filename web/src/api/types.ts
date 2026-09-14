@@ -422,6 +422,15 @@ export interface Backup {
 export interface BackupList {
   backups: readonly Backup[];
   problem?: string;
+
+  /**
+   * Where the program looked, which is how an empty list is read correctly.
+   *
+   * Empty means there was nowhere to look rather than nothing to find: Apple ships
+   * no Finder, iTunes or Apple Devices for Linux, so a page told only that the list
+   * was empty would go on to explain how to make a backup in Finder.
+   */
+  looked?: readonly string[];
 }
 
 /**
