@@ -6,6 +6,7 @@ import { isMissingImporter, useBackups, useClose, useSetupAction } from "@/api/q
 import type { Setup } from "@/api/types";
 import { Notices } from "@/components/Notices";
 import { Button } from "@/components/ui/button";
+import { Migration } from "@/components/migration/Migration";
 import { Android } from "@/components/wizard/Android";
 import { Backups } from "@/components/wizard/Backups";
 import { Choose } from "@/components/wizard/Choose";
@@ -258,6 +259,10 @@ function Screen({
           }}
         />
       );
+    case "migrate":
+      // Its own screens and its own state on the server: this one ends with a backup
+      // to restore rather than with an archive to read.
+      return <Migration language={language} onLeave={onBack} />;
     case "choose":
       // Nothing to correct behind a failure met here, so it gets a screen of its own.
       if (failure !== undefined) return <Failure state={failure} onBack={onAgain} />;

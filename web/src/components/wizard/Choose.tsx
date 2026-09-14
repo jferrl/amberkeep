@@ -4,7 +4,7 @@ import { useT } from "@/i18n";
 import type { Phrase } from "@/i18n";
 
 /**
- * The three routes, in the order somebody is most likely to need them.
+ * The routes, in the order somebody is most likely to need them.
  *
  * Two of them need the part of the engine that reads phone backups, which can be
  * left out of a build. When it has been, they are not offered: a choice that answers
@@ -14,6 +14,9 @@ const routes: { route: Route; title: Phrase; help: Phrase; needsImporter: boolea
   { route: "backups", title: "routeBackup", help: "routeBackupHelp", needsImporter: true },
   { route: "android", title: "routeAndroid", help: "routeAndroidHelp", needsImporter: true },
   { route: "existing", title: "routeFile", help: "routeFileHelp", needsImporter: false },
+  // Gated on the same part of the engine as the two above. Reading phone backups and
+  // writing one are the same half of the program, so a build without one has neither.
+  { route: "migrate", title: "routeMigrate", help: "routeMigrateHelp", needsImporter: true },
 ];
 
 /**

@@ -1,11 +1,14 @@
 /**
- * The three ways somebody can have a WhatsApp history, and nothing else.
+ * What somebody can be here to do, and nothing else.
  *
- * They are written down here rather than beside the chooser so that the screen that
- * offers them and the screen that acts on one can both name the same thing without
- * importing each other.
+ * Written down here rather than beside the chooser so that the screen offering them
+ * and the screen acting on one can name the same thing without importing each other.
+ *
+ * The last is not like the others. The first three end with an archive to read; that
+ * one ends with a backup to restore onto a phone, which is why it has screens of its
+ * own rather than another branch of this wizard.
  */
-export type Route = "choose" | "backups" | "android" | "existing";
+export type Route = "choose" | "backups" | "android" | "existing" | "migrate";
 
 /**
  * What somebody has typed, and how far along they are.

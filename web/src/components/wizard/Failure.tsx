@@ -1,4 +1,15 @@
-import type { Setup } from "@/api/types";
+/**
+ * Work that did not finish, whichever of the two jobs it was.
+ *
+ * Narrowed to the two fields this actually shows rather than taking a whole state,
+ * because bringing an archive in and moving one onto a phone both fail the same way:
+ * a sentence saying what went wrong, and several lines of what to try. Two components
+ * saying that differently would be two chances to say it worse.
+ */
+export interface Failed {
+  detail?: string | undefined;
+  guidance?: string | undefined;
+}
 import { Button } from "@/components/ui/button";
 import { Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
@@ -17,7 +28,7 @@ export function Trouble({
   state,
   correctable,
 }: {
-  state: Setup;
+  state: Failed;
   /**
    * Whether the thing that caused this is still on screen to be put right.
    *
@@ -64,7 +75,7 @@ export function Trouble({
  * use and less work, and this screen exists only so that there is never a state the
  * wizard cannot be got out of.
  */
-export function Failure({ state, onBack }: { state: Setup; onBack: () => void }) {
+export function Failure({ state, onBack }: { state: Failed; onBack: () => void }) {
   const t = useT();
 
   return (
