@@ -57,7 +57,7 @@ own format, with nothing neutral to move them to.
   skip without it: `AMBERKEEP_REAL_MSGSTORE`, `AMBERKEEP_REAL_CHATSTORAGE`,
   `AMBERKEEP_REAL_BACKUP`, `AMBERKEEP_GOLDEN_CRYPT15`, `AMBERKEEP_REAL_LIDPAIRS`,
   `AMBERKEEP_ORACLE_REPORT`, `AMBERKEEP_REAL_ORIGINAL_STORE`,
-  `AMBERKEEP_REAL_MIGRATED_STORE`.
+  `AMBERKEEP_REAL_MIGRATED_STORE`, `AMBERKEEP_REAL_STORE_IN`, `AMBERKEEP_REAL_INTO`.
 - **The migration is checked against the Python prototype.** It is the only thing that
   has ever produced the right answer on a real phone, so it is the oracle. Point
   `AMBERKEEP_ORACLE_REPORT` at one or more of its reports, comma-separated and in the

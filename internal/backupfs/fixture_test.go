@@ -1,7 +1,9 @@
 package backupfs
 
 import (
+	"bytes"
 	"database/sql"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -321,4 +323,64 @@ func buildWALPair(t *testing.T) (mainBytes, walBytes, shmBytes []byte) {
 		t.Fatalf("closing the fixture database: %v", err)
 	}
 	return mainBytes, walBytes, shmBytes
+}
+
+// snapshot records every file in a tree and its contents, so a test can insist
+// nothing changed.
+func snapshot(t *testing.T, root string) map[string][]byte {
+	t.Helper()
+
+	out := map[string][]byte{}
+	if err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		out[relative] = data
+		return nil
+	}); err != nil {
+		t.Fatalf("reading the tree: %v", err)
+	}
+	return out
+}
+
+// compare says what changed since a snapshot, or nothing at all.
+func compare(t *testing.T, root string, was map[string][]byte) string {
+	t.Helper()
+
+	now := snapshot(t, root)
+	for name, before := range was {
+		after, still := now[name]
+		switch {
+		case !still:
+			return name + " is gone"
+		case !bytes.Equal(before, after):
+			return name + " was changed"
+		}
+	}
+	for name := range now {
+		if _, expected := was[name]; !expected {
+			return name + " appeared"
+		}
+	}
+	return ""
+}
+
+// payloadIn reads one file's contents out of a backup folder by name.
+func payloadIn(t *testing.T, root, domain, relativePath string) []byte {
+	t.Helper()
+
+	id := fileIDOf(domain, relativePath)
+	data, err := os.ReadFile(filepath.Join(root, id[:2], id))
+	if err != nil {
+		t.Fatalf("reading %s out of the backup: %v", relativePath, err)
+	}
+	return data
 }

@@ -144,6 +144,24 @@ difference that makes somebody doubt both.
   arrives twice under two different addresses — where no check can see it, because
   nothing about the result is wrong. That is now a warning on the plan, named and
   counted, because it is the one failure here that looks exactly like success.
-- Still to come: putting the result back into a copy of a backup, and the guided flow
-  that hands the restore to Finder. Nothing here touches a device and nothing later
-  will either.
+- Putting the result back into a backup is `backupfs.Patch`, and it works the same
+  way: the backup is opened read-only, copied whole, and exactly two things inside the
+  copy change — the file being replaced, and the size and times its index records for
+  it. A restore reads that size from the index rather than from the file, so the two
+  disagreeing is how a restore truncates a database and reports success. On a real
+  4.6 GB backup of 27,352 files it copies and patches in 13 seconds, changes exactly
+  two of them, and leaves the original byte-identical.
+- That measurement settles a question the plan left open. It proposed cloning the
+  folder with APFS copy-on-write, as the prototype did, which would need a dependency
+  on `golang.org/x/sys`. A plain copy runs at 350 MB/s, which is not the part anybody
+  waits for, so the dependency is not worth taking. Revisit if a backup somewhere is
+  large enough to change that answer.
+- Two things a real backup taught here. Its index does not change size when a file's
+  recorded size does — the property list re-encodes to the same length and SQLite
+  updates it in place — so anything comparing backups by size sees one file differ,
+  not two. And the backup records no write-ahead log for the message store at all,
+  which is the thing the plan was most worried about: a stale log replayed over the
+  replaced contents. The code neutralises one when it is there and says so in the
+  result; on this backup it never had to.
+- Still to come: the guided flow that hands the restore to Finder. Nothing here
+  touches a device and nothing later will either.

@@ -3,6 +3,7 @@ package backupfs
 import (
 	"fmt"
 	"math"
+	"time"
 
 	"howett.net/plist"
 )
@@ -99,4 +100,68 @@ func archiveInt(dict map[string]any, key string) (int64, error) {
 	default:
 		return 0, fmt.Errorf("%q field is a %T, not a number", key, v)
 	}
+}
+
+// resize returns a file's archived metadata with a new size and the times that go
+// with it.
+//
+// The blob is decoded into plain Go values and re-encoded, rather than edited in
+// place: an NSKeyedArchiver plist is a graph of references and there is no safe way
+// to reach into the bytes. What comes back has to satisfy the same parser, which is
+// checked here rather than hoped for, because the thing that reads it next is a
+// phone in the middle of a restore.
+func resize(data []byte, size int64, at time.Time) ([]byte, error) {
+	var archive map[string]any
+	if _, err := plist.Unmarshal(data, &archive); err != nil {
+		return nil, fmt.Errorf("decoding the keyed archive: %w", err)
+	}
+
+	objects, ok := archive["$objects"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("keyed archive has no $objects array")
+	}
+
+	// The archived MBFile is the one object carrying a Size. Found by looking rather
+	// than by index, because the order of the graph is Apple's business.
+	var found bool
+	for _, object := range objects {
+		dict, isDict := object.(map[string]any)
+		if !isDict {
+			continue
+		}
+		if _, carries := dict["Size"]; !carries {
+			continue
+		}
+		dict["Size"] = size
+		// Both times move with the size. A file whose contents changed and whose
+		// timestamps did not is the sort of inconsistency that makes a restore
+		// behave unpredictably rather than fail honestly.
+		for _, when := range []string{"LastModified", "LastStatusChange"} {
+			if _, carries := dict[when]; carries {
+				dict[when] = at.Unix()
+			}
+		}
+		found = true
+		break
+	}
+	if !found {
+		return nil, fmt.Errorf("keyed archive carries no MBFile with a Size")
+	}
+
+	out, err := plist.Marshal(archive, plist.BinaryFormat)
+	if err != nil {
+		return nil, fmt.Errorf("re-encoding the keyed archive: %w", err)
+	}
+
+	// It has to be readable by the same parser that read the original, and say what
+	// it was told to say. A blob that decodes to something else is worse than one
+	// that does not decode at all.
+	back, err := parseMBFile(out)
+	if err != nil {
+		return nil, fmt.Errorf("the re-encoded metadata cannot be read back: %w", err)
+	}
+	if back.Size != size {
+		return nil, fmt.Errorf("the re-encoded metadata says %d bytes, not %d", back.Size, size)
+	}
+	return out, nil
 }

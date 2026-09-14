@@ -13,6 +13,9 @@ const (
 	GuidanceFileNotFound     = "backupfs.file-not-found"
 	GuidanceNotAFile         = "backupfs.not-a-file"
 	GuidanceUnreadable       = "backupfs.unreadable"
+	GuidanceWouldOverwrite   = "backupfs.would-overwrite"
+	GuidanceNotADatabase     = "backupfs.not-a-database"
+	GuidanceUnfinished       = "backupfs.unfinished"
 )
 
 // Error is what this package returns for problems a user can act on.
@@ -96,4 +99,24 @@ var (
 	// problem: a truncated database, an I/O error mid-copy, and the like.
 	ErrUnreadable = &Error{Guidance: GuidanceUnreadable,
 		msg: "the backup could not be read"}
+
+	// ErrWouldOverwrite reports a destination that already holds something.
+	//
+	// What is most likely to be there is the last attempt, which is several gigabytes
+	// somebody waited for and may still need to restore from.
+	ErrWouldOverwrite = &Error{Guidance: GuidanceWouldOverwrite,
+		msg: "there is already something at that path; choose somewhere new"}
+
+	// ErrNotADatabase reports a replacement file that is not a SQLite database.
+	ErrNotADatabase = &Error{Guidance: GuidanceNotADatabase,
+		msg: "that file is not a database, so it is not something to put into a backup"}
+
+	// ErrUnfinished reports a database whose write-ahead log has not been folded in.
+	//
+	// Only the database file goes into a backup, so the changes sitting in its log
+	// would be left behind — and those are the most recent ones, which is exactly
+	// what somebody is doing this for.
+	ErrUnfinished = &Error{Guidance: GuidanceUnfinished,
+		msg: "that database still has a write-ahead log beside it, so the most recent " +
+			"changes are not in the file yet"}
 )

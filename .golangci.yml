@@ -65,6 +65,10 @@ linters:
         # Removing a temporary file on a path that is already returning an error.
         # There is nothing further to report and nothing a caller could do.
         - os.Remove
+        # Abandoning a half-made copy of a backup on a path that is already failing.
+        # Leaving it is the thing to avoid; failing to leave it is not worth a second
+        # error on top of the first.
+        - os.RemoveAll
     exhaustive:
       default-signifies-exhaustive: true
     gocritic:
