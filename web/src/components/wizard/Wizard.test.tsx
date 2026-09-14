@@ -1158,3 +1158,45 @@ describe("what the wizard has to say about itself", () => {
     ).toBeInTheDocument();
   });
 });
+
+/**
+ * Every problem at once, not one per attempt.
+ *
+ * The screen this matters on asks for a file, a sixty-four character key read off a
+ * phone, and a folder. Reporting the first blank and stopping meant somebody with
+ * three blanks made three attempts to discover they had three blanks — and one of
+ * those attempts costs them retyping the key.
+ */
+describe("what a form says is wrong", () => {
+  it("names all of it, rather than the first thing it found", async () => {
+    const user = userEvent.setup();
+    render(<App language="en" />);
+
+    await chooseRoute(user, /I have an Android phone/);
+    await walkThePhone(user);
+    await user.click(await screen.findByRole("button", { name: "Unlock the file" }));
+
+    // Both blanks, from one press.
+    const said = await screen.findAllByRole("alert");
+    expect(said.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Say where the file is before going on.")).toBeInTheDocument();
+    expect(screen.getByText("Type the key before going on.")).toBeInTheDocument();
+  });
+
+  it("does not send a key that is not one", async () => {
+    const user = userEvent.setup();
+    render(<App language="en" />);
+
+    await chooseRoute(user, /I have an Android phone/);
+    await walkThePhone(user);
+    await user.type(
+      await screen.findByLabelText(/Where msgstore.db.crypt15 is/),
+      "/tmp/msgstore.db.crypt15",
+    );
+    await user.type(screen.getByLabelText("The 64-digit key"), "not-a-key");
+    await user.click(screen.getByRole("button", { name: "Unlock the file" }));
+
+    expect(screen.getByText(/That is not a 64-digit key/)).toBeInTheDocument();
+    expect(posted.filter((one) => one.at.startsWith("/api/decrypt"))).toHaveLength(0);
+  });
+});

@@ -282,3 +282,47 @@ describe("the window's menu", () => {
     expect(heard).toEqual([]);
   });
 });
+
+describe("the one secret this program handles", () => {
+  /**
+   * Masked by default is right: the key is usually read aloud off a phone in a room
+   * with other people in it, and a browser offering to remember it is the beginning
+   * of it being kept. Unreadable forever is not right: it is sixty-four characters,
+   * and nobody types those correctly without being able to look.
+   */
+  it("starts hidden", async () => {
+    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+
+    const box = await screen.findByLabelText("The 64-digit key");
+    expect(box).toHaveAttribute("type", "password");
+  });
+
+  it("can be checked, and hidden again", async () => {
+    const user = userEvent.setup();
+    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+
+    await user.click(await screen.findByRole("button", { name: "Show" }));
+    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute("type", "text");
+
+    await user.click(screen.getByRole("button", { name: "Hide" }));
+    expect(screen.getByLabelText("The 64-digit key")).toHaveAttribute("type", "password");
+  });
+
+  it("says which state it is in, for anybody not looking at the letters", async () => {
+    const user = userEvent.setup();
+    render(<Field label="The 64-digit key" value="abc" onChange={() => undefined} secret />);
+
+    const button = await screen.findByRole("button");
+    expect(button).toHaveAttribute("aria-pressed", "false");
+    await user.click(button);
+    expect(screen.getByRole("button")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  /** A field that is not a secret is not given a control that suggests it is. */
+  it("is offered on nothing else", async () => {
+    render(<Field label="The full path to the file" value="" onChange={() => undefined} />);
+
+    expect(await screen.findByLabelText("The full path to the file")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show" })).not.toBeInTheDocument();
+  });
+});

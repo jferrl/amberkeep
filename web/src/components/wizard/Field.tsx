@@ -67,6 +67,10 @@ export function Field({
     choosing === undefined ? false : inAWindow(),
   );
   const [opening, setOpening] = useState(false);
+  // Masked to begin with, because the one secret this program handles is usually
+  // read aloud off a phone in a room with other people in it. Checkable on demand,
+  // because it is sixty-four characters and nobody types those correctly blind.
+  const [shown, setShown] = useState(false);
 
   const open = () => {
     if (choosing === undefined) return;
@@ -87,7 +91,7 @@ export function Field({
   const box_ = (
     <Input
       id={box}
-      type={secret === true ? "password" : "text"}
+      type={secret === true && !shown ? "password" : "text"}
       value={value}
       spellCheck={false}
       autoCapitalize="off"
@@ -106,7 +110,21 @@ export function Field({
       <label htmlFor={box} className="text-sm font-medium">
         {label}
       </label>
-      {picker && choosing !== undefined ? (
+      {secret === true ? (
+        <div className="flex items-start gap-2">
+          {box_}
+          <Button
+            variant="default"
+            aria-pressed={shown}
+            className="shrink-0"
+            onClick={() => {
+              setShown(!shown);
+            }}
+          >
+            {shown ? t("hideKey") : t("showKey")}
+          </Button>
+        </div>
+      ) : picker && choosing !== undefined ? (
         <div className="flex items-start gap-2">
           {box_}
           <Button

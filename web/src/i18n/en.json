@@ -216,5 +216,8 @@
   "exportDoneKeep": "Copy that folder somewhere safe. A backup on the same computer is not a backup.",
   "exportDoneBack": "Back to the archive",
   "exportAgain": "Write another copy",
-  "exportAction": "Keep a copy"
+  "exportAction": "Keep a copy",
+  "showKey": "Show",
+  "hideKey": "Hide",
+  "androidFileHint": "The file you copied off the phone. It ends in .crypt15 and is usually a few hundred megabytes."
 }

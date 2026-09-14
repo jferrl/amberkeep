@@ -163,10 +163,6 @@ export function Android({
     event.preventDefault();
 
     const where = file.trim();
-    if (where === "") {
-      setWrong({ file: t("fileNeeded") });
-      return;
-    }
 
     // The groups WhatsApp shows the key in are for reading it aloud, so whatever
     // somebody typed or pasted between them is thrown away rather than refused.
@@ -176,14 +172,20 @@ export function Android({
       : looksLikeAPath.test(key.trim())
         ? key.trim()
         : "";
-    if (secret === "") {
-      setWrong({ key: digits === "" ? t("keyNeeded") : t("keyNotAKey") });
-      return;
-    }
-
     const folder = into.trim();
-    if (folder === "") {
-      setWrong({ into: t("workspaceNeeded") });
+
+    // Every problem at once. Reporting the first and stopping meant somebody with
+    // three blanks made three attempts to discover they had three blanks — and this
+    // screen's own key is sixty-four characters read off a phone, so the attempt
+    // they are being sent back to is the expensive one.
+    const problems: { file?: string; key?: string; into?: string } = {};
+    if (where === "") problems.file = t("fileNeeded");
+    if (secret === "")
+      problems.key = digits === "" ? t("keyNeeded") : t("keyNotAKey");
+    if (folder === "") problems.into = t("workspaceNeeded");
+
+    if (Object.keys(problems).length > 0) {
+      setWrong(problems);
       return;
     }
 
@@ -210,6 +212,7 @@ export function Android({
       <form className="flex flex-col gap-5" onSubmit={send}>
         <Field
           label={t("androidFileLabel")}
+          hint={t("androidFileHint")}
           choosing={{ what: "encrypted", named: t("chooseEncrypted") }}
           value={file}
           wrong={wrong.file}
