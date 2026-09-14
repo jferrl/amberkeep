@@ -1,0 +1,67 @@
+name: Schema report
+description: A WhatsApp database layout this build does not recognise. The most useful thing you can send.
+title: "schema: "
+labels: ["schema"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        WhatsApp changes its databases every few months, and a layout from a version
+        nobody here has seen is what keeps the readers working for everyone else.
+
+        **Send the structure, never the contents.** The commands below print only table
+        and column names — no messages, no phone numbers, no names. Read what they print
+        before you paste it. If anything in it looks like something somebody said, do not
+        send it, and open a bug report instead.
+
+        Never attach `msgstore.db`, `ChatStorage.sqlite`, `wa.db`, a `.crypt15` file or a
+        backup folder. Those are your entire history, and this is a public page.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Which phone
+      options: ["Android", "iPhone"]
+    validations: { required: true }
+  - type: input
+    id: whatsapp
+    attributes:
+      label: WhatsApp version
+      description: In the app, Settings > Help > App info.
+      placeholder: "2.26.35.75"
+    validations: { required: true }
+  - type: input
+    id: os
+    attributes:
+      label: Phone OS version
+      placeholder: "Android 16, or iOS 26.0"
+    validations: { required: true }
+  - type: textarea
+    id: schema
+    attributes:
+      label: The structure
+      description: |
+        Run this and paste what it prints.
+
+        **Android**, on a decrypted `msgstore.db`:
+        `sqlite3 msgstore.db ".schema" | grep -v "^INSERT"`
+
+        **iPhone**, on a `ChatStorage.sqlite` taken out of a backup:
+        `sqlite3 ChatStorage.sqlite ".schema" | grep -v "^INSERT"`
+
+        Or, from this program: `amberkeep inspect --db <file> --full`
+      render: sql
+    validations: { required: true }
+  - type: textarea
+    id: said
+    attributes:
+      label: What Amberkeep said, if anything
+      description: The whole message, including the advice underneath it.
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before sending
+      options:
+        - label: I have read what I am pasting and it contains no message content, phone numbers or names.
+          required: true
+        - label: I have not attached a database, a backup or a key.
+          required: true

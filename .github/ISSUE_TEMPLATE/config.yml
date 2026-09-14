@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: A security problem
+    url: https://github.com/jferrl/amberkeep/security/advisories/new
+    about: Report it privately. Never in a public issue.
+  - name: A question about using it
+    url: https://github.com/jferrl/amberkeep/discussions
+    about: Ask here rather than opening an issue.

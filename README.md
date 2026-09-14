@@ -190,6 +190,10 @@ unknown:
 Read [docs/PRINCIPLES.md](docs/PRINCIPLES.md) first; it is binding, not advisory.
 Commits follow the Conventional Commits format and need a DCO sign-off (`git commit -s`).
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the checks and the sign-off, and
+[SECURITY.md](SECURITY.md) if you have found something that should not be said in
+public.
+
 Schema reports are the most useful contribution. WhatsApp changes its databases every
 few months, and a **structure-only** dump from a version we have not seen keeps the
 readers working for everyone. Never send message content.

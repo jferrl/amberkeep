@@ -1,0 +1,44 @@
+name: Bug report
+description: Something did not work.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Do not attach your database, your backup, or your key**, and do not paste
+        anything a person wrote. Everything here is public, permanently. Every failure
+        this program understands comes with advice underneath it — please include that
+        whole message rather than a screenshot of part of it.
+
+        If what you have found is a security problem, do not open an issue. See
+        [SECURITY.md](../blob/main/SECURITY.md).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you ran, what you expected, and what happened instead.
+    validations: { required: true }
+  - type: textarea
+    id: said
+    attributes:
+      label: What it said
+      description: The whole message, including the advice under it. Paste it as text.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The output of `amberkeep version`.
+      placeholder: "amberkeep v0.1.0"
+    validations: { required: true }
+  - type: input
+    id: platform
+    attributes:
+      label: Your computer
+      placeholder: "macOS 26.1 on Apple silicon, or Windows 11"
+    validations: { required: true }
+  - type: input
+    id: source
+    attributes:
+      label: Where the archive came from
+      placeholder: "Android msgstore.db.crypt15, WhatsApp 2.26.35.75"

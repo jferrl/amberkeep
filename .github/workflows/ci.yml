@@ -117,6 +117,20 @@ jobs:
           awk -v t="$total" 'BEGIN { if (t + 0 < 85) { print "coverage " t "% is below the 85% gate"; exit 1 } }'
       - name: Build
         run: npm run build
+      - name: The committed viewer is what this source builds to
+        # internal/viewer/dist is committed so the binary can embed it, which means it
+        # can fall behind web/src without anything noticing: the Go tests would keep
+        # passing against a viewer nobody is looking at any more. The build above has
+        # just overwritten it, so anything git sees here is drift.
+        working-directory: .
+        run: |
+          if [ -n "$(git status --porcelain -- internal/viewer/dist)" ]; then
+            echo "internal/viewer/dist does not match what web/src builds to."
+            echo "Run: cd web && npm run build   — then commit the result."
+            git status --porcelain -- internal/viewer/dist
+            exit 1
+          fi
+          echo "in step with web/src"
       - name: Install a browser
         # Only the headless shell: the tests drive a page, they do not record video
         # or need a full browser install.
