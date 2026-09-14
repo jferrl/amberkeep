@@ -23,7 +23,7 @@ body:
     attributes:
       label: What it said
       description: The whole message, including the advice under it. Paste it as text.
-      render: text
+      render: shell
   - type: input
     id: version
     attributes:
