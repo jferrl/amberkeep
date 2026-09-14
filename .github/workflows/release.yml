@@ -1,0 +1,86 @@
+name: Release
+
+# Runs when a version tag is pushed. The tag must point at a commit CI has already
+# passed on: this builds and publishes, it does not decide whether the code is good.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          check-latest: true
+      # Cheap insurance. A tag can be pushed at anything, and a release nobody can
+      # run is worse than no release.
+      - name: Test
+        run: go test ./... -count=1
+        env:
+          CGO_ENABLED: 0
+
+  build:
+    name: Build
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Build every platform
+        # One static binary per platform, cross-compiled from one machine because
+        # nothing here needs a C toolchain. -trimpath keeps build paths out of the
+        # binary, so the same source at the same version produces the same bytes
+        # wherever it is built.
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME}"
+          mkdir -p dist
+
+          for target in darwin/arm64 darwin/amd64 windows/amd64 windows/arm64 linux/amd64 linux/arm64; do
+            os="${target%/*}"
+            arch="${target#*/}"
+            name="amberkeep"
+            [ "$os" = "windows" ] && name="amberkeep.exe"
+
+            echo "building $target"
+            mkdir -p "build/$os-$arch"
+            GOOS="$os" GOARCH="$arch" CGO_ENABLED=0 \
+              go build -trimpath -ldflags "-s -w -X main.version=$version" \
+              -o "build/$os-$arch/$name" ./cmd/amberkeep
+
+            cp LICENSE README.md "build/$os-$arch/"
+
+            if [ "$os" = "windows" ]; then
+              (cd "build/$os-$arch" && zip -qr "../../dist/amberkeep_${version}_${os}_${arch}.zip" .)
+            else
+              tar -czf "dist/amberkeep_${version}_${os}_${arch}.tar.gz" -C "build/$os-$arch" .
+            fi
+          done
+
+      - name: Checksums
+        # The only integrity story an unsigned binary has. Somebody who cares can
+        # check what they downloaded is what was built.
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" dist/* \
+            --title "${GITHUB_REF_NAME}" \
+            --notes-file .github/RELEASE_NOTES.md \
+            --verify-tag

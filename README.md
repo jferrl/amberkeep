@@ -55,6 +55,22 @@ And on a real iPhone store of 554 conversations and 161,026 messages:
 | export every conversation as web pages | 3 s, 9,404 pictures shown |
 | page backwards through a 32,935-message conversation | 0.19 s |
 
+## Installing it
+
+Download the archive for your computer from
+[Releases](https://github.com/jferrl/amberkeep/releases), unpack it, and run
+`amberkeep`. One file, no installer, nothing to uninstall.
+
+The binaries are not signed, so macOS says it cannot check the app and Windows
+SmartScreen warns. On macOS, `xattr -d com.apple.quarantine ./amberkeep` after
+downloading. Every archive's SHA-256 is published beside it.
+
+Or build it yourself, which needs nothing but Go:
+
+```sh
+go build ./cmd/amberkeep
+```
+
 ## Using it
 
 If you do not already have a decrypted database, start here:

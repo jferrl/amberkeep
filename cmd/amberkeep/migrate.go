@@ -30,6 +30,17 @@ import (
 // confirmation is what somebody has to type before anything is written.
 const confirmation = "migrate"
 
+// unproven is said every time, at the top, before anything else.
+//
+// What this produces has been checked more thoroughly than most things in this
+// program: it agrees with the prototype that performed the original migration, and
+// every consistency check passes on a full run. None of that is the same as a phone
+// having accepted one, and the difference is somebody else's phone. Saying so in the
+// release notes is not enough — somebody running a command has not read those.
+const unproven = "Note: no backup this command has produced has yet been restored to a phone.\n" +
+	"Everything it writes is checked, and the checks pass, but that is not the same\n" +
+	"thing. Read what follows, and keep the archived safety backup it asks for.\n"
+
 // Where the command reads and writes. Variables so a test can drive the whole
 // command and read what somebody would have seen, which is the only way to check
 // that what it says is what it does.
@@ -60,6 +71,8 @@ func runMigrate(ctx context.Context, args []string) error {
 		fs.Usage()
 		return fmt.Errorf("both --android and --backup are needed")
 	}
+
+	fmt.Fprintf(told, "%s\n", unproven)
 
 	ready, err := migrate.Preflight(ctx, *backup, whatsappDomain, chatStorage)
 	if err != nil {
