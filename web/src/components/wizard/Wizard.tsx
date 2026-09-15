@@ -126,7 +126,7 @@ export function Wizard({
   const failure = stage === "failed" && !read ? state : undefined;
 
   return (
-    <div className="min-h-dvh bg-[var(--color-bg)]">
+    <div className="flex min-h-dvh flex-col bg-[var(--color-bg)]">
       <p className="m-0 border-b border-[var(--color-line)] bg-[var(--color-surface)] px-5 py-2 text-center text-sm text-[var(--color-muted)]">
         {t("readOnly")}
       </p>

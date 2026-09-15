@@ -16,7 +16,11 @@ export function Notices() {
   const t = useT();
 
   return (
-    <footer className="border-t border-[var(--color-line)] px-5 py-2.5 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
+    // mt-auto rather than a fixed position: on a short screen this sits at the
+    // bottom of the window, and on a long one it is pushed below the fold and
+    // scrolls away like the end of a document. What it must never do is cover
+    // anything — it is a legal notice, not a tool.
+    <footer className="mt-auto shrink-0 border-t border-[var(--color-line)] px-5 py-2.5 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
       <div className="mx-auto max-w-2xl">
         <p className="m-0">{t("notAffiliated")}</p>
         <p className="m-0 mt-1">{t("freeSoftware")}</p>
