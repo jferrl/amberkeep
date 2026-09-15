@@ -10,6 +10,7 @@ import {
 } from "@/api/queries";
 import { Notices } from "@/components/Notices";
 import { Export } from "@/components/export/Export";
+import { Framed } from "@/components/wizard/Frame";
 import { asking } from "@/lib/desktop";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
@@ -48,12 +49,18 @@ export function App({ language }: { language: Language }) {
     // conversations. It is a job with its own progress and its own ending, and the
     // list underneath it would be a list nobody is reading.
     return keeping ? (
-      <Export
-        language={language}
-        onLeave={() => {
-          setKeeping(false);
-        }}
-      />
+      // Framed like the wizard: it takes the whole window, so it needs the whole
+      // window's furniture. Without it this screen had no promise at the top, no
+      // notices at the bottom, and its first line of text under the close, minimise
+      // and zoom buttons.
+      <Framed>
+        <Export
+          language={language}
+          onLeave={() => {
+            setKeeping(false);
+          }}
+        />
+      </Framed>
     ) : (
       <Browser
         language={language}

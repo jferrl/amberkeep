@@ -47,7 +47,11 @@ let backups: BackupList;
 const advice: AdviceOnFailure = {
   "crypt15.wrong-key": {
     title: "That key does not open this backup",
-    body: "Check that the key is the one this phone showed you.\nKeys are not shared between phones.",
+    // As the real ones are written: hard-wrapped to a terminal's width, with the
+    // one thing whose line breaks matter indented.
+    body:
+      "Check that the key is the one this phone showed you.\nKeys are not shared between phones.\n\n" +
+      "  WhatsApp > Settings > Chats > Chat backup",
   },
   "source.unrecognised-archive": {
     title: "That database is not one this version recognises",
@@ -505,13 +509,25 @@ describe("when the work fails", () => {
   });
 
   /** It arrives with its line breaks in it and is written to be read as it is. */
-  it("keeps the line breaks the advice was written with", async () => {
+  /**
+   * The advice is written in a Go file and printed in a terminal, so it arrives
+   * wrapped at about seventy characters. Shown as it was written it reads as a
+   * program's output; what matters is which line breaks were meant.
+   */
+  it("sets the advice as prose, and leaves what was laid out alone", async () => {
     states = [failure];
     render(<App language="en" />);
 
-    const advice = await screen.findByText(/Keys are not shared/);
-    expect(advice.tagName).toBe("PRE");
-    expect(advice.textContent).toContain("\n");
+    // A wrapped paragraph is one paragraph, joined back up.
+    const paragraph = await screen.findByText(/Keys are not shared/);
+    expect(paragraph.tagName).toBe("P");
+    expect(paragraph.textContent).toBe(
+      "Check that the key is the one this phone showed you. Keys are not shared between phones.",
+    );
+
+    // A menu to follow keeps its own shape.
+    const menu = screen.getByText(/Chat backup/);
+    expect(menu.tagName).toBe("PRE");
   });
 
   /**

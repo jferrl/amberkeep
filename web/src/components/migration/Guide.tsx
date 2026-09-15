@@ -1,4 +1,5 @@
 import type { GuideStage, GuideStep } from "@/api/types";
+import { Prose } from "@/components/wizard/Prose";
 import { useT } from "@/i18n";
 
 /**
@@ -55,9 +56,9 @@ export function Step({ step, number }: { step: GuideStep; number: number }) {
         )}
       </h3>
 
-      <pre className="m-0 mt-2 overflow-x-auto bg-transparent font-sans text-sm whitespace-pre-wrap">
-        {step.body}
-      </pre>
+      <div className="mt-2">
+        <Prose text={step.body} />
+      </div>
 
       {step.expect !== undefined && (
         <p className="m-0 mt-3 text-sm">

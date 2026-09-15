@@ -12,6 +12,7 @@ export interface Failed {
 }
 import { useAdvice } from "@/api/queries";
 import { Button } from "@/components/ui/button";
+import { Prose } from "@/components/wizard/Prose";
 import { Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 
@@ -75,9 +76,9 @@ export function Trouble({
       {told !== undefined && (
         <div className="flex flex-col gap-1.5">
           <h2 className="m-0 text-sm font-semibold">{t("failedGuidance")}</h2>
-          <pre className="m-0 overflow-x-auto bg-[var(--color-surface)] p-3 font-sans text-sm whitespace-pre-wrap">
-            {told.body}
-          </pre>
+          <div className="rounded-md bg-[var(--color-surface)] p-3">
+            <Prose text={told.body} />
+          </div>
         </div>
       )}
 

@@ -10,8 +10,8 @@ import {
   useSetupAction,
 } from "@/api/queries";
 import type { Setup } from "@/api/types";
-import { Notices } from "@/components/Notices";
 import { Button } from "@/components/ui/button";
+import { Framed } from "@/components/wizard/Frame";
 import { Migration } from "@/components/migration/Migration";
 import { Android } from "@/components/wizard/Android";
 import { Backups } from "@/components/wizard/Backups";
@@ -55,7 +55,6 @@ export function Wizard({
   onRetry: () => void;
   language: Language;
 }) {
-  const t = useT();
   const action = useSetupAction();
   const letGo = useClose();
 
@@ -132,30 +131,9 @@ export function Wizard({
   const failure = stage === "failed" && !read ? state : undefined;
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[var(--color-bg)]">
-      {/*
-        The promise, and in a window it is also the window's title.
-
-        The band at the top of the frame belongs to the close, minimise and zoom
-        buttons, which macOS draws over the page. This used to ignore them: the
-        sentence was centred in a strip of its own height, so it sat eight pixels
-        above the buttons' line and the two read as two things that had collided.
-        Giving the strip the band's height puts the sentence on that line instead,
-        and the side padding keeps it clear of the buttons when the window is narrow.
-      */}
-      <p className="m-0 flex min-h-[max(2.25rem,var(--frame))] items-center justify-center border-b border-[var(--color-line)] bg-[var(--color-surface)] px-[calc(var(--frame)+1.25rem)] text-center text-sm text-[var(--color-muted)]">
-        {t("readOnly")}
-      </p>
-
-      {action.refused !== undefined && (
-        <p
-          role="alert"
-          className="m-0 border-b border-[var(--color-accent)] px-5 py-2 text-center text-sm font-medium"
-        >
-          {t("refused", { detail: action.refused })}
-        </p>
-      )}
-
+    <Framed
+      {...(action.refused === undefined ? {} : { refused: action.refused })}
+    >
       <Screen
         state={state}
         unreachable={unreachable}
@@ -177,9 +155,7 @@ export function Wizard({
         onStart={start}
         extras={extras}
       />
-
-      <Notices />
-    </div>
+    </Framed>
   );
 }
 
