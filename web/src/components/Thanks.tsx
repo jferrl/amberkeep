@@ -1,3 +1,4 @@
+import { styles } from "@/components/ui/control";
 import { useT } from "@/i18n";
 import { outside } from "@/lib/desktop";
 
@@ -12,29 +13,34 @@ import { outside } from "@/lib/desktop";
  * is somewhere to point at — a program that points somebody at a page that does not
  * exist has spent the only goodwill the line was ever going to earn.
  *
- * Quiet on purpose: the smallest type on the screen, under everything that matters,
- * no button, no badge, nothing to dismiss because there is nothing in the way.
+ * Ko-fi publishes a button for this. It is a script tag pointing at their servers,
+ * and embedding it would mean this page fetching something from somewhere else,
+ * which it has never done and which there is a browser test to prevent. So the
+ * button is drawn here, in this program's own palette, and clicking it hands the
+ * address to the operating system. Nothing is loaded from anybody.
  */
 export function Thanks({ where }: { where: string | undefined }) {
   const t = useT();
   if (where === undefined || where === "") return null;
 
   return (
-    <p className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
-      {t("thanksAsk", { where: readable(where) })}{" "}
+    <div className="flex flex-col items-start gap-2">
+      <p className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
+        {t("thanksAsk")}
+      </p>
       <a
         href={where}
-        className="underline decoration-[var(--color-edge)] underline-offset-4 hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]"
+        className={styles({ variant: "default", size: "sm" })}
         onClick={(event) => {
-          // Never followed in place. In a window that would replace the program
-          // with a web page and leave somebody with no way back.
+          // Never followed in place. In a window there is no address bar and no way
+          // back, so a link followed there would replace the program with a web page.
           event.preventDefault();
           outside(where);
         }}
       >
-        {readable(where)}
+        {t("thanksButton", { where: readable(where) })}
       </a>
-    </p>
+    </div>
   );
 }
 

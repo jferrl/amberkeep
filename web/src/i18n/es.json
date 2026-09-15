@@ -281,5 +281,6 @@
   "noteIntoACopy": "Metiéndolo en una copia de la copia de seguridad. El original no se toca.",
   "onePicture": "1 foto",
   "picturesCount": "{count} fotos",
-  "thanksAsk": "Si esto te ha servido, puedes invitarme a un café. Es voluntario, y aquí no depende nada de ello:"
+  "thanksAsk": "Si esto te ha servido, puedes invitarme a un café. Es voluntario, y aquí no depende nada de ello.",
+  "thanksButton": "Invítame a un café · {where}"
 }

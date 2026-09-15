@@ -42,8 +42,23 @@ describe("saying thanks", () => {
     // Voluntary is said out loud rather than implied.
     expect(screen.getByText(/voluntary/)).toBeVisible();
 
-    const link = screen.getByRole("link", { name: "ko-fi.com/jferrl" });
+    const link = screen.getByRole("link", { name: /ko-fi.com\/jferrl/ });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
+  });
+
+  /**
+   * Ko-fi publishes a button as a script tag pointing at their servers. Embedding it
+   * would be this page fetching something from somewhere else, which is the one thing
+   * it has never done — so the button is drawn here and nothing is loaded from
+   * anybody. This is the test that says so out loud; the browser test that watches
+   * every request is what would catch it.
+   */
+  it("loads nothing from anywhere to draw itself", () => {
+    const { container } = shown("https://ko-fi.com/jferrl");
+
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector("iframe")).toBeNull();
   });
 
   it("says it in Spanish to a Spanish reader", () => {
@@ -57,7 +72,7 @@ describe("saying thanks", () => {
     vi.stubGlobal("runtime", { BrowserOpenURL: opened });
 
     shown("https://ko-fi.com/jferrl");
-    await userEvent.click(screen.getByRole("link", { name: "ko-fi.com/jferrl" }));
+    await userEvent.click(screen.getByRole("link", { name: /ko-fi.com\/jferrl/ }));
 
     expect(opened).toHaveBeenCalledWith("https://ko-fi.com/jferrl");
   });
@@ -68,7 +83,7 @@ describe("saying thanks", () => {
     vi.stubGlobal("open", opened);
 
     shown("https://ko-fi.com/jferrl");
-    await userEvent.click(screen.getByRole("link", { name: "ko-fi.com/jferrl" }));
+    await userEvent.click(screen.getByRole("link", { name: /ko-fi.com\/jferrl/ }));
 
     expect(opened).toHaveBeenCalledWith(
       "https://ko-fi.com/jferrl",
