@@ -149,11 +149,11 @@ func Preflight(ctx context.Context, backup, domain, relativePath string) (Readin
 // A check's own sentence is a different one from the step's — "the backup is not
 // encrypted" against "turn off encrypted backups" — and both are wanted.
 func (r *Readiness) add(step, check string, passed, blocking bool, found note) {
-	title, _ := guide.Check(check, nil, guide.English)
+	title, _ := guide.Sentence(check, nil, guide.English)
 	f := Finding{Step: step, Check: check, Passed: passed, Blocking: blocking, Title: title}
 	if found.name != "" {
 		f.Note, f.Values = found.name, found.values
-		f.Detail, _ = guide.Check(found.name, found.values, guide.English)
+		f.Detail, _ = guide.Sentence(found.name, found.values, guide.English)
 	}
 	r.Findings = append(r.Findings, f)
 }

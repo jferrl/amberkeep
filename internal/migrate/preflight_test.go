@@ -134,7 +134,7 @@ func TestHowOldTheBackupIsSaid(t *testing.T) {
 				t.Errorf("freshness named %q, want %q", got.name, tt.note)
 			}
 
-			said, ok := guide.Check(got.name, got.values, guide.English)
+			said, ok := guide.Sentence(got.name, got.values, guide.English)
 			if !ok {
 				t.Fatalf("%q is not a sentence the guide knows", got.name)
 			}
@@ -147,7 +147,7 @@ func TestHowOldTheBackupIsSaid(t *testing.T) {
 			}
 
 			// And in Spanish, which is the whole reason these are named.
-			spanish, ok := guide.Check(got.name, got.values, guide.Spanish)
+			spanish, ok := guide.Sentence(got.name, got.values, guide.Spanish)
 			if !ok || spanish == said {
 				t.Errorf("%q is not said in Spanish: %q", got.name, spanish)
 			}

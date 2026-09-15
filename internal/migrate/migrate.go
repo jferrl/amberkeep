@@ -29,7 +29,10 @@ package migrate
 
 import (
 	"fmt"
+	"strconv"
 	"time"
+
+	"github.com/jferrl/amberkeep/internal/guide"
 )
 
 // Plan is what a migration would do, worked out without doing any of it.
@@ -65,9 +68,10 @@ type Plan struct {
 	// Untouched is conversations on the iPhone that this migration does not go near.
 	Untouched int `json:"untouched"`
 
-	// Warnings are the things somebody has to read before agreeing, in their own
-	// words rather than as codes.
-	Warnings []string `json:"warnings,omitempty"`
+	// Warnings are the things somebody has to read before agreeing, each named so a
+	// page can say it in its reader's own language and written out in English beside
+	// the name.
+	Warnings []Said `json:"warnings,omitempty"`
 
 	// Earliest and Latest bound what would arrive, so a person can recognise their
 	// own history in the report rather than trusting a count.
@@ -182,9 +186,47 @@ type Conversation struct {
 	Earliest time.Time `json:"earliest,omitzero"`
 	Latest   time.Time `json:"latest,omitzero"`
 
-	// Skipped says, in a sentence, why nothing would happen to this conversation.
-	// It is empty when something would.
-	Skipped string `json:"skipped,omitempty"`
+	// Skipped says why nothing would happen to this conversation. It is zero when
+	// something would.
+	Skipped Said `json:"skipped,omitzero"`
+}
+
+// Said is a sentence this package wants said.
+//
+// Named rather than only written out, because the same sentence is read in a
+// terminal and on a page and the page's reader may not read English. The name is
+// what the guide's catalogues are keyed by; Text is the same sentence in English,
+// filled in from the same values, for the terminal and for a page meeting a name
+// from a newer program; Values fill the holes in either.
+type Said struct {
+	Note   string            `json:"note,omitempty"`
+	Text   string            `json:"text,omitempty"`
+	Values map[string]string `json:"values,omitempty"`
+}
+
+// says names a sentence and writes it in English at once, from one template and one
+// set of values given as name, value pairs, so the two cannot disagree.
+func says(name string, pairs ...string) Said {
+	said := Said{Note: name}
+	if len(pairs) >= 2 {
+		said.Values = make(map[string]string, len(pairs)/2)
+		for i := 0; i+1 < len(pairs); i += 2 {
+			said.Values[pairs[i]] = pairs[i+1]
+		}
+	}
+	said.Text, _ = guide.Sentence(name, said.Values, guide.English)
+	return said
+}
+
+// counted picks between a sentence written for one thing and one written for
+// several. "1 conversaciones" is the tell of a program that was translated rather
+// than written, and a sentence with a number in it cannot be right in both languages
+// at once, so the sentence that fits is chosen where the number is known.
+func counted(n int, name, hole string) Said {
+	if n == 1 {
+		return says(name + "-one")
+	}
+	return says(name, hole, strconv.Itoa(n))
 }
 
 // Merging reports whether this conversation already exists on the iPhone.

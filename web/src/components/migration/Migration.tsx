@@ -128,7 +128,7 @@ export function Migration({
       return (
         <MigrationChecks
           language={language}
-          sentences={guide.data?.checks}
+          sentences={guide.data?.sentences}
           state={now}
           stages={stages}
           busy={step.busy}
@@ -150,6 +150,7 @@ export function Migration({
     case "planned":
       return (
         <MigrationPlanned
+          sentences={guide.data?.sentences}
           state={now}
           language={language}
           into={into}

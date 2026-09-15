@@ -4,6 +4,7 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Step } from "@/components/migration/Guide";
 import { useT } from "@/i18n";
+import type { Sentences } from "@/lib/said";
 import { filled } from "@/lib/said";
 import type { Language } from "@/i18n";
 
@@ -96,9 +97,6 @@ export function MigrationChecks({
     </Shell>
   );
 }
-
-/** Sentences are the check's own words, as the program serves them. */
-type Sentences = Readonly<Record<string, string>> | undefined;
 
 /**
  * One of a finding's two sentences, in the reader's own language.

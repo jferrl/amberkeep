@@ -60,8 +60,10 @@ type catalogue struct {
 	Chrome map[string]string `json:"chrome"`
 	// Advice is what to say about a failure, by the identifier the error carries.
 	Advice map[string]Advice `json:"advice"`
-	// Checks are what a preflight check says it looked at and what it found.
-	Checks map[string]string `json:"checks"`
+	// Sentences are everything else a screen names rather than writes out: what a
+	// check looked at and what it found, why a conversation is not moving, what has
+	// to be read before agreeing to a migration.
+	Sentences map[string]string `json:"sentences"`
 }
 
 // said is every language's catalogue, read once.

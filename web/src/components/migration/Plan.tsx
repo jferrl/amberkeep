@@ -11,6 +11,8 @@ import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
+import type { Sentences } from "@/lib/said";
+import { spoken } from "@/lib/said";
 import type { Language } from "@/i18n";
 import { count, dayOf } from "@/lib/format";
 
@@ -35,6 +37,7 @@ export const theWord = "migrate";
 export function MigrationPlanned({
   state,
   language,
+  sentences,
   into,
   onInto,
   onCarryOut,
@@ -44,6 +47,8 @@ export function MigrationPlanned({
 }: {
   state: Migration;
   language: Language;
+  /** The program's own words for what it named, in the reader's language. */
+  sentences: Sentences;
   into: string;
   onInto: (into: string) => void;
   onCarryOut: () => void;
@@ -97,12 +102,14 @@ export function MigrationPlanned({
       {plan.warnings !== undefined && plan.warnings.length > 0 && (
         <Aside heading={t("migrateChecksBlocked")} tone="warning">
           {plan.warnings.map((warning) => (
-            <Say key={warning}>{warning}</Say>
+            <Say key={warning.note ?? warning.text}>
+              {spoken(warning, sentences)}
+            </Say>
           ))}
         </Aside>
       )}
 
-      <LeftOut conversations={plan.conversations} />
+      <LeftOut conversations={plan.conversations} sentences={sentences} />
 
       {/*
         The warning this program leads with, on the one screen where it was missing.
@@ -217,13 +224,13 @@ function Totals({
  */
 function LeftOut({
   conversations,
+  sentences,
 }: {
   conversations: readonly MigrationConversation[];
+  sentences: Sentences;
 }) {
   const t = useT();
-  const skipped = conversations.filter(
-    (c) => c.skipped !== undefined && c.skipped !== "",
-  );
+  const skipped = conversations.filter((c) => c.skipped !== undefined);
   if (skipped.length === 0) return null;
 
   return (
@@ -235,7 +242,10 @@ function LeftOut({
         {skipped.map((c) => (
           <li key={c.address} className="text-sm">
             <span>{c.name}</span>
-            <span className="text-[var(--color-muted)]"> — {c.skipped}</span>
+            <span className="text-[var(--color-muted)]">
+              {" — "}
+              {spoken(c.skipped, sentences)}
+            </span>
           </li>
         ))}
       </ul>

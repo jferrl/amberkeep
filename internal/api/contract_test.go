@@ -314,13 +314,19 @@ var (
 			},
 			{
 				Address: group.String(), Name: "Vermut del sabado", Kind: "group",
-				Destination: group.String(), Skipped: "groups were not included",
+				Destination: group.String(), Skipped: migrate.Said{
+					Note: "groups-not-included", Text: "groups were not included",
+				},
 			},
 		},
-		Warnings: []string{
-			"9 messages will arrive as a line of text saying what was sent, not as the " +
+		// Named, with the number beside the sentence rather than only inside it,
+		// which is what lets a page say this in its own reader's language.
+		Warnings: []migrate.Said{{
+			Note:   "warn-placeholders",
+			Values: map[string]string{"messages": "9"},
+			Text: "9 messages will arrive as a line of text saying what was sent, not as the " +
 				"picture, recording or file itself.",
-		},
+		}},
 	}
 
 	recordedResult = Migrated{

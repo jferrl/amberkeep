@@ -412,6 +412,19 @@ export interface Advice {
   body: string;
 }
 
+/**
+ * A sentence the program named rather than wrote out.
+ *
+ * `note` is what the guide's catalogue is keyed by, `values` fills its holes, and
+ * `text` is the same sentence in English for a name this build has never met. The
+ * words themselves arrive with the guide, in the language this page asked for.
+ */
+export interface Spoken {
+  note?: string;
+  text?: string;
+  values?: Readonly<Record<string, string>>;
+}
+
 /** AdviceOnFailure is every piece of advice, by the identifier a failure carries. */
 export type AdviceOnFailure = Readonly<Record<string, Advice>>;
 
@@ -568,7 +581,7 @@ export interface MigrationConversation {
   earliest?: Timestamp;
   latest?: Timestamp;
   /** Why nothing would happen to it. Empty when something would. */
-  skipped?: string;
+  skipped?: Spoken;
 }
 
 /**
@@ -591,7 +604,7 @@ export interface MigrationPlan {
   creating: number;
   untouched: number;
 
-  warnings?: readonly string[];
+  warnings?: readonly Spoken[];
   earliest?: Timestamp;
   latest?: Timestamp;
 }
@@ -652,12 +665,14 @@ export interface GuideStage {
 export interface Guide {
   stages: readonly GuideStage[];
   /**
-   * What a preflight check says it looked at, and what it found, by name.
+   * Everything the migration screens name rather than write out: what a check
+   * looked at and what it found, why a conversation is not moving, what has to be
+   * read before agreeing.
    *
-   * Sent with the steps because they are read on the same screen and come from the
-   * same catalogue: the checks are the sentences a finding names.
+   * Sent with the steps because they are read on the same screens and come from the
+   * same catalogue.
    */
-  checks?: Readonly<Record<string, string>>;
+  sentences?: Readonly<Record<string, string>>;
 }
 
 /** How far along writing an archive out is. */

@@ -1,4 +1,4 @@
-import type { Said } from "@/api/types";
+import type { Said, Spoken } from "@/api/types";
 import type { Language, Phrase, Translate } from "@/i18n";
 import { count as formatted } from "@/lib/format";
 
@@ -127,4 +127,25 @@ export function filled(
   return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
     name in values ? (values[name] ?? whole) : whole,
   );
+}
+
+/** Sentences are the program's own words, as it serves them: by name, in one language. */
+export type Sentences = Readonly<Record<string, string>> | undefined;
+
+/**
+ * spoken is what a named sentence says, in the reader's own language.
+ *
+ * The program names what it wants said and sends the English beside it. When this
+ * build's guide knows the name, the reader gets their own language; when it does
+ * not — a program newer than the page it is serving — they get the English, which is
+ * better than a blank line where a sentence was.
+ */
+export function spoken(
+  said: Spoken | undefined,
+  sentences: Sentences,
+): string | undefined {
+  if (said === undefined) return undefined;
+
+  const template = said.note === undefined ? undefined : sentences?.[said.note];
+  return template === undefined ? said.text : filled(template, said.values);
 }

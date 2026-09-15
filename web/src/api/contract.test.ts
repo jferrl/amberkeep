@@ -311,15 +311,15 @@ describe("the migration", () => {
 
     for (const finding of findings) {
       expect(finding.check).toBeTruthy();
-      expect(guide.checks?.[finding.check ?? ""]).toBeTruthy();
+      expect(guide.sentences?.[finding.check ?? ""]).toBeTruthy();
       if (finding.detail !== undefined) {
-        expect(guide.checks?.[finding.note ?? ""]).toBeTruthy();
+        expect(guide.sentences?.[finding.note ?? ""]).toBeTruthy();
       }
     }
 
     // And the holes in them are filled by the values that travel beside them.
     const room = findings.find((f) => f.note === "needs-space");
-    expect(guide.checks?.["needs-space"]).toContain("{size}");
+    expect(guide.sentences?.["needs-space"]).toContain("{size}");
     expect(room?.values?.size).toBeTruthy();
   });
 

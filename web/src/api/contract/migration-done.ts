@@ -38,7 +38,10 @@ export default {
         "untranslatable": 0,
         "as_placeholders": 0,
         "on_phone_already": 0,
-        "skipped": "groups were not included"
+        "skipped": {
+          "note": "groups-not-included",
+          "text": "groups were not included"
+        }
       }
     ],
     "adding": 34,
@@ -49,7 +52,13 @@ export default {
     "creating": 0,
     "untouched": 553,
     "warnings": [
-      "9 messages will arrive as a line of text saying what was sent, not as the picture, recording or file itself."
+      {
+        "note": "warn-placeholders",
+        "text": "9 messages will arrive as a line of text saying what was sent, not as the picture, recording or file itself.",
+        "values": {
+          "messages": "9"
+        }
+      }
     ],
     "earliest": "2019-06-14T09:00:00Z",
     "latest": "2019-06-17T09:00:00Z"

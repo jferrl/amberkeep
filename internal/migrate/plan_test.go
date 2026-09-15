@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/model"
 )
 
@@ -97,7 +98,7 @@ func TestRunningItTwiceWouldAddNothing(t *testing.T) {
 	if got := plan.Summary(); !strings.Contains(got, "already on the iPhone") {
 		t.Errorf("it does not say plainly that there is nothing to do: %q", got)
 	}
-	if c := plan.Conversations[0]; c.Skipped == "" {
+	if c := plan.Conversations[0]; c.Skipped.Note == "" {
 		t.Error("the conversation does not say why nothing would happen to it")
 	}
 }
@@ -129,7 +130,7 @@ func TestWhatCannotBeCarriedAcross(t *testing.T) {
 	accounted(t, plan, 5)
 
 	// Both limitations have to be said out loud, not left in a number.
-	said := strings.Join(plan.Warnings, "\n")
+	said := warningsSaid(plan.Warnings)
 	for _, want := range []string{"line of text", "call history"} {
 		if !strings.Contains(said, want) {
 			t.Errorf("the warnings do not mention %q:\n%s", want, said)
@@ -193,7 +194,7 @@ func TestWhatIsLeftOutAndWhy(t *testing.T) {
 			}
 			// The empty conversation is never carried, whatever is asked for.
 			for _, c := range plan.Conversations {
-				if c.Address == luis.String() && c.Skipped == "" {
+				if c.Address == luis.String() && c.Skipped.Note == "" {
 					t.Error("an empty conversation was not skipped")
 				}
 			}
@@ -354,7 +355,7 @@ func TestTwoConversationsThatAreOnePerson(t *testing.T) {
 	if folded != 1 {
 		t.Fatalf("%d conversations were folded in, want the hidden one", folded)
 	}
-	if said := strings.Join(plan.Warnings, "\n"); !strings.Contains(said, "same person the iPhone already has") {
+	if said := warningsSaid(plan.Warnings); !strings.Contains(said, "same person the iPhone already has") {
 		t.Errorf("the fold is not mentioned in the warnings:\n%s", said)
 	}
 
@@ -406,10 +407,80 @@ func TestItSaysWhenItCannotTellPeopleApart(t *testing.T) {
 				t.Fatalf("Build() failed: %v", err)
 			}
 
-			warned := strings.Contains(strings.Join(plan.Warnings, "\n"), "hidden identity")
+			warned := strings.Contains(warningsSaid(plan.Warnings), "hidden identity")
 			if warned != tt.want {
 				t.Errorf("warned = %v, want %v; warnings were %v", warned, tt.want, plan.Warnings)
 			}
 		})
+	}
+}
+
+// warningsSaid is what the warnings say in English, which is what these tests are
+// about: whether the thing that has to be said before somebody agrees is said at all.
+// Which sentence was named is checked where that is the point.
+func warningsSaid(warnings []Said) string {
+	said := make([]string, 0, len(warnings))
+	for _, w := range warnings {
+		said = append(said, w.Text)
+	}
+	return strings.Join(said, "\n")
+}
+
+// TestWhatIsSaidIsNamedAndSayable covers the half the tests above do not: every
+// sentence this package produces has to exist in the guide, in both languages, or a
+// Spanish reader sees the English and a rename goes unnoticed until somebody runs a
+// migration in Spanish.
+func TestWhatIsSaidIsNamedAndSayable(t *testing.T) {
+	t.Parallel()
+
+	said := []Said{
+		says("all-already-there"), says("nothing-carries"), says("it-is-empty"),
+		says("groups-not-included"), says("not-a-conversation"), says("hidden-identity"),
+		counted(1, "warn-no-pairings", "conversations"), counted(4, "warn-no-pairings", "conversations"),
+		counted(1, "warn-folded", "conversations"), counted(4, "warn-folded", "conversations"),
+		counted(1, "warn-placeholders", "messages"), counted(9, "warn-placeholders", "messages"),
+		counted(1, "warn-untranslatable", "entries"), counted(6, "warn-untranslatable", "entries"),
+		counted(1, "warn-hidden-left-out", "conversations"), counted(3, "warn-hidden-left-out", "conversations"),
+		counted(1, "warn-groups-left-out", "groups"), counted(7, "warn-groups-left-out", "groups"),
+	}
+
+	for _, one := range said {
+		t.Run(one.Note, func(t *testing.T) {
+			t.Parallel()
+
+			if one.Text == "" {
+				t.Fatalf("%s says nothing in English", one.Note)
+			}
+			if strings.Contains(one.Text, "{") {
+				t.Errorf("%s has a hole nothing filled: %q", one.Note, one.Text)
+			}
+
+			spanish, ok := guide.Sentence(one.Note, one.Values, guide.Spanish)
+			switch {
+			case !ok:
+				t.Errorf("%s is not written in Spanish", one.Note)
+			case spanish == one.Text:
+				t.Errorf("%s is the English one in both languages", one.Note)
+			case strings.Contains(spanish, "{"):
+				t.Errorf("%s has a hole nothing filled in Spanish: %q", one.Note, spanish)
+			}
+		})
+	}
+}
+
+// TestASentenceForOneThingIsADifferentSentence covers the plural, which is the tell
+// of a program that was translated rather than written: "1 conversaciones".
+func TestASentenceForOneThingIsADifferentSentence(t *testing.T) {
+	t.Parallel()
+
+	one, several := counted(1, "warn-folded", "conversations"), counted(2, "warn-folded", "conversations")
+	if one.Note == several.Note {
+		t.Errorf("one and several name the same sentence: %s", one.Note)
+	}
+	if len(one.Values) != 0 {
+		t.Errorf("the sentence for one thing was given a number to put in it: %v", one.Values)
+	}
+	if several.Values["conversations"] != "2" {
+		t.Errorf("the number did not travel: %v", several.Values)
 	}
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"iter"
 	"sort"
-	"strings"
 
 	"github.com/jferrl/amberkeep/internal/model"
 )
@@ -83,7 +82,7 @@ func Build(ctx context.Context, from Source, to *Target, opts Options) (Plan, er
 		if !ok {
 			continue
 		}
-		if c.Skipped != "" {
+		if c.Skipped.Note != "" {
 			plan.Conversations = append(plan.Conversations, c)
 			continue
 		}
@@ -113,9 +112,9 @@ func Build(ctx context.Context, from Source, to *Target, opts Options) (Plan, er
 
 		switch {
 		case c.Adding == 0 && c.AlreadyThere > 0:
-			c.Skipped = "every message is already on the iPhone"
+			c.Skipped = says("all-already-there")
 		case c.Adding == 0:
-			c.Skipped = "nothing in it can be carried across"
+			c.Skipped = says("nothing-carries")
 		case c.Merging():
 			plan.Merging++
 			touchedSessions[c.Session] = true
@@ -148,15 +147,15 @@ func consider(chat model.Chat, names *model.Directory, opts Options) (Conversati
 
 	switch {
 	case chat.Messages == 0:
-		c.Skipped = "it is empty"
+		c.Skipped = says("it-is-empty")
 	case chat.Kind == model.ChatGroup && !opts.Groups:
-		c.Skipped = "groups were not included"
+		c.Skipped = says("groups-not-included")
 	case chat.Kind != model.ChatGroup && chat.Kind != model.ChatDirect:
-		c.Skipped = "only conversations and groups can be moved"
+		c.Skipped = says("not-a-conversation")
 	// Resolving a hidden identifier and getting another hidden one back means this
 	// archive holds no phone number for that person at all.
 	case chat.JID.Server == model.ServerHidden && names.Resolve(chat.JID).Server == model.ServerHidden && !opts.Hidden:
-		c.Skipped = "it has only a hidden identity, so it cannot be matched to a conversation on the iPhone"
+		c.Skipped = says("hidden-identity")
 	}
 	return c, true
 }
@@ -255,8 +254,8 @@ func sortBySize(conversations []Conversation) {
 }
 
 // warningsFor is what somebody has to read before agreeing.
-func warningsFor(plan Plan, opts Options, to *Target) []string {
-	var out []string
+func warningsFor(plan Plan, opts Options, to *Target) []Said {
+	var out []Said
 
 	// The one that produces a wrong result which looks entirely right. WhatsApp files
 	// some people under a hidden identifier rather than a number, and which of the two
@@ -265,44 +264,24 @@ func warningsFor(plan Plan, opts Options, to *Target) []string {
 	// arrives a second time — under a different address, so nothing downstream can
 	// notice, and nobody finds out until they look at their own conversation list.
 	if hidden := to.Hidden(); hidden > 0 && to.Pairings() == 0 {
-		out = append(out, fmt.Sprintf(
-			"The iPhone files %s under a hidden identity rather than a phone number, and "+
-				"WhatsApp's own record of which is which was not supplied. Anybody in that "+
-				"position who is known by their number on the Android will arrive as a second "+
-				"conversation rather than joining the one already there. Supply LID.sqlite from "+
-				"the same backup to avoid it.",
-			plural(hidden, "conversation", "conversations")))
+		out = append(out, counted(hidden, "warn-no-pairings", "conversations"))
 	}
 
 	if folded := countFolded(plan); folded > 0 {
-		out = append(out, fmt.Sprintf(
-			"%s turned out to be the same person the iPhone already has under another name, "+
-				"and will be written into the conversation that is already there rather than "+
-				"added beside it.", plural(folded, "conversation", "conversations")))
+		out = append(out, counted(folded, "warn-folded", "conversations"))
 	}
 
 	if plan.AsPlaceholders > 0 {
-		out = append(out, fmt.Sprintf(
-			"%s will arrive as a line of text saying what was sent, not as the picture, "+
-				"recording or file itself. Those files are not in the backup this reads, and "+
-				"nothing here can invent them.", plural(plan.AsPlaceholders, "message", "messages")))
+		out = append(out, counted(plan.AsPlaceholders, "warn-placeholders", "messages"))
 	}
 	if plan.Untranslatable > 0 {
-		out = append(out, fmt.Sprintf(
-			"%s will not come across at all: call history, and the notices WhatsApp writes "+
-				"into a conversation about itself. Nothing anybody typed is in that number.",
-			plural(plan.Untranslatable, "entry", "entries")))
+		out = append(out, counted(plan.Untranslatable, "warn-untranslatable", "entries"))
 	}
-	if hidden := countSkipped(plan, "hidden identity"); hidden > 0 && !opts.Hidden {
-		out = append(out, fmt.Sprintf(
-			"%s could not be matched to anyone, because WhatsApp hides some people behind an "+
-				"identifier this archive has no phone number for. They were left out rather than "+
-				"added as somebody new.", plural(hidden, "conversation", "conversations")))
+	if hidden := countSkipped(plan, "hidden-identity"); hidden > 0 && !opts.Hidden {
+		out = append(out, counted(hidden, "warn-hidden-left-out", "conversations"))
 	}
-	if groups := countSkipped(plan, "groups were not"); groups > 0 {
-		out = append(out, fmt.Sprintf(
-			"%s were left out because groups were not included.",
-			plural(groups, "group", "groups")))
+	if groups := countSkipped(plan, "groups-not-included"); groups > 0 {
+		out = append(out, counted(groups, "warn-groups-left-out", "groups"))
 	}
 	return out
 }
@@ -317,10 +296,15 @@ func countFolded(plan Plan) int {
 }
 
 // countSkipped counts the conversations skipped for one reason.
+//
+// By name rather than by what the sentence says. It used to match on a fragment of
+// the English — "groups were not" — which made the wording of a sentence somebody
+// reads part of the logic, and would have counted nothing at all the moment that
+// sentence was written in another language.
 func countSkipped(plan Plan, because string) int {
 	var n int
 	for _, c := range plan.Conversations {
-		if c.Skipped != "" && strings.Contains(c.Skipped, because) {
+		if c.Skipped.Note == because {
 			n++
 		}
 	}

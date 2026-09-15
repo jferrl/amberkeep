@@ -278,8 +278,14 @@ func reportPlan(w io.Writer, plan migrate.Plan) {
 		app.Plural(plan.Merging, "conversation", "conversations"),
 		app.Plural(plan.Untouched, "conversation", "conversations"))
 
+	// In whatever this terminal reads. The numbers in these sentences are the same
+	// either way; the sentence around them is not.
 	for _, warning := range plan.Warnings {
-		fmt.Fprintf(w, "\n  ! %s\n", wrap(warning, 68, "    "))
+		said, ok := guide.Sentence(warning.Note, warning.Values, spoken())
+		if !ok {
+			said = warning.Text
+		}
+		fmt.Fprintf(w, "\n  ! %s\n", wrap(said, 68, "    "))
 	}
 }
 

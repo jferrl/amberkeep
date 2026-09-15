@@ -52,24 +52,26 @@ func AllAdvice(lang Language) map[string]Advice {
 	return all
 }
 
-// Check is what one preflight finding says, in the reader's own language.
+// Sentence is one of the named sentences, in the reader's own language.
 //
-// Two sentences make a finding — what was looked at ("the backup is not encrypted")
-// and what was found ("it is encrypted, and an encrypted backup is sealed with a key
-// that never leaves the phone") — and both are named here. The values fill whatever
-// holes the sentence has: a file that is missing, how many days old a backup is.
-func Check(name string, values map[string]string, lang Language) (string, bool) {
-	said, ok := checkIn(name, lang)
+// The migration screens name what they want said rather than writing it: what a
+// check looked at ("the backup is not encrypted") and what it found ("it is
+// encrypted, and an encrypted backup is sealed with a key that never leaves the
+// phone"), why a conversation is not moving, what has to be read before agreeing.
+// The values fill whatever holes the sentence has — a file that is missing, how many
+// days old a backup is, how many conversations are affected.
+func Sentence(name string, values map[string]string, lang Language) (string, bool) {
+	said, ok := sentenceIn(name, lang)
 	if !ok {
 		return "", false
 	}
 	return Fill(said, values), true
 }
 
-// AllChecks is every one of them, for a page that is handed findings by name and has
-// to be able to say all of them without asking again.
-func AllChecks(lang Language) map[string]string {
-	spoken, english := said[lang].Checks, said[English].Checks
+// AllSentences is every one of them, for a page that is handed names and has to be
+// able to say all of them without asking again.
+func AllSentences(lang Language) map[string]string {
+	spoken, english := said[lang].Sentences, said[English].Sentences
 
 	all := make(map[string]string, len(english))
 	for name, text := range english {
@@ -81,10 +83,10 @@ func AllChecks(lang Language) map[string]string {
 	return all
 }
 
-func checkIn(name string, lang Language) (string, bool) {
-	if text, ok := said[lang].Checks[name]; ok && text != "" {
+func sentenceIn(name string, lang Language) (string, bool) {
+	if text, ok := said[lang].Sentences[name]; ok && text != "" {
 		return text, true
 	}
-	text, ok := said[English].Checks[name]
+	text, ok := said[English].Sentences[name]
 	return text, ok
 }

@@ -101,7 +101,7 @@ function planned(over: Partial<MigrationPlan> = {}): State {
           untranslatable: 0,
           as_placeholders: 0,
           on_phone_already: 0,
-          skipped: "no messages this could add",
+          skipped: { note: "groups-not-included", text: "groups were not included" },
         },
       ],
       adding: 12,
@@ -117,12 +117,14 @@ function planned(over: Partial<MigrationPlan> = {}): State {
 }
 
 const guide: Guide = {
-  // The sentences a finding names, as the program serves them: in whichever
-  // language the page asked for, with the holes still in them.
-  checks: {
+  // The sentences a finding or a conversation names, as the program serves them:
+  // in whichever language the page asked for, with the holes still in them.
+  sentences: {
     "not-encrypted": "La copia de seguridad no está cifrada",
     "is-encrypted": "está cifrada, y una copia cifrada está sellada con una clave que nunca sale del teléfono",
     "days-ago": "hecha hace {days} días",
+    "groups-not-included": "no se han incluido los grupos",
+    "warn-placeholders": "{messages} mensajes llegarán como una línea de texto.",
   },
   stages: [
     {
@@ -488,6 +490,38 @@ describe("when something is wrong", () => {
     expect(
       screen.getByText("Something a newer program checks"),
     ).toBeVisible();
+  });
+
+  /**
+   * The screen where somebody types a word to agree to this. What they are agreeing
+   * to was described in English whatever they were reading, which is the worst place
+   * in the program to do that.
+   */
+  it("says what would be left out, and what to read first, in the reader's language", async () => {
+    now = planned({
+      warnings: [
+        {
+          note: "warn-placeholders",
+          text: "9 messages will arrive as a line of text.",
+          values: { messages: "9" },
+        },
+        { note: "unheard-of", text: "Something a newer program warns about." },
+      ],
+    });
+
+    show();
+
+    expect(
+      await screen.findByText("9 mensajes llegarán como una línea de texto."),
+    ).toBeVisible();
+    // A name this build's guide does not know keeps the English rather than going blank.
+    expect(
+      screen.getByText("Something a newer program warns about."),
+    ).toBeVisible();
+
+    // And the reason a conversation is not moving, which is inside the fold.
+    await userEvent.setup().click(screen.getByText(/Se quedan fuera|Left out/));
+    expect(screen.getByText(/no se han incluido los grupos/)).toBeVisible();
   });
 
   it("says so rather than offering the word when there is nothing to move", async () => {
