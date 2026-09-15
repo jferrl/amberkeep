@@ -28,7 +28,7 @@
   "couldNotRead": "The archive could not be read.",
   "retry": "Try again",
   "backToList": "Back to the list",
-  "readOnly": "Nothing here leaves this computer.",
+  "readOnly": "Nothing leaves this computer.",
   "searchUnavailable": "This archive was opened without a search index, so only conversation names can be searched.",
   "pictureAlt": "Picture recovered from this message",
   "openTitle": "Open your WhatsApp history",

@@ -28,7 +28,7 @@
   "couldNotRead": "No se pudo leer el archivo.",
   "retry": "Reintentar",
   "backToList": "Volver a la lista",
-  "readOnly": "Nada de esto sale de este ordenador.",
+  "readOnly": "Nada sale de este ordenador.",
   "searchUnavailable": "Este archivo se abrió sin índice de búsqueda, así que solo se pueden buscar nombres de conversaciones.",
   "pictureAlt": "Imagen recuperada de este mensaje",
   "openTitle": "Abre tu historial de WhatsApp",

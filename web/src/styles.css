@@ -82,6 +82,27 @@
     color-scheme: light dark;
   }
 
+  /*
+   * The band at the top that belongs to the window rather than to the page.
+   *
+   * In its own window there is no title bar above the page: it starts at the very
+   * top of the frame, and macOS draws the close, minimise and zoom buttons over
+   * whatever the page happened to put there. This is how tall that band is, so a
+   * screen can sit something on the same line as those buttons, or begin below
+   * them, without measuring anything itself — and so that the two screens that do
+   * it cannot drift apart. In a browser there is nothing above, and it is zero.
+   *
+   * 52px is the inset title bar's own height, which is what puts the buttons'
+   * centre at 26px; anything centred in this band lands on that line.
+   */
+  :root {
+    --frame: 0px;
+  }
+
+  :root.framed {
+    --frame: 52px;
+  }
+
   body {
     margin: 0;
     background: var(--color-bg);

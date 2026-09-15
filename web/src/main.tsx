@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 
 import { App } from "@/App";
 import { LanguageProvider, languageOf, translator } from "@/i18n";
+import { inAWindow } from "@/lib/desktop";
 import "@/styles.css";
 
 /**
@@ -28,6 +29,16 @@ const queries = new QueryClient({
 
 const language = languageOf(navigator.languages);
 document.documentElement.lang = language;
+
+/**
+ * Whether there is a window around this page, said once.
+ *
+ * Marked on the document rather than asked screen by screen: the window's title bar
+ * is inset, so the page owns the top of the frame and has to leave room for the
+ * buttons drawn over it. That is one fact about where the page is running, and it
+ * belongs in one place — the styles read --frame and every screen gets it right.
+ */
+if (inAWindow()) document.documentElement.classList.add("framed");
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("the page has no root to render into");

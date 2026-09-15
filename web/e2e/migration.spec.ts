@@ -32,7 +32,7 @@ test("is offered as a way in, and opens on what it cannot promise", async ({ pag
   ).toBeVisible();
   // The page makes that promise once, on the strip above every screen, rather than
   // three times in one viewport.
-  await expect(page.getByText(/Nothing here leaves this computer/)).toBeVisible();
+  await expect(page.getByText(/Nothing leaves this computer/)).toBeVisible();
 });
 
 /**

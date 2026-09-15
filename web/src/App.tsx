@@ -10,7 +10,7 @@ import {
 } from "@/api/queries";
 import { Notices } from "@/components/Notices";
 import { Export } from "@/components/export/Export";
-import { asking, inAWindow } from "@/lib/desktop";
+import { asking } from "@/lib/desktop";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
 import { Button } from "@/components/ui/button";
@@ -146,14 +146,10 @@ function Browser({
           The top padding is for the window: its title bar is hidden and inset, so
           the page begins at the very top of the frame and the close, minimise and
           zoom buttons are drawn over whatever is there — which was this sentence.
-          In a browser there is nothing above to clear.
+          --frame is how tall that band is, and it is zero in a browser, where there
+          is nothing above to clear.
         */}
-        <div
-          className={cn(
-            "flex flex-col gap-2 border-b border-[var(--color-line)] px-3.5 pb-2",
-            inAWindow() ? "pt-9" : "pt-2",
-          )}
-        >
+        <div className="flex flex-col gap-2 border-b border-[var(--color-line)] px-3.5 pt-[calc(var(--frame)+0.5rem)] pb-2">
           <span className="text-xs text-[var(--color-muted)]">
             {t("readOnly")}
           </span>

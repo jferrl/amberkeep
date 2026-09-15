@@ -847,7 +847,7 @@ describe("the promise the whole program rests on", () => {
       await arrive(user);
 
       expect(
-        await screen.findByText("Nothing here leaves this computer."),
+        await screen.findByText("Nothing leaves this computer."),
       ).toBeInTheDocument();
     },
   );
