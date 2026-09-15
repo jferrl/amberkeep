@@ -7,6 +7,9 @@
 /cmd/amberkeep/amberkeep
 *.exe
 
+# The macOS application, assembled by desktop/build/bundle.sh around the binary.
+/desktop/Amberkeep.app/
+
 # Go
 *.test
 *.out
