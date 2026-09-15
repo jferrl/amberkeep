@@ -261,6 +261,19 @@ unknown:
 - [docs/formats/android.md](docs/formats/android.md) — the crypt15 backup and `msgstore.db`
 - [docs/formats/ios.md](docs/formats/ios.md) — iPhone backups and `ChatStorage.sqlite`
 
+## What it will cost
+
+Nothing today: there is nowhere to buy a licence and the program asks for none.
+
+When there is, reading, searching and checking your own archive stay free — that is
+the point of the thing, not a trial — and the two things that will cost money are
+writing the archive out and moving a history onto an iPhone. One payment, no account,
+no subscription, and a licence that works with no network because this program makes
+no network calls and is not about to start for a licence.
+
+[What costs what](docs/PRICING_AND_LICENSING.md) · [what is next](docs/ROADMAP.md) ·
+[legal notices](docs/LEGAL_NOTICES.md)
+
 ## Contributing
 
 Read [docs/PRINCIPLES.md](docs/PRINCIPLES.md) first; it is binding, not advisory.

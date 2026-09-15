@@ -54,6 +54,12 @@ own format, with nothing neutral to move them to.
   pasted into a public issue by somebody whose database is their private
   correspondence. A reader that learns a new message type extends `Known()` in the
   same commit, and a test walks every code a byte can hold to make sure it did.
+- **A licence is a signed statement, never a question asked of a server.** Zero
+  network has no exceptions, licences included; see `docs/adr/0009-offline-licences.md`.
+  `licence.Sells()` is the one place that says whether there is a shop and it answers
+  no, so every gate is open. `licence.Allows(grant)` is the one question a gate asks.
+  Do not add a fifth call site without a reason, and never put a name or an address in
+  a key.
 - **Unrecognised is not the same as dropped.** A message of a kind this build does not
   know is carried through with its original type number and rendered as such. Never
   invent a meaning for a code no reliable source documents. Say UNKNOWN instead.

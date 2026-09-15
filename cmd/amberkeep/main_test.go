@@ -305,6 +305,7 @@ func TestCommandDispatch(t *testing.T) {
 		{name: "prepare with nothing to work on", args: []string{"prepare"}, fails: true},
 		{name: "canary with nothing to look at", args: []string{"canary"}, fails: true},
 		{name: "canary listing the shapes it carries", args: []string{"canary", "--shapes"}},
+		{name: "a licence key that is not one", args: []string{"licence", "--add", "hunter2"}, fails: true},
 	}
 
 	for _, tt := range tests {

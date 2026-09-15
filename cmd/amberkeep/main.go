@@ -38,6 +38,7 @@ func commands() []command {
 		{"decrypt", "turn an encrypted backup into a readable database", runDecrypt},
 		{"inspect", "report what an archive contains, without changing anything", runInspect},
 		{"canary", "report what a database holds that this build has never seen", runCanary},
+		{"licence", "show the licence on this computer, or put one here", runLicence},
 		{"prepare", "make a decrypted database quick to read", runPrepare},
 		{"export", "write the archive out as web pages, text and structured data", runExport},
 		{"search", "find messages anywhere in the archive", runSearch},

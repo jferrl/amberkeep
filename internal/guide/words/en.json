@@ -80,6 +80,10 @@
       "body": "The iPhone message store could not be read. Check that the path is right,\nthat the file finished copying, and that the two files ending -wal and -shm\nwere copied with it.",
       "title": "The iPhone message store could not be read"
     },
+    "licence.needed": {
+      "body": "Writing your archive out, and moving a history onto an iPhone, are the two\nthings Amberkeep asks to be paid for. Reading it, searching it and checking it\nare free, and will stay free.\n\nIf you have a key, this computer has not been told about it:\n\n  amberkeep licence --add AMBERKEEP-1....\n\nA licence is bought once, works with no network, and keeps working on the\nversion you bought. What costs what is in docs/PRICING_AND_LICENSING.md.",
+      "title": "This needs a licence"
+    },
     "search.index-unreadable": {
       "body": "The search index could not be used. It is a derived file and nothing in the\narchive depends on it, so the fix is to build it again:\n\n  amberkeep search --db msgstore.db --rebuild \"your search\"\n\nIf that keeps happening, check there is room on the disk: an index is\nroughly a third the size of the archive.",
       "title": "The search index could not be used"

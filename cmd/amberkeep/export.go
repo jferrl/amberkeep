@@ -10,6 +10,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/export"
+	"github.com/jferrl/amberkeep/internal/licence"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -36,6 +37,12 @@ func runExport(ctx context.Context, args []string) error {
 	if *db == "" {
 		fs.Usage()
 		return fmt.Errorf("--db is needed")
+	}
+	// Asked before anything is read, so that somebody is told at the start rather
+	// than after a minute of work. It answers yes to everything while there is
+	// nowhere to buy a licence.
+	if err := licence.Allows(licence.Archive); err != nil {
+		return err
 	}
 
 	wanted, err := parseFormats(*formats)

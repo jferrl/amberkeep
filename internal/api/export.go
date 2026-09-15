@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/jferrl/amberkeep/internal/licence"
 )
 
 // Writing the archive out, from a browser.
@@ -184,6 +186,12 @@ func (s *server) handleWriteExport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "say which formats to write: html, text or json", http.StatusBadRequest)
 		return
 	}
+	// One of the two things this program asks to be paid for, refused before any
+	// work starts. While there is nowhere to buy a licence this answers yes.
+	if err := licence.Allows(licence.Archive); err != nil {
+		http.Error(w, err.Error(), http.StatusPaymentRequired)
+		return
+	}
 	if ask.Into == "" {
 		ask.Into = s.opts.Workspace
 	}
@@ -193,6 +201,12 @@ func (s *server) handleWriteExport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "an export is already running", http.StatusConflict)
 		return
 	}
+	// Taken here, before the work starts, because this reply is about this request:
+	// it was accepted and it is writing. Read after the goroutine and a small archive
+	// can finish first, so the same request would sometimes be answered with the
+	// state of its own ending — true, but not what was asked, and not the same answer
+	// twice.
+	started := s.exports.now()
 
 	// The work outlives the request that asked for it: an archive of a million
 	// messages takes a minute, and somebody who closes the tab halfway through
@@ -208,7 +222,7 @@ func (s *server) handleWriteExport(w http.ResponseWriter, r *http.Request) {
 		s.exports.done(result)
 	}()
 
-	writeStatus(w, r, http.StatusAccepted, s.exports.now())
+	writeStatus(w, r, http.StatusAccepted, started)
 }
 
 // handleForgetExport clears a finished export so the screen can be used again.

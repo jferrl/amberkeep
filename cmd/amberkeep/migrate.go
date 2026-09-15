@@ -13,6 +13,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/guide"
+	"github.com/jferrl/amberkeep/internal/licence"
 	"github.com/jferrl/amberkeep/internal/migrate"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -119,6 +120,14 @@ func runMigrate(ctx context.Context, args []string) error {
 		fmt.Fprintf(told, "To do it, read what follows, then run the same command again with --write.\n")
 		show(told, guide.Before, spoken())
 		return nil
+	}
+
+	// The plan is free and the writing is not: somebody sees exactly what would
+	// happen to their own history before any of this is about money. Asked before
+	// the confirmation rather than after, because being made to type a word and
+	// then told no would be a poor way to learn the price.
+	if err := licence.Allows(licence.Migration); err != nil {
+		return err
 	}
 
 	show(told, guide.Before, spoken())
