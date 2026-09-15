@@ -51,7 +51,7 @@ func run() error {
 		Importer: app.Importer{Me: me},
 		Phones:   app.Phones{},
 		Migrator: app.Migrator{Me: me},
-		Advise:   app.AdviseOn,
+		Advise:   app.GuidanceFor,
 
 		// No launch secret, and nothing is weakened by its absence. The secret exists
 		// because `serve` opens a port on the loopback address, where anything else
