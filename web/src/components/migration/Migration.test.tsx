@@ -524,6 +524,27 @@ describe("when something is wrong", () => {
     expect(screen.getByText(/no se han incluido los grupos/)).toBeVisible();
   });
 
+  /** The other of the two moments, and the other half of the same wiring. */
+  it("offers the coffee once the backup exists", async () => {
+    now = {
+      stage: "done",
+      result: {
+        backup: "/backups/00008030-0011.amberkeep",
+        added: 34,
+        merged: 1,
+        created: 0,
+        checks: 31,
+        files: 27352,
+        thanks: "https://ko-fi.com/jferrl",
+      },
+    };
+
+    show();
+
+    const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
+    expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
+  });
+
   it("says so rather than offering the word when there is nothing to move", async () => {
     now = planned({ adding: 0 });
 

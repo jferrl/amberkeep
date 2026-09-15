@@ -174,6 +174,35 @@ describe("when it is done", () => {
     };
   });
 
+  /**
+   * The one screen in this program that mentions money, and the only reason it is
+   * here: somebody's history has just been written out and it worked.
+   */
+  it("offers the coffee, and only when the program sent somewhere to point at", async () => {
+    show();
+    expect(
+      await screen.findByText(/conversations written|conversaciones escritas/),
+    ).toBeVisible();
+    // Nothing yet: this reply carried no address.
+    expect(screen.queryByRole("link", { name: /coffee/i })).toBeNull();
+
+    now = {
+      stage: "done",
+      result: {
+        into: "/Users/someone/Amberkeep/archive",
+        conversations: 412,
+        messages: 1121482,
+        bytes: 98_000_000,
+        formats: ["html"],
+        thanks: "https://ko-fi.com/jferrl",
+      },
+    };
+    show();
+
+    const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
+    expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
+  });
+
   it("says where the history is, which is the only thing that matters now", async () => {
     show();
     expect(
