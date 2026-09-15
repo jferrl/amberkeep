@@ -10,6 +10,7 @@ import {
   useSetupState,
 } from "@/api/queries";
 import { Notices } from "@/components/Notices";
+import { Thanks } from "@/components/Thanks";
 import { Export } from "@/components/export/Export";
 import { Framed } from "@/components/wizard/Frame";
 import { ThanksProvider } from "@/lib/thanks";
@@ -209,6 +210,15 @@ function Browser({
           onOpenHit={openHit}
           language={language}
         />
+
+        {/*
+          The sidebar of an archive somebody is reading, which is where a person
+          spends minutes rather than seconds. Above the notices, out of the way of
+          the two controls at the top that actually do something.
+        */}
+        <div className="mt-auto px-3.5 pb-3">
+          <Thanks />
+        </div>
 
         <Notices />
       </nav>

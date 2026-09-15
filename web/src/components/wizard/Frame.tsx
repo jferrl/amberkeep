@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { Notices } from "@/components/Notices";
+import { Thanks } from "@/components/Thanks";
 import { useT } from "@/i18n";
 
 /**
@@ -44,6 +45,14 @@ export function Framed({
       )}
 
       {children}
+
+      {/*
+        At the foot of every screen, above the notices: somebody looking for a way to
+        say thanks should find one without having to finish something first.
+      */}
+      <div className="mx-auto mt-auto w-full max-w-2xl px-5 pb-4">
+        <Thanks />
+      </div>
 
       <Notices />
     </div>

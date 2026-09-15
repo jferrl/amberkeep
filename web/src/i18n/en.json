@@ -282,7 +282,6 @@
   "onePicture": "1 picture",
   "picturesCount": "{count} pictures",
   "thanksAsk": "If this helped, you can buy me a coffee. It is voluntary, and nothing here depends on it.",
-  "thanksButton": "Buy me a coffee · {where}",
-  "startOver": "Back to the start",
-  "thanksFooter": "If it helped:"
+  "thanksButton": "Buy me a coffee",
+  "startOver": "Back to the start"
 }

@@ -38,15 +38,24 @@ describe("saying thanks", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("asks once, quietly, and shows the address the way anybody would write it", () => {
+  it("is a control somebody can see, pointing where it says", () => {
     shown("https://ko-fi.com/jferrl");
 
-    expect(screen.getByText(/buy me a coffee/)).toBeVisible();
-    // Voluntary is said out loud rather than implied.
-    expect(screen.getByText(/voluntary/)).toBeVisible();
-
-    const link = screen.getByRole("link", { name: /ko-fi.com\/jferrl/ });
+    const link = screen.getByRole("link", { name: /buy me a coffee/i });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
+  });
+
+  /** On the screens that have room for it, the sentence is said as well. */
+  it("says why, where there is room to", () => {
+    render(
+      <LanguageProvider value={translator("en")}>
+        <ThanksProvider value="https://ko-fi.com/jferrl">
+          <Thanks full />
+        </ThanksProvider>
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByText(/voluntary/)).toBeVisible();
   });
 
   /**
@@ -66,7 +75,7 @@ describe("saying thanks", () => {
 
   it("says it in Spanish to a Spanish reader", () => {
     shown("https://ko-fi.com/jferrl", "es");
-    expect(screen.getByText(/invitarme a un café/)).toBeVisible();
+    expect(screen.getByRole("link", { name: /Invítame a un café/ })).toBeVisible();
   });
 
   /** In a window, following it in place would replace the program with a web page. */
@@ -75,7 +84,7 @@ describe("saying thanks", () => {
     vi.stubGlobal("runtime", { BrowserOpenURL: opened });
 
     shown("https://ko-fi.com/jferrl");
-    await userEvent.click(screen.getByRole("link", { name: /ko-fi.com\/jferrl/ }));
+    await userEvent.click(screen.getByRole("link", { name: /coffee/i }));
 
     expect(opened).toHaveBeenCalledWith("https://ko-fi.com/jferrl");
   });
@@ -86,7 +95,7 @@ describe("saying thanks", () => {
     vi.stubGlobal("open", opened);
 
     shown("https://ko-fi.com/jferrl");
-    await userEvent.click(screen.getByRole("link", { name: /ko-fi.com\/jferrl/ }));
+    await userEvent.click(screen.getByRole("link", { name: /coffee/i }));
 
     expect(opened).toHaveBeenCalledWith(
       "https://ko-fi.com/jferrl",

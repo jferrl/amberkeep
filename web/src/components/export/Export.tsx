@@ -315,7 +315,7 @@ function Written({
 
       <Say>{t("exportDoneKeep")}</Say>
 
-      <Thanks />
+      <Thanks full />
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={onLeave}>

@@ -545,7 +545,7 @@ describe("when something is wrong", () => {
 
     show(undefined, "https://ko-fi.com/jferrl");
 
-    const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
+    const link = await screen.findByRole("link", { name: /coffee/i });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
   });
 

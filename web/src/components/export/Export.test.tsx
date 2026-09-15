@@ -187,11 +187,11 @@ describe("when it is done", () => {
       await screen.findByText(/conversations written|conversaciones escritas/),
     ).toBeVisible();
     // Nothing yet: this build knows of nowhere to point at.
-    expect(screen.queryByRole("link", { name: /ko-fi/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /coffee/i })).toBeNull();
 
     show("https://ko-fi.com/jferrl");
 
-    const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
+    const link = await screen.findByRole("link", { name: /coffee/i });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");
   });
 

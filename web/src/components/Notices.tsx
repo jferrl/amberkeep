@@ -1,6 +1,4 @@
 import { useT } from "@/i18n";
-import { outside } from "@/lib/desktop";
-import { useThanks } from "@/lib/thanks";
 
 /**
  * The two things this program has to say about itself, wherever somebody is looking.
@@ -16,37 +14,16 @@ import { useThanks } from "@/lib/thanks";
  */
 export function Notices() {
   const t = useT();
-  const where = useThanks();
 
   return (
-    // mt-auto rather than a fixed position: on a short screen this sits at the
-    // bottom of the window, and on a long one it is pushed below the fold and
-    // scrolls away like the end of a document. What it must never do is cover
-    // anything — it is a legal notice, not a tool.
-    <footer className="mt-auto shrink-0 border-t border-[var(--color-line)] px-5 py-2.5 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
-      <div className="mx-auto max-w-2xl">
+    // Pushed to the bottom by whatever sits above it rather than claiming mt-auto
+    // itself: the coffee does that now, and two things both claiming the space left
+    // one of them floating in the middle of a short screen. What this must never do
+    // is cover anything — it is a legal notice, not a tool.
+    <footer className="shrink-0 border-t border-[var(--color-line)] py-2.5 text-[0.6875rem] leading-snug text-[var(--color-muted)]">
+      <div className="mx-auto w-full max-w-2xl px-5">
         <p className="m-0">{t("notAffiliated")}</p>
         <p className="m-0 mt-1">{t("freeSoftware")}</p>
-        {/*
-          And where to say thanks, for anybody who goes looking for it rather than
-          waiting to be asked. A line among the notices rather than a button in the
-          way: the asking is done once, on the screen that says something worked.
-        */}
-        {where !== undefined && where !== "" && (
-          <p className="m-0 mt-1">
-            {t("thanksFooter")}{" "}
-            <a
-              href={where}
-              className="underline decoration-[var(--color-edge)] underline-offset-2 hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]"
-              onClick={(event) => {
-                event.preventDefault();
-                outside(where);
-              }}
-            >
-              {where.replace(/^https?:\/\//, "")}
-            </a>
-          </p>
-        )}
       </div>
     </footer>
   );
