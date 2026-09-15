@@ -39,27 +39,7 @@ export interface Viewer {
  * changes the archive: it is opened read-only and there is no way in through the
  * page to write to it.
  */
-/** Watched is every address the page asked for, in the order it asked. */
-export type Watched = readonly string[];
-
-export const test = base.extend<{ watched: Watched }, { viewer: Viewer; wizard: Viewer }>({
-  /**
-   * Everything the page asked for, from before it was opened.
-   *
-   * A listener attached in the body of a test has already missed whatever the first
-   * screen asked for on the way in, so a test that wants to see it had to navigate a
-   * second time — and a second navigation, arriving while the first one's requests
-   * are still in flight, is exactly the kind of thing that passes on a fast machine
-   * and fails on a slow one. A fixture is set up before the hooks that navigate, so
-   * this sees every request without anybody having to go back.
-   */
-  watched: async ({ page }, run: (watched: Watched) => Promise<void>) => {
-    const asked: string[] = [];
-    page.on("request", (request) => {
-      asked.push(request.url());
-    });
-    await run(asked);
-  },
+export const test = base.extend<object, { viewer: Viewer; wizard: Viewer }>({
 
   viewer: [
     // Playwright calls the second argument "use". It is named otherwise here

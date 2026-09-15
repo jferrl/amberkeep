@@ -17,6 +17,29 @@ import { expect, test } from "./server";
  * a folder, which it opens read-only.
  */
 
+/**
+ * Every address the page asked for, from before it was opened.
+ *
+ * A listener attached in the body of a test has already missed whatever the first
+ * screen asked for on the way in. This was a fixture, on the belief that fixtures are
+ * set up before the hooks — they are not: one the hooks do not themselves use is
+ * created lazily, just before the test body, which is after the navigation below. It
+ * passed here and failed on a CI runner, where the request it watches for lands
+ * during the hook rather than after it.
+ *
+ * Hooks run in the order they are declared, so this one is attached first and sees
+ * everything. Module state is safe: tests in one file share a worker and run one at a
+ * time.
+ */
+const watched: string[] = [];
+
+test.beforeEach(({ page }) => {
+  watched.length = 0;
+  page.on("request", (request) => {
+    watched.push(request.url());
+  });
+});
+
 test.beforeEach(async ({ page, wizard }) => {
   await page.goto(wizard.opening);
 
@@ -51,7 +74,7 @@ test("is offered as a way in, and opens on what it cannot promise", async ({ pag
  * The same claim the rest of the program makes, on the screens that handle a whole
  * message history and end with a phone being written to.
  */
-test("talks to nothing but the program that served it", async ({ page, wizard, watched }) => {
+test("talks to nothing but the program that served it", async ({ page, wizard }) => {
   await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
   await page.waitForTimeout(500);
 
@@ -139,7 +162,7 @@ test("lets somebody go back and change what they named", async ({ page }) => {
  * runner has none and may not even be allowed to look — so what is asserted is that
  * it asked, and that typing a path stays possible whatever the answer was.
  */
-test("asks the program for the backups it has already made", async ({ page, watched }) => {
+test("asks the program for the backups it has already made", async ({ page }) => {
   await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
   await expect
     .poll(() => watched.map((address) => new URL(address).pathname))
