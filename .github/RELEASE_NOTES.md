@@ -32,7 +32,7 @@ operating system's own file pickers, and the same program underneath.
 - **`Amberkeep_*_macos.dmg`** — the application, for every Mac. One disk image with
   both architectures in it, so it runs natively on Apple silicon and on an Intel Mac.
   macOS 14 or later.
-- **`Amberkeep_*_windows_amd64.zip`** — the application for 64-bit Windows 10 or
+- **`Amberkeep_*_windows_x64.zip`** — the application for 64-bit Windows 10 or
   later. On a Windows machine with an ARM processor it runs under emulation.
 - **`amberkeep_*.tar.gz` / `.zip`** — the command-line tool, one static binary, for
   macOS, Windows and Linux on both architectures. It needs nothing installed.

@@ -197,7 +197,10 @@ jobs:
             CGO_ENABLED=0 go build -C desktop -tags desktop,production -trimpath \
               -ldflags "-s -w -H windowsgui" -o "$PWD/build/windows/Amberkeep.exe" ./...
             cp LICENSE README.md build/windows/
-            (cd build/windows && 7z a -tzip "../../dist/Amberkeep_${version}_windows_amd64.zip" .)
+            # x64 rather than amd64: the command-line archive for the same machine
+            # is amberkeep_<version>_windows_amd64.zip, and GitHub will not take two
+            # assets whose names differ only in case.
+            (cd build/windows && 7z a -tzip "../../dist/Amberkeep_${version}_windows_x64.zip" .)
           fi
 
       - uses: actions/upload-artifact@v4
@@ -217,9 +220,22 @@ jobs:
           path: staged
       - name: Gather
         run: |
+          set -euo pipefail
           mkdir -p dist
           find staged -type f -exec cp {} dist/ \;
           ls -la dist
+
+          # Two assets whose names differ only in case are two assets on a Linux
+          # runner and one name to GitHub, which refuses the second with a validation
+          # error at the upload — after the release has been created, which is a
+          # failure nobody can read and half a release to clean up. Said here, where
+          # it can be understood.
+          duplicated="$(ls dist | tr 'A-Z' 'a-z' | sort | uniq -d)"
+          if [ -n "$duplicated" ]; then
+            echo "these asset names collide once GitHub folds their case:" >&2
+            echo "$duplicated" >&2
+            exit 1
+          fi
 
       - name: Checksums
         # The only integrity story an unsigned binary has. Somebody who cares can

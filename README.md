@@ -94,7 +94,7 @@ From [Releases](https://github.com/jferrl/amberkeep/releases):
 
 - **`Amberkeep_*_macos.dmg`** — the application, for every Mac. One disk image with
   both architectures in it, so it runs natively on Apple silicon and on an Intel Mac.
-- **`Amberkeep_*_windows_amd64.zip`** — the application for 64-bit Windows.
+- **`Amberkeep_*_windows_x64.zip`** — the application for 64-bit Windows.
 - **`amberkeep_*.tar.gz` / `.zip`** — the command-line tool, one static binary, for
   macOS, Windows and Linux on both architectures. Unpack it and run `amberkeep`. No
   installer, nothing to uninstall.
