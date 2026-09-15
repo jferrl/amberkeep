@@ -35,6 +35,7 @@ search and export. The iPhone side and the desktop application are being built.
 | Desktop application | working on macOS and Windows; a window, a dock icon, a menu bar and native file pickers |
 | English and Spanish | working |
 | Android to iPhone migration | working in the browser and by `amberkeep migrate`, but see below |
+| Schema canary | working: `amberkeep canary` says what a database holds that this build has never seen |
 
 ### Opening it the first time
 
@@ -161,6 +162,27 @@ archive can disappoint.
 
 Every failure this tool understands comes with what to do about it, in the output,
 rather than an error to search the internet for.
+
+## When WhatsApp changes its database
+
+It does, every few months, on both phones. Nothing here assumes a column exists: the
+readers ask the database what it has and adapt, which is what lets one build open a
+database written by a version nobody has looked at yet.
+
+That is quiet, though — a database carrying something new opens perfectly and says
+nothing about the part that was not read — so there is a command that says it:
+
+```sh
+amberkeep canary --db msgstore.db
+```
+
+It compares the database against the shapes this build was written against and
+reports what is new, what is missing, and which message type codes appear that
+nothing here has a meaning for, with how many rows carry each. What it prints is table
+names, column names, integer codes and counts: nothing anybody wrote or is called, so
+it can be pasted into an issue as it stands.
+
+[What it has been run against](docs/COMPATIBILITY_MATRIX.md), and how to add yours.
 
 ## What it does differently
 

@@ -14,6 +14,24 @@ structure-only; tests that need real data read a path from an environment variab
 skip without it. CI fails the build if a file that looks like private data is
 committed, and that guard is mechanical because remembering is not good enough.
 
+## The most useful thing you can send without writing any code
+
+A database shape. WhatsApp changes its schema every few months and this program can
+only report what it has seen, so a version nobody here has run against is worth more
+than most patches:
+
+```sh
+amberkeep canary --db msgstore.db --emit \
+  --whatsapp 2.26.36.1 --os "Android 16" --device SM-A566B > android-2.26.36.1.json
+```
+
+That file is table names, column names and the version you typed — the rule above
+holds, and it holds mechanically: the report is built from the database's catalogue
+and from counting rows, and a test fails if a value ever reaches it. Read it before
+you send it. Then open an issue, or a pull request adding it to
+`internal/canary/corpus/` and a row to
+[docs/COMPATIBILITY_MATRIX.md](docs/COMPATIBILITY_MATRIX.md).
+
 ## Before you write anything
 
 Read [AGENTS.md](AGENTS.md), then [docs/PRINCIPLES.md](docs/PRINCIPLES.md). They are

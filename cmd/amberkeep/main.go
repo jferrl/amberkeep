@@ -37,6 +37,7 @@ func commands() []command {
 		{"extract", "take WhatsApp's message store out of an iPhone backup", runExtract},
 		{"decrypt", "turn an encrypted backup into a readable database", runDecrypt},
 		{"inspect", "report what an archive contains, without changing anything", runInspect},
+		{"canary", "report what a database holds that this build has never seen", runCanary},
 		{"prepare", "make a decrypted database quick to read", runPrepare},
 		{"export", "write the archive out as web pages, text and structured data", runExport},
 		{"search", "find messages anywhere in the archive", runSearch},

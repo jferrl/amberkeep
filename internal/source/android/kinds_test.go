@@ -161,3 +161,32 @@ func TestErrorBehaviour(t *testing.T) {
 		}
 	})
 }
+
+// TestKnownIsExactlyWhatThisBuildRecognises keeps the list the canary reports
+// against and the switch that reads messages from drifting apart.
+//
+// Every code a byte can hold is tried, so a meaning added to the switch without an
+// entry in the list fails here rather than becoming a code the canary reports as
+// unknown on a database this build reads perfectly well — and an entry left in the
+// list after its meaning was removed fails the same way.
+func TestKnownIsExactlyWhatThisBuildRecognises(t *testing.T) {
+	t.Parallel()
+
+	listed := make(map[int]bool, len(Known()))
+	for _, code := range Known() {
+		if listed[code] {
+			t.Errorf("code %d is listed twice", code)
+		}
+		listed[code] = true
+	}
+
+	for code := range 256 {
+		recognised := kindOf(code, 0) != model.KindUnknown
+		switch {
+		case recognised && !listed[code]:
+			t.Errorf("code %d has a meaning here and is not in Known()", code)
+		case !recognised && listed[code]:
+			t.Errorf("code %d is in Known() and has no meaning here", code)
+		}
+	}
+}

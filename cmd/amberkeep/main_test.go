@@ -303,6 +303,8 @@ func TestCommandDispatch(t *testing.T) {
 		{name: "search with a database but no words", args: []string{"search", "--db", "x"}, fails: true},
 		{name: "extract with no backup to work on", args: []string{"extract"}, fails: true},
 		{name: "prepare with nothing to work on", args: []string{"prepare"}, fails: true},
+		{name: "canary with nothing to look at", args: []string{"canary"}, fails: true},
+		{name: "canary listing the shapes it carries", args: []string{"canary", "--shapes"}},
 	}
 
 	for _, tt := range tests {

@@ -1,6 +1,7 @@
 package ios
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/jferrl/amberkeep/internal/model"
@@ -78,4 +79,20 @@ func kindOfMedia(mediaType string) model.Kind {
 // notices, which is the only case where the group event code means anything.
 func isSystem(messageType int) bool {
 	return messageType == 6 || messageType == 10
+}
+
+// Known is every type code this build has a meaning for from the number alone.
+//
+// Exported for the canary. A code that is not here is not necessarily a message this
+// build cannot read: an iPhone store records a media type beside the message, and
+// kindOf falls back to that, which is what keeps a new WhatsApp release from turning
+// a photograph into an unrecognised row. What a code missing from this list means is
+// that the number carries no meaning here, which is the thing worth reporting.
+func Known() []int {
+	codes := make([]int, 0, len(kinds))
+	for code := range kinds {
+		codes = append(codes, code)
+	}
+	sort.Ints(codes)
+	return codes
 }

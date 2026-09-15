@@ -47,6 +47,13 @@ own format, with nothing neutral to move them to.
   the page alike. A test fails the build if an error is added without any, or if the
   advice exists in one language and not the other. Nobody should have to search the
   internet to get past a problem we understand, in any language.
+- **A schema this build has never seen is a thing to report, not to fail on.**
+  `internal/canary` compares a database against the shapes in `internal/canary/corpus`
+  and says what is new. Its output is table names, column names, integer codes and
+  counts, and a test fails if a value ever reaches it: the report is meant to be
+  pasted into a public issue by somebody whose database is their private
+  correspondence. A reader that learns a new message type extends `Known()` in the
+  same commit, and a test walks every code a byte can hold to make sure it did.
 - **Unrecognised is not the same as dropped.** A message of a kind this build does not
   know is carried through with its original type number and rendered as such. Never
   invent a meaning for a code no reliable source documents. Say UNKNOWN instead.

@@ -112,3 +112,23 @@ func kindOf(sourceType, origin int) model.Kind {
 		return model.KindUnknown
 	}
 }
+
+// Known is every type code this build has a meaning for.
+//
+// Exported for the canary, which counts the codes in a database and reports the ones
+// nothing here recognises. It is a list rather than a derivation because the meanings
+// are a switch, and a switch cannot be enumerated — but a test walks every code a
+// byte can hold and fails if this list and that switch ever disagree, so the two
+// cannot drift apart.
+func Known() []int {
+	return []int{
+		typeText, typeImage, typeAudio, typeVideo, typeContact, typeLocation,
+		typeSystem, typeDocument, typeMissedCall, typeCall, typeGIF, typeContactArray,
+		typeDeleted, typeLiveLocation, typeSticker, typeGroupInvite, typeBizList,
+		typeBizButtons, typeOfficial, typeTemplateQuote, typeEphemeralSet,
+		typeViewOnceImg, typeViewOnceVid, typeInteractive, typeInteractiveQ,
+		typeInteractiveR, typeCarousel, typeDeletedAdmin, typePoll, typeViewOnceAudio,
+		typeCallLog, typeEvent, typeAlbum, typePollAlt, typePrivacyState,
+		typeNotDisplayed,
+	}
+}

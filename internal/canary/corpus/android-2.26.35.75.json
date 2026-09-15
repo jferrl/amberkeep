@@ -1,0 +1,2635 @@
+{
+  "device": "SM-A566B",
+  "os": "Android 16",
+  "platform": "android",
+  "seen": "2026-09-11",
+  "tables": {
+    "addon_message_media": [
+      "_id",
+      "message_row_id",
+      "addon_message_index",
+      "chat_row_id",
+      "file_path",
+      "file_size",
+      "media_key",
+      "media_key_timestamp",
+      "width",
+      "height",
+      "direct_path",
+      "message_url",
+      "mime_type",
+      "file_length",
+      "file_hash",
+      "enc_file_hash",
+      "partial_media_hash",
+      "partial_media_enc_hash",
+      "original_file_hash",
+      "thumbnail",
+      "thumbnail_direct_path",
+      "thumbnail_hash",
+      "enc_thumbnail_hash",
+      "scans_sidecar",
+      "transferred"
+    ],
+    "aea_chat_state": [
+      "chat_row_id",
+      "cooldown_state",
+      "cooldown_started_at"
+    ],
+    "agent_chat_assignment": [
+      "jid_row_id",
+      "agent_id",
+      "is_opened",
+      "account_jid_row_id"
+    ],
+    "agent_devices": [
+      "agent_id",
+      "agent_name",
+      "device",
+      "last_modified_time",
+      "is_deleted"
+    ],
+    "agent_message_attribution": [
+      "message_row_id",
+      "agent_id"
+    ],
+    "ai_agentic_metadata": [
+      "message_row_id",
+      "bot_progress_indicator_metadata"
+    ],
+    "ai_rich_response_message_additional_info": [
+      "message_row_id",
+      "ai_rich_response_additional_blob"
+    ],
+    "ai_rich_response_message_core_info": [
+      "message_row_id",
+      "ai_rich_response_message_type",
+      "ai_rich_response_submessage_types",
+      "additional_table_mask",
+      "ai_rich_response_core_blob",
+      "planning_status",
+      "foa_native_data",
+      "foa_native_mutation",
+      "foa_native_mutation_extended"
+    ],
+    "ai_thread_info": [
+      "thread_id_row_id",
+      "title",
+      "creation_ts",
+      "variant",
+      "last_thread_messages_row_id",
+      "last_message_timestamp",
+      "title_source",
+      "unseen_message_count",
+      "origin_chat_row_id",
+      "selected_mode",
+      "selected_modes"
+    ],
+    "ai_thread_info_fts_content": [
+      "docid",
+      "c0search_content"
+    ],
+    "ai_thread_info_fts_docsize": [
+      "docid",
+      "size"
+    ],
+    "ai_thread_info_fts_segdir": [
+      "level",
+      "idx",
+      "start_block",
+      "leaves_end_block",
+      "end_block",
+      "root"
+    ],
+    "ai_thread_info_fts_segments": [
+      "blockid",
+      "block"
+    ],
+    "ai_thread_info_fts_stat": [
+      "id",
+      "value"
+    ],
+    "android_metadata": [
+      "locale"
+    ],
+    "audio_data": [
+      "message_row_id",
+      "waveform",
+      "background_color",
+      "transcription_status",
+      "transcription_locale",
+      "transcription_confidence_threshold",
+      "transcription_request_locale",
+      "transcription_feedback_submitted",
+      "transcription_id",
+      "background_color_changed"
+    ],
+    "auth_agent_chat_metadata": [
+      "chat_row_id",
+      "parent_company_name",
+      "oba_phone_number"
+    ],
+    "away_messages": [
+      "_id",
+      "jid"
+    ],
+    "away_messages_exemptions": [
+      "_id",
+      "jid",
+      "exempt",
+      "exempt_until"
+    ],
+    "backup_changes": [
+      "_id",
+      "operation",
+      "table_name",
+      "table_row_id"
+    ],
+    "bcall_session": [
+      "_id",
+      "session_id",
+      "media_type",
+      "master_key",
+      "caption"
+    ],
+    "bot_chat_info": [
+      "chat_row_id",
+      "pip_enabled",
+      "welcome_request_message_sent",
+      "bot_metrics_thread_origin"
+    ],
+    "bot_memory_metadata": [
+      "_id",
+      "message_row_id",
+      "memory_annotated_user_message_key_id",
+      "memory",
+      "memory_id",
+      "added",
+      "bot_jid_row_id"
+    ],
+    "bot_message_info": [
+      "message_row_id",
+      "target_id",
+      "message_state",
+      "invoker_jid_row_id",
+      "model_type",
+      "message_disclaimer",
+      "keyword_json",
+      "promotion_message",
+      "imagine_json",
+      "age_collection",
+      "bot_response_id",
+      "bot_jid_row_id",
+      "in_app_thread_survey",
+      "verification_metadata",
+      "response_viewed",
+      "bot_group_json",
+      "metrics_metadata_json",
+      "bot_deep_link_token",
+      "ai_media_collection_metadata_json",
+      "signature_validation_status",
+      "tool_calls_blob",
+      "bot_client_public_key",
+      "bot_history_share_json"
+    ],
+    "bot_message_prompts": [
+      "message_row_id",
+      "chat_row_id",
+      "prompts",
+      "impression_logged"
+    ],
+    "bot_message_sharing_info": [
+      "message_row_id",
+      "message_id",
+      "bot_entry_point_origin",
+      "forward_score"
+    ],
+    "bot_plugin_metadata": [
+      "message_row_id",
+      "search_provider",
+      "plugin_type",
+      "thumbnail_cdn_url",
+      "profile_photo_cdn_url",
+      "search_provider_url",
+      "reference_index",
+      "profile_photo_thumbnail",
+      "search_query",
+      "favicon_cdn_url"
+    ],
+    "broadcast_chat_details": [
+      "chat_row_id",
+      "use_case"
+    ],
+    "business_message_forward_info": [
+      "message_row_id",
+      "business_owner_jid_row_id"
+    ],
+    "call_link": [
+      "_id",
+      "token",
+      "creator_jid_row_id"
+    ],
+    "call_log": [
+      "_id",
+      "jid_row_id",
+      "from_me",
+      "call_id",
+      "transaction_id",
+      "timestamp",
+      "video_call",
+      "duration",
+      "call_result",
+      "bytes_transferred",
+      "group_jid_row_id",
+      "is_joinable_group_call",
+      "call_creator_device_jid_row_id",
+      "call_random_id",
+      "call_link_row_id",
+      "is_dnd_mode_on",
+      "call_type",
+      "offer_silence_reason",
+      "scheduled_id",
+      "telecom_uuid",
+      "terminated_by_device_switch"
+    ],
+    "call_log_participant_v2": [
+      "_id",
+      "call_log_row_id",
+      "jid_row_id",
+      "call_result"
+    ],
+    "call_unknown_caller": [
+      "call_log_row_id"
+    ],
+    "chat": [
+      "_id",
+      "jid_row_id",
+      "hidden",
+      "subject",
+      "created_timestamp",
+      "display_message_row_id",
+      "last_message_row_id",
+      "last_read_message_row_id",
+      "last_read_receipt_sent_message_row_id",
+      "last_important_message_row_id",
+      "archived",
+      "sort_timestamp",
+      "mod_tag",
+      "gen",
+      "spam_detection",
+      "unseen_earliest_message_received_time",
+      "unseen_message_count",
+      "unseen_missed_calls_count",
+      "unseen_row_count",
+      "plaintext_disabled",
+      "vcard_ui_dismissed",
+      "change_number_notified_message_row_id",
+      "show_group_description",
+      "ephemeral_expiration",
+      "last_read_ephemeral_message_row_id",
+      "ephemeral_setting_timestamp",
+      "unseen_important_message_count",
+      "ephemeral_disappearing_messages_initiator",
+      "group_type",
+      "last_message_reaction_row_id",
+      "last_seen_message_reaction_row_id",
+      "unseen_message_reaction_count",
+      "growth_lock_level",
+      "growth_lock_expiration_ts",
+      "last_read_message_sort_id",
+      "display_message_sort_id",
+      "last_message_sort_id",
+      "last_read_receipt_sent_message_sort_id",
+      "has_new_community_admin_dialog_been_acknowledged",
+      "history_sync_progress",
+      "ephemeral_displayed_exemptions",
+      "chat_lock",
+      "chat_origin",
+      "unseen_comment_message_count",
+      "participation_status",
+      "account_jid_row_id",
+      "chat_encryption_state",
+      "group_member_count",
+      "limited_sharing",
+      "limited_sharing_setting_timestamp",
+      "is_contact",
+      "ephemeral_after_read_duration",
+      "business_chat_state",
+      "chat_props"
+    ],
+    "chat_ephemeral": [
+      "chat_row_id",
+      "ephemeral_trigger",
+      "ephemeral_initiated_by_me",
+      "after_read_duration"
+    ],
+    "community_chat": [
+      "chat_row_id",
+      "last_activity_ts",
+      "last_activity_seen_ts",
+      "join_ts",
+      "closed",
+      "nesting_state"
+    ],
+    "composition": [
+      "_id",
+      "chat_row_id",
+      "quoted_message_row_id",
+      "timestamp",
+      "message_type",
+      "composition_type",
+      "text",
+      "lookup_tables",
+      "last_seen_timestamp"
+    ],
+    "composition_media": [
+      "composition_row_id",
+      "media_uri",
+      "media_duration_in_seconds",
+      "media_name",
+      "file_length"
+    ],
+    "composition_mention": [
+      "_id",
+      "composition_row_id",
+      "jid_row_id",
+      "mention_type"
+    ],
+    "conversion_tuples": [
+      "jid_row_id",
+      "data",
+      "source",
+      "biz_count",
+      "has_user_sent_last_message",
+      "last_interaction"
+    ],
+    "data_sharing_disclosure_metadata": [
+      "message_row_id",
+      "show_mm_disclosure"
+    ],
+    "deleted_chat_job": [
+      "_id",
+      "chat_row_id",
+      "block_size",
+      "deleted_message_row_id",
+      "deleted_starred_message_row_id",
+      "deleted_messages_remove_files",
+      "deleted_categories_message_row_id",
+      "deleted_categories_starred_message_row_id",
+      "deleted_categories_remove_files",
+      "deleted_message_categories",
+      "singular_message_delete_rows_id",
+      "delete_files_singular_delete"
+    ],
+    "dynamic_audience_sources": [
+      "_id",
+      "chat_row_id",
+      "dynamic_audience_type",
+      "dynamic_audience_id"
+    ],
+    "embeddings_deletion_log": [
+      "_id",
+      "message_row_id",
+      "sort_id"
+    ],
+    "extended_media_data": [
+      "row_id",
+      "type",
+      "direct_path",
+      "preview_path",
+      "file_path",
+      "file_hash",
+      "file_size",
+      "media_key",
+      "media_key_timestamp",
+      "enc_file_hash",
+      "width",
+      "height",
+      "media_caption",
+      "transferred",
+      "external_url",
+      "mime_type",
+      "display_type"
+    ],
+    "favorite": [
+      "_id",
+      "jid_row_id",
+      "favorite_type",
+      "sort_order"
+    ],
+    "feature_key_store": [
+      "_id",
+      "key_id",
+      "key",
+      "key_type",
+      "creation_timestamp",
+      "expiry_timestamp",
+      "key_jid"
+    ],
+    "forwarded_newsletter_message_info": [
+      "message_row_id",
+      "newsletter_jid_row_id",
+      "newsletter_server_message_id",
+      "newsletter_name",
+      "profile_name"
+    ],
+    "frequent": [
+      "_id",
+      "jid_row_id",
+      "type",
+      "message_count",
+      "forward_count",
+      "share_count",
+      "cross_app_share_count"
+    ],
+    "frequent_forward_chat": [
+      "chat_row_id",
+      "num_forward",
+      "last_forward_timestamp",
+      "last_scan",
+      "num_image",
+      "num_video",
+      "num_gif"
+    ],
+    "gap_enforcement_business_chat_thread_info_cache": [
+      "business_chat_row_id",
+      "business_chat_is_mm_thread",
+      "business_chat_thread_type"
+    ],
+    "group_history_bundle": [
+      "message_row_id",
+      "process_state",
+      "send_state"
+    ],
+    "group_history_bundle_association": [
+      "message_row_id",
+      "bundle_message_row_id",
+      "message_sort_id",
+      "bundle_sender_jid_row_id",
+      "bundle_message_key_id",
+      "bundle_message_key_from_me",
+      "bundle_message_key_chat_row_id"
+    ],
+    "group_history_metadata": [
+      "message_row_id",
+      "history_receivers",
+      "first_message_timestamp_seconds",
+      "message_count",
+      "non_history_receivers",
+      "oldest_message_timestamp_in_bundle_seconds"
+    ],
+    "group_history_share_reporting_info": [
+      "_id",
+      "message_row_id",
+      "stanza_id",
+      "reporting_token",
+      "reporting_token_version",
+      "added_timestamp",
+      "send_timestamp",
+      "reporting_tag",
+      "is_send"
+    ],
+    "group_notification_version": [
+      "group_jid_row_id",
+      "subject_timestamp",
+      "announcement_version",
+      "participant_version",
+      "group_join_request_timestamp",
+      "group_photo_timestamp"
+    ],
+    "group_participant_device": [
+      "_id",
+      "group_participant_row_id",
+      "device_jid_row_id",
+      "sent_sender_key",
+      "sent_add_on_sender_key",
+      "sent_sender_key_bucket"
+    ],
+    "group_participant_label_metadata": [
+      "group_participant_user_row_id",
+      "edit_time"
+    ],
+    "group_participant_user": [
+      "_id",
+      "group_jid_row_id",
+      "user_jid_row_id",
+      "rank",
+      "pending",
+      "add_timestamp",
+      "label",
+      "join_method",
+      "group_history_send_state"
+    ],
+    "group_participants": [
+      "_id",
+      "gjid",
+      "jid",
+      "admin",
+      "pending",
+      "sent_sender_key"
+    ],
+    "group_participants_history": [
+      "_id",
+      "timestamp",
+      "gjid",
+      "jid",
+      "action",
+      "old_phash",
+      "new_phash"
+    ],
+    "group_past_participant_user": [
+      "_id",
+      "group_jid_row_id",
+      "user_jid_row_id",
+      "is_leave",
+      "timestamp"
+    ],
+    "group_root_key_mapping": [
+      "_id",
+      "group_jid_row_id",
+      "key_id",
+      "is_current"
+    ],
+    "integrator_display_name": [
+      "integrator_id",
+      "display_name",
+      "status",
+      "icon_path",
+      "opt_in_status",
+      "identifier_type",
+      "group_messaging_supported"
+    ],
+    "integrity_chat_info": [
+      "chat_row_id",
+      "is_reach_out",
+      "is_eligible_for_link_friction_banner"
+    ],
+    "integrity_deleted_chat_message_count": [
+      "id",
+      "lid",
+      "messages_receive_date",
+      "messages_count",
+      "outgoing_messages_count",
+      "messages_count_after_privacy_token"
+    ],
+    "integrity_deleted_chat_metadata": [
+      "id",
+      "lid",
+      "chat_type",
+      "is_first_reach_out",
+      "chat_creation_timestamp",
+      "last_incoming_message_timestamp",
+      "lidHash"
+    ],
+    "interactive_message_bloks_widget": [
+      "_id",
+      "message_row_id",
+      "uuid",
+      "data",
+      "type",
+      "fallback"
+    ],
+    "interactive_message_header_content": [
+      "_id",
+      "message_row_id",
+      "header_title",
+      "header_sub_title",
+      "header_thumbnail",
+      "document_url",
+      "document_direct_path",
+      "document_media_key",
+      "document_media_key_timestamp_ms",
+      "document_media_hash",
+      "document_media_enc_hash",
+      "document_mime_type",
+      "document_file_name",
+      "document_file_path",
+      "document_file_length"
+    ],
+    "interactive_message_sections": [
+      "_id",
+      "message_row_id",
+      "section_index",
+      "section_title",
+      "section_highlight_label",
+      "item_index",
+      "item_id",
+      "item_header",
+      "item_title",
+      "item_description"
+    ],
+    "invoice_transactions": [
+      "message_row_id",
+      "pay_transaction_id"
+    ],
+    "jid": [
+      "_id",
+      "user",
+      "server",
+      "agent",
+      "type",
+      "raw_string",
+      "device"
+    ],
+    "jid_map": [
+      "lid_row_id",
+      "jid_row_id",
+      "sort_id"
+    ],
+    "jid_user_metadata": [
+      "jid_row_id",
+      "country_code"
+    ],
+    "joinable_call_log": [
+      "call_log_row_id",
+      "call_id",
+      "group_jid_row_id",
+      "joinable_video_call",
+      "phash_identifier",
+      "self_other_device_connected",
+      "is_lgc_add"
+    ],
+    "keywords": [
+      "_id",
+      "keyword"
+    ],
+    "label_schedule_time": [
+      "_id",
+      "label_id",
+      "days",
+      "start_minutes",
+      "end_minutes"
+    ],
+    "label_sublist": [
+      "_id",
+      "predefined_id",
+      "jid_row_id",
+      "sub_list_id"
+    ],
+    "labeled_jid": [
+      "_id",
+      "label_id",
+      "jid_row_id"
+    ],
+    "labels": [
+      "_id",
+      "label_name",
+      "predefined_id",
+      "color_id",
+      "type",
+      "sort_id",
+      "hidden",
+      "mute_end_time",
+      "mute_schedule_enabled_days",
+      "mute_schedule_time_from",
+      "mute_schedule_time_to",
+      "is_immutable",
+      "is_aura_benefit_enabled",
+      "notification_schedule_enabled",
+      "schedule_mute_outside_enabled",
+      "schedule_hide_outside_enabled"
+    ],
+    "lid_chat_state": [
+      "jid_row_id",
+      "is_pn_shared",
+      "pn_requested_ts",
+      "pnh_duplicate_lid_thread"
+    ],
+    "lid_display_name": [
+      "lid_row_id",
+      "display_name",
+      "username"
+    ],
+    "media_hash_thumbnail": [
+      "media_hash",
+      "thumbnail"
+    ],
+    "media_processed_video": [
+      "_id",
+      "message_row_id",
+      "direct_path",
+      "height",
+      "width",
+      "file_size",
+      "bitrate",
+      "quality",
+      "capabilities"
+    ],
+    "media_refs": [
+      "_id",
+      "path",
+      "ref_count"
+    ],
+    "message": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "sender_jid_row_id",
+      "status",
+      "broadcast",
+      "recipient_count",
+      "participant_hash",
+      "origination_flags",
+      "origin",
+      "timestamp",
+      "received_timestamp",
+      "receipt_server_timestamp",
+      "message_type",
+      "text_data",
+      "starred",
+      "lookup_tables",
+      "sort_id",
+      "message_add_on_flags",
+      "view_mode",
+      "translated_text",
+      "view_replies_thread_id",
+      "server_sts"
+    ],
+    "message_add_on": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "sender_jid_row_id",
+      "parent_message_row_id",
+      "timestamp",
+      "status",
+      "message_add_on_type",
+      "received_timestamp",
+      "expiry_duration_in_secs",
+      "server_timestamp",
+      "expiry_timestamp",
+      "expiry_type"
+    ],
+    "message_add_on_event_response": [
+      "message_add_on_row_id",
+      "response",
+      "sender_timestamp",
+      "extra_guest_count"
+    ],
+    "message_add_on_keep_in_chat": [
+      "message_add_on_row_id",
+      "keep_in_chat_state",
+      "sender_timestamp",
+      "keep_count",
+      "actor_device_jid_row_id"
+    ],
+    "message_add_on_pin_in_chat": [
+      "message_add_on_row_id",
+      "pin_in_chat_state",
+      "sender_timestamp"
+    ],
+    "message_add_on_poll_vote": [
+      "message_add_on_row_id",
+      "sender_timestamp"
+    ],
+    "message_add_on_poll_vote_selected_option": [
+      "_id",
+      "message_add_on_row_id",
+      "message_poll_option_id"
+    ],
+    "message_add_on_question_response": [
+      "message_add_on_row_id",
+      "response"
+    ],
+    "message_add_on_reaction": [
+      "message_add_on_row_id",
+      "reaction",
+      "sender_timestamp"
+    ],
+    "message_add_on_receipt_coex": [
+      "_id",
+      "message_add_on_row_id",
+      "user_lid_row_id",
+      "receipt_coex_timestamp"
+    ],
+    "message_add_on_receipt_device": [
+      "receipt_device_id",
+      "message_add_on_row_id",
+      "receipt_device_jid_row_id",
+      "receipt_device_timestamp",
+      "primary_device_version"
+    ],
+    "message_add_on_scheduled_call_edit": [
+      "message_add_on_row_id",
+      "edit_type",
+      "message_edit_version"
+    ],
+    "message_add_on_status_question_answer": [
+      "message_add_on_row_id",
+      "answer"
+    ],
+    "message_add_on_status_sticker_interaction": [
+      "message_add_on_row_id",
+      "sticker_key",
+      "type"
+    ],
+    "message_ai_media_collection": [
+      "message_row_id",
+      "collection_id",
+      "expected_media_count",
+      "has_global_caption"
+    ],
+    "message_album": [
+      "message_row_id",
+      "image_count",
+      "video_count",
+      "expected_image_count",
+      "expected_video_count"
+    ],
+    "message_association": [
+      "_id",
+      "child_message_row_id",
+      "parent_message_row_id",
+      "association_type"
+    ],
+    "message_bcall_session": [
+      "message_row_id",
+      "bcall_session_row_id"
+    ],
+    "message_biz_context_info": [
+      "message_row_id",
+      "weblink_render_config",
+      "business_interaction_pills",
+      "preview_match_url"
+    ],
+    "message_bot_feedback": [
+      "message_row_id",
+      "bot_feedback_kind",
+      "bot_feedback_text",
+      "bot_feedback_key_remote_jid",
+      "bot_feedback_key_from_me",
+      "bot_feedback_key_id",
+      "bot_feedback_kind_positive",
+      "bot_feedback_kind_negative"
+    ],
+    "message_broadcast_ephemeral": [
+      "message_row_id",
+      "shared_secret"
+    ],
+    "message_call_log": [
+      "message_row_id",
+      "call_log_row_id"
+    ],
+    "message_comment": [
+      "_id",
+      "parent_message_row_id",
+      "message_row_id"
+    ],
+    "message_comment_parent": [
+      "message_row_id",
+      "chat_row_id",
+      "number_of_comments",
+      "last_comment_ts",
+      "last_comment_message_row_id"
+    ],
+    "message_conditional_reveal": [
+      "message_row_id",
+      "enc_payload",
+      "enc_iv",
+      "proto_data",
+      "reveal_key_index",
+      "conditional_reveal_type",
+      "stanza_data",
+      "key_id",
+      "key_jid",
+      "reporting_token_info",
+      "chat_row_id",
+      "from_me",
+      "scheduled_time"
+    ],
+    "message_details": [
+      "message_row_id",
+      "author_device_jid"
+    ],
+    "message_edit_info": [
+      "message_row_id",
+      "original_key_id",
+      "edited_timestamp",
+      "sender_timestamp"
+    ],
+    "message_ephemeral": [
+      "message_row_id",
+      "duration",
+      "expire_timestamp",
+      "keep_in_chat",
+      "ephemeral_trigger",
+      "ephemeral_initiated_by_me",
+      "after_read_duration"
+    ],
+    "message_ephemeral_setting": [
+      "message_row_id",
+      "setting_duration",
+      "setting_reason",
+      "user_jid_row_id_csv",
+      "ephemeral_trigger",
+      "ephemeral_initiated_by_me",
+      "pre_setting_duration",
+      "after_read_duration"
+    ],
+    "message_ephemeral_sync_response": [
+      "chat_jid",
+      "last_sync_response_sent_timestamp",
+      "no_of_retries_sent_already"
+    ],
+    "message_event": [
+      "message_row_id",
+      "is_canceled",
+      "name",
+      "description",
+      "location_latitude",
+      "location_longitude",
+      "location_name",
+      "location_address",
+      "join_link",
+      "start_time",
+      "chat_row_id",
+      "event_state",
+      "end_time",
+      "allow_extra_guests",
+      "is_schedule_call",
+      "has_reminder",
+      "reminder_offset_sec",
+      "show_upcoming_banner"
+    ],
+    "message_event_invite": [
+      "message_row_id",
+      "event_id",
+      "event_title",
+      "start_time",
+      "is_canceled",
+      "caption",
+      "end_time",
+      "call_link",
+      "cover_image_width",
+      "cover_image_height"
+    ],
+    "message_external_ad_content": [
+      "message_row_id",
+      "title",
+      "body",
+      "media_type",
+      "thumbnail_url",
+      "full_thumbnail",
+      "micro_thumbnail",
+      "media_url",
+      "source_type",
+      "source_id",
+      "source_url",
+      "render_larger_thumbnail",
+      "show_ad_attribution",
+      "has_icebreaker_auto_response",
+      "has_click_to_call_auto_response",
+      "ad_context_preview_dismissed",
+      "source_app",
+      "automated_greeting_message_shown",
+      "greeting_message_body",
+      "cta_payload",
+      "disable_nudge",
+      "original_image_url",
+      "automated_greeting_message_cta_type",
+      "ctwa_clid",
+      "wtwa_ad_format",
+      "ad_preview_url",
+      "wtwa_website_url",
+      "has_ctwa_flows_auto_response",
+      "agm_thumbnail_strategy",
+      "agm_title_strategy",
+      "agm_subtitle_strategy",
+      "agm_header_interaction_strategy"
+    ],
+    "message_fixed_content_placeholder": [
+      "message_row_id",
+      "placeholder_type"
+    ],
+    "message_forwarded": [
+      "message_row_id",
+      "forward_score",
+      "forward_origin"
+    ],
+    "message_ftsv2_content": [
+      "docid",
+      "c0content",
+      "c1fts_jid",
+      "c2fts_namespace"
+    ],
+    "message_ftsv2_docsize": [
+      "docid",
+      "size"
+    ],
+    "message_ftsv2_segdir": [
+      "level",
+      "idx",
+      "start_block",
+      "leaves_end_block",
+      "end_block",
+      "root"
+    ],
+    "message_ftsv2_segments": [
+      "blockid",
+      "block"
+    ],
+    "message_ftsv2_stat": [
+      "id",
+      "value"
+    ],
+    "message_future": [
+      "message_row_id",
+      "version",
+      "data",
+      "future_message_type",
+      "future_proof_stanza",
+      "edit_version",
+      "message_stanza_data"
+    ],
+    "message_group_invite": [
+      "message_row_id",
+      "group_jid_row_id",
+      "admin_jid_row_id",
+      "group_name",
+      "invite_code",
+      "expiration",
+      "invite_time",
+      "expired",
+      "group_type"
+    ],
+    "message_inline_video_metadata": [
+      "message_row_id",
+      "video_content_url",
+      "is_muted",
+      "caption"
+    ],
+    "message_invoice": [
+      "message_row_id",
+      "wa_invoice_id",
+      "amount",
+      "note",
+      "token",
+      "sender_jid_row_id",
+      "receiver_jid_row_id",
+      "status",
+      "status_ts",
+      "creation_ts",
+      "attachment_type",
+      "attachment_mimetype",
+      "attachment_media_key",
+      "attachment_media_key_ts",
+      "attachment_file_sha256",
+      "attachment_file_enc_sha256",
+      "attachment_direct_path",
+      "attachment_jpeg_thumbnail",
+      "metadata"
+    ],
+    "message_limit_sharing_setting": [
+      "message_row_id",
+      "enabled",
+      "trigger"
+    ],
+    "message_link": [
+      "_id",
+      "chat_row_id",
+      "message_row_id",
+      "link_index"
+    ],
+    "message_location": [
+      "message_row_id",
+      "chat_row_id",
+      "latitude",
+      "longitude",
+      "place_name",
+      "place_address",
+      "url",
+      "live_location_share_duration",
+      "live_location_sequence_number",
+      "live_location_final_latitude",
+      "live_location_final_longitude",
+      "live_location_final_timestamp",
+      "map_download_status"
+    ],
+    "message_logging_funnel_id": [
+      "message_row_id",
+      "fs_funnel_id",
+      "ps_funnel_id"
+    ],
+    "message_media": [
+      "message_row_id",
+      "chat_row_id",
+      "autotransfer_retry_enabled",
+      "multicast_id",
+      "media_job_uuid",
+      "transferred",
+      "transcoded",
+      "file_path",
+      "file_size",
+      "suspicious_content",
+      "trim_from",
+      "trim_to",
+      "face_x",
+      "face_y",
+      "media_key",
+      "media_key_timestamp",
+      "width",
+      "height",
+      "has_streaming_sidecar",
+      "gif_attribution",
+      "thumbnail_height_width_ratio",
+      "direct_path",
+      "first_scan_sidecar",
+      "first_scan_length",
+      "message_url",
+      "mime_type",
+      "file_length",
+      "media_name",
+      "file_hash",
+      "media_duration",
+      "page_count",
+      "enc_file_hash",
+      "partial_media_hash",
+      "partial_media_enc_hash",
+      "is_animated_sticker",
+      "original_file_hash",
+      "mute_video",
+      "media_caption",
+      "media_upload_handle",
+      "sticker_flags",
+      "raw_transcription_text",
+      "first_viewed_timestamp",
+      "doodle_id",
+      "media_source_type",
+      "accessibility_label",
+      "media_transcode_quality",
+      "metadata_url",
+      "motion_photo_presentation_offset_ms",
+      "qr_url",
+      "media_key_domain",
+      "e2ee_media_key",
+      "premium_message",
+      "emoji_tags",
+      "is_offloaded"
+    ],
+    "message_media_interactive_annotation": [
+      "_id",
+      "message_row_id",
+      "location_latitude",
+      "location_longitude",
+      "location_name",
+      "sort_order",
+      "newsletter_jid_row_id",
+      "newsletter_server_message_id",
+      "newsletter_name",
+      "skip_confirmation",
+      "newsletter_content_type",
+      "newsletter_accessibility_text",
+      "child_message_row_id",
+      "type",
+      "fp_interactive_annotation",
+      "status_link_type"
+    ],
+    "message_media_interactive_annotation_embedded_music": [
+      "message_media_interactive_annotation_row_id",
+      "music_content_media_id",
+      "song_id",
+      "author",
+      "title",
+      "artwork_direct_path",
+      "artwork_sha256",
+      "artwork_enc_sha256",
+      "artwork_media_key",
+      "artist_attribution",
+      "country_blocklist",
+      "is_explicit",
+      "pending_embedded_music_type",
+      "start_time_ms",
+      "derived_content_start_time_ms",
+      "overlap_duration_ms",
+      "audio_library_product"
+    ],
+    "message_media_interactive_annotation_vertex": [
+      "_id",
+      "message_media_interactive_annotation_row_id",
+      "x",
+      "y",
+      "sort_order"
+    ],
+    "message_media_map": [
+      "_id",
+      "message_row_id",
+      "chat_row_id",
+      "media_row_id"
+    ],
+    "message_media_vcard_count": [
+      "_id",
+      "message_row_id",
+      "count"
+    ],
+    "message_mentions": [
+      "_id",
+      "message_row_id",
+      "jid_row_id",
+      "display_name",
+      "mention_type"
+    ],
+    "message_music": [
+      "message_row_id",
+      "song_uri",
+      "artwork_uri",
+      "style_raw_value"
+    ],
+    "message_newsletter_admin_invite": [
+      "message_row_id",
+      "newsletter_jid_row_id",
+      "newsletter_name",
+      "expiration"
+    ],
+    "message_newsletter_follower_invite": [
+      "message_row_id",
+      "newsletter_jid_row_id",
+      "newsletter_name"
+    ],
+    "message_newsletter_fts_content": [
+      "docid",
+      "c0content",
+      "c1fts_jid",
+      "c2fts_namespace"
+    ],
+    "message_newsletter_fts_docsize": [
+      "docid",
+      "size"
+    ],
+    "message_newsletter_fts_segdir": [
+      "level",
+      "idx",
+      "start_block",
+      "leaves_end_block",
+      "end_block",
+      "root"
+    ],
+    "message_newsletter_fts_segments": [
+      "blockid",
+      "block"
+    ],
+    "message_newsletter_fts_stat": [
+      "id",
+      "value"
+    ],
+    "message_order": [
+      "message_row_id",
+      "order_id",
+      "thumbnail",
+      "order_title",
+      "item_count",
+      "status",
+      "surface",
+      "message",
+      "seller_jid",
+      "token",
+      "currency_code",
+      "total_amount_1000",
+      "message_version",
+      "catalog_type"
+    ],
+    "message_orphan": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "sender_jid_row_id",
+      "parent_chat_row_id",
+      "parent_from_me",
+      "parent_key_id",
+      "parent_sender_jid_row_id",
+      "timestamp",
+      "orphan_message_data",
+      "orphan_message_type",
+      "orphan_message_stanza_data",
+      "orphan_message_reason"
+    ],
+    "message_orphaned_edit": [
+      "_id",
+      "key_id",
+      "from_me",
+      "chat_row_id",
+      "sender_jid_row_id",
+      "timestamp",
+      "message_type",
+      "revoked_key_id",
+      "retry_count",
+      "admin_jid_row_id",
+      "orphan_message_data",
+      "reporting_token",
+      "reporting_tag",
+      "reporting_version"
+    ],
+    "message_parent_association": [
+      "message_row_id",
+      "parent_message_row_id",
+      "association_type"
+    ],
+    "message_payment": [
+      "message_row_id",
+      "sender_jid_row_id",
+      "receiver_jid_row_id",
+      "amount_with_symbol",
+      "remote_resource",
+      "remote_message_sender_jid_row_id",
+      "remote_message_from_me",
+      "remote_message_key"
+    ],
+    "message_payment_invite": [
+      "message_row_id",
+      "service",
+      "expiration_timestamp",
+      "incentive_eligible",
+      "referral_id",
+      "invite_type"
+    ],
+    "message_payment_reminder": [
+      "message_row_id",
+      "reminder_id",
+      "instance_id",
+      "description",
+      "frequency",
+      "status",
+      "payee_vpa",
+      "payee_jid_row_id",
+      "payer_jid_row_id",
+      "amount_value",
+      "amount_offset",
+      "amount_currency_code"
+    ],
+    "message_payment_status_update": [
+      "message_row_id",
+      "transaction_info",
+      "transaction_data",
+      "init_timestamp",
+      "update_timestamp",
+      "amount_data"
+    ],
+    "message_payment_transaction_reminder": [
+      "message_row_id",
+      "web_stub",
+      "amount",
+      "transfer_date",
+      "payment_sender_name",
+      "expiration",
+      "remote_message_key"
+    ],
+    "message_poll": [
+      "message_row_id",
+      "enc_key",
+      "selectable_options_count",
+      "invalid_state",
+      "poll_logging_id",
+      "poll_type",
+      "correct_option_id",
+      "content_type",
+      "hide_participant_names",
+      "end_time",
+      "allow_add_option"
+    ],
+    "message_poll_option": [
+      "_id",
+      "message_row_id",
+      "option_sha256",
+      "option_name",
+      "vote_total",
+      "option_hash",
+      "contributor_jid_row_id",
+      "added_timestamp_ms"
+    ],
+    "message_privacy_state": [
+      "message_row_id",
+      "host_storage",
+      "actual_actors",
+      "privacy_mode_ts",
+      "business_name"
+    ],
+    "message_product": [
+      "message_row_id",
+      "business_owner_jid",
+      "product_id",
+      "title",
+      "description",
+      "currency_code",
+      "amount_1000",
+      "retailer_id",
+      "url",
+      "product_image_count",
+      "sale_amount_1000",
+      "body",
+      "footer",
+      "signed_url"
+    ],
+    "message_quarantine": [
+      "message_row_id",
+      "chat_row_id",
+      "timestamp",
+      "original_protobuf",
+      "serialized_stanza",
+      "protobuf_type"
+    ],
+    "message_question": [
+      "message_row_id",
+      "response_count",
+      "response_read_count",
+      "is_enabled"
+    ],
+    "message_quote_invoice": [
+      "message_row_id",
+      "amount",
+      "note",
+      "status",
+      "attachment_jpeg_thumbnail"
+    ],
+    "message_quoted": [
+      "message_row_id",
+      "chat_row_id",
+      "parent_message_chat_row_id",
+      "from_me",
+      "sender_jid_row_id",
+      "key_id",
+      "timestamp",
+      "message_type",
+      "text_data",
+      "payment_transaction_id",
+      "lookup_tables",
+      "origin",
+      "quoted_source",
+      "quoted_type"
+    ],
+    "message_quoted_blank_reply": [
+      "message_row_id",
+      "parent_group_jid",
+      "group_subject"
+    ],
+    "message_quoted_call_log": [
+      "message_row_id",
+      "video_call",
+      "call_result"
+    ],
+    "message_quoted_event_invite": [
+      "message_row_id",
+      "event_id",
+      "event_title",
+      "start_time",
+      "end_time",
+      "is_canceled",
+      "caption",
+      "call_link"
+    ],
+    "message_quoted_group_invite": [
+      "message_row_id",
+      "group_jid_row_id",
+      "admin_jid_row_id",
+      "group_name",
+      "invite_code",
+      "expiration",
+      "invite_time",
+      "expired",
+      "group_type"
+    ],
+    "message_quoted_group_invite_legacy": [
+      "message_row_id",
+      "group_jid_row_id",
+      "admin_jid_row_id",
+      "group_name",
+      "invite_code",
+      "expiration",
+      "invite_time",
+      "expired",
+      "group_type"
+    ],
+    "message_quoted_location": [
+      "message_row_id",
+      "latitude",
+      "longitude",
+      "place_name",
+      "place_address",
+      "url",
+      "thumbnail"
+    ],
+    "message_quoted_media": [
+      "message_row_id",
+      "media_job_uuid",
+      "transferred",
+      "file_path",
+      "file_size",
+      "media_key",
+      "media_key_timestamp",
+      "width",
+      "height",
+      "direct_path",
+      "message_url",
+      "mime_type",
+      "file_length",
+      "media_name",
+      "file_hash",
+      "media_duration",
+      "page_count",
+      "enc_file_hash",
+      "thumbnail",
+      "media_caption",
+      "accessibility_label"
+    ],
+    "message_quoted_mentions": [
+      "_id",
+      "message_row_id",
+      "jid_row_id",
+      "display_name",
+      "mention_type"
+    ],
+    "message_quoted_order": [
+      "message_row_id",
+      "order_id",
+      "thumbnail",
+      "order_title",
+      "item_count",
+      "status",
+      "surface",
+      "message",
+      "seller_jid",
+      "token",
+      "currency_code",
+      "total_amount_1000",
+      "message_version",
+      "catalog_type"
+    ],
+    "message_quoted_payment_invite": [
+      "message_row_id",
+      "service",
+      "expiration_timestamp",
+      "incentive_eligible",
+      "referral_id",
+      "invite_type"
+    ],
+    "message_quoted_product": [
+      "message_row_id",
+      "business_owner_jid",
+      "product_id",
+      "title",
+      "description",
+      "currency_code",
+      "amount_1000",
+      "retailer_id",
+      "url",
+      "product_image_count",
+      "sale_amount_1000",
+      "body",
+      "footer",
+      "signed_url"
+    ],
+    "message_quoted_text": [
+      "message_row_id",
+      "thumbnail"
+    ],
+    "message_quoted_ui_elements": [
+      "message_row_id",
+      "element_type",
+      "element_content"
+    ],
+    "message_quoted_ui_elements_reply": [
+      "message_row_id",
+      "element_type",
+      "reply_values",
+      "reply_description"
+    ],
+    "message_quoted_ui_elements_reply_legacy": [
+      "message_row_id",
+      "element_type",
+      "reply_values",
+      "reply_description"
+    ],
+    "message_quoted_vcard": [
+      "_id",
+      "message_row_id",
+      "vcard"
+    ],
+    "message_rating": [
+      "message_row_id",
+      "rating"
+    ],
+    "message_revoked": [
+      "message_row_id",
+      "revoked_key_id",
+      "admin_jid_row_id",
+      "revoke_timestamp"
+    ],
+    "message_scheduled_call": [
+      "message_row_id",
+      "scheduled_timestamp_ms",
+      "call_type",
+      "title"
+    ],
+    "message_secret": [
+      "message_row_id",
+      "message_secret"
+    ],
+    "message_send_count": [
+      "message_row_id",
+      "send_count"
+    ],
+    "message_span_indices": [
+      "_id",
+      "message_row_id",
+      "start_index",
+      "end_index",
+      "span_type"
+    ],
+    "message_split_payment": [
+      "message_row_id",
+      "split_id",
+      "total_amount_value",
+      "total_amount_offset",
+      "currency_code",
+      "description",
+      "requester_jid_row_id",
+      "created_at_ms",
+      "chat_jid_row_id"
+    ],
+    "message_split_payment_participant": [
+      "split_id",
+      "jid_row_id",
+      "share_amount_value",
+      "share_amount_offset",
+      "currency_code",
+      "status_value",
+      "transaction_id"
+    ],
+    "message_status_psa_campaign": [
+      "message_row_id",
+      "campaign_id",
+      "duration",
+      "first_seen_timestamp",
+      "action_link_url",
+      "action_link_button_title"
+    ],
+    "message_sticker_pack": [
+      "message_row_id",
+      "sticker_pack_id",
+      "tray_icon_file_name",
+      "pack_name",
+      "pack_description",
+      "publisher",
+      "image_data_hash",
+      "sticker_pack_size",
+      "sticker_pack_origin"
+    ],
+    "message_sticker_pack_stickers": [
+      "_id",
+      "message_row_id",
+      "file_name",
+      "is_animated",
+      "emojis",
+      "accessibility_label",
+      "is_lottie",
+      "mimetype"
+    ],
+    "message_streaming_sidecar": [
+      "message_row_id",
+      "sidecar",
+      "chunk_lengths",
+      "timestamp"
+    ],
+    "message_structure_analysis_result": [
+      "message_row_id",
+      "message_field_json_array",
+      "submessage_field_json_array",
+      "button_value_json_array",
+      "cta_url_unique_count",
+      "body_url_count",
+      "body_url_unique_count",
+      "url_unique_count",
+      "decision_id",
+      "decision_sources"
+    ],
+    "message_system": [
+      "message_row_id",
+      "action_type"
+    ],
+    "message_system_biz_callback_disabled": [
+      "message_row_id",
+      "callback_expiry_timestamp",
+      "outgoing_failed_call_id"
+    ],
+    "message_system_biz_callback_enabled": [
+      "message_row_id",
+      "callback_expiry_timestamp",
+      "outgoing_failed_call_id"
+    ],
+    "message_system_biz_per_customer_3pd_data_share_state": [
+      "message_row_id",
+      "data_sharing_enabled"
+    ],
+    "message_system_block_contact": [
+      "message_row_id",
+      "is_blocked"
+    ],
+    "message_system_business_broadcast": [
+      "message_row_id",
+      "broadcast_raw_jid"
+    ],
+    "message_system_business_state": [
+      "message_row_id",
+      "privacy_message_type",
+      "business_name",
+      "is_deprecated"
+    ],
+    "message_system_chat_assignment": [
+      "message_row_id",
+      "agent_name",
+      "is_unassigned_chat"
+    ],
+    "message_system_chat_participant": [
+      "message_row_id",
+      "user_jid_row_id"
+    ],
+    "message_system_community_link_changed": [
+      "message_row_id",
+      "old_group_type",
+      "new_group_type",
+      "linked_parent_group_jid_row_id"
+    ],
+    "message_system_detected_outcomes_labeled_chat": [
+      "message_row_id",
+      "predefined_id"
+    ],
+    "message_system_device_change": [
+      "message_row_id",
+      "device_added_count",
+      "device_removed_count"
+    ],
+    "message_system_ephemeral_setting_not_applied": [
+      "message_row_id",
+      "setting_duration"
+    ],
+    "message_system_event_updates": [
+      "message_row_id",
+      "event_message_row_id",
+      "event_name"
+    ],
+    "message_system_group": [
+      "message_row_id",
+      "is_me_joined"
+    ],
+    "message_system_group_auto_restrict": [
+      "message_row_id",
+      "threshold"
+    ],
+    "message_system_group_with_parent": [
+      "message_row_id",
+      "linked_parent_group_name"
+    ],
+    "message_system_initial_privacy_provider": [
+      "message_row_id",
+      "privacy_provider",
+      "verified_biz_name",
+      "biz_state_id",
+      "is_deprecated"
+    ],
+    "message_system_lid_change": [
+      "message_row_id",
+      "old_lid_row_id",
+      "new_lid_row_id",
+      "display_name"
+    ],
+    "message_system_linked_group_call": [
+      "message_row_id",
+      "call_id",
+      "is_video_call",
+      "call_type"
+    ],
+    "message_system_number_change": [
+      "message_row_id",
+      "old_jid_row_id",
+      "new_jid_row_id"
+    ],
+    "message_system_opt_out": [
+      "message_row_id",
+      "biz_opt_out_category",
+      "biz_opt_out_action"
+    ],
+    "message_system_payment_invite_setup": [
+      "message_row_id",
+      "service",
+      "invite_used"
+    ],
+    "message_system_photo_change": [
+      "message_row_id",
+      "new_photo_id",
+      "old_photo",
+      "new_photo"
+    ],
+    "message_system_privacy": [
+      "message_row_id",
+      "is_transition",
+      "message_privacy_type"
+    ],
+    "message_system_reminder_sent": [
+      "message_row_id",
+      "original_message_row_id",
+      "original_reminder_content"
+    ],
+    "message_system_reminder_setup": [
+      "message_row_id",
+      "original_message_row_id",
+      "reminder_timestamp_ms",
+      "reminder_content"
+    ],
+    "message_system_scheduled_call_start": [
+      "message_row_id",
+      "creation_message_row_id",
+      "call_title",
+      "call_timestamp_ms"
+    ],
+    "message_system_sibling_group_link_change": [
+      "message_row_id",
+      "subgroup_raw_jid",
+      "subgroup_subject",
+      "parent_group_jid_row_id"
+    ],
+    "message_system_side_chat_privacy": [
+      "message_row_id",
+      "origin_chat_row_id"
+    ],
+    "message_system_update_audience_linking": [
+      "message_row_id",
+      "lists_to_remove_count",
+      "lists_to_sync_count"
+    ],
+    "message_system_username_change": [
+      "message_row_id",
+      "user_jid",
+      "old_username",
+      "new_username",
+      "display_name"
+    ],
+    "message_system_value_change": [
+      "message_row_id",
+      "old_data"
+    ],
+    "message_system_with_group_nodes": [
+      "message_row_id",
+      "group_jid_row_id",
+      "group_node_type",
+      "group_subject",
+      "version"
+    ],
+    "message_template": [
+      "message_row_id",
+      "content_text_data",
+      "footer_text_data",
+      "template_id",
+      "csat_trigger_expiration_ts",
+      "category",
+      "tag",
+      "mask_linked_devices"
+    ],
+    "message_template_button": [
+      "_id",
+      "message_row_id",
+      "text_data",
+      "extra_data",
+      "button_type",
+      "used",
+      "selected_index",
+      "otp_button_type",
+      "extra_consent_data",
+      "otp_matched_package_name",
+      "selected_carousel_card_index",
+      "webview_presentation",
+      "webview_interaction"
+    ],
+    "message_template_quoted": [
+      "message_row_id",
+      "content_text_data",
+      "footer_text_data"
+    ],
+    "message_text": [
+      "message_row_id",
+      "description",
+      "page_title",
+      "url",
+      "font_style",
+      "text_color",
+      "background_color",
+      "preview_type",
+      "invite_link_group_type",
+      "counter_abuse_token",
+      "fb_experiment_id",
+      "social_media_post_type",
+      "link_media_duration_seconds",
+      "link_end_index"
+    ],
+    "message_thumbnail": [
+      "message_row_id",
+      "thumbnail"
+    ],
+    "message_ui_elements": [
+      "_id",
+      "message_row_id",
+      "element_type",
+      "element_content",
+      "description",
+      "template_id",
+      "hsm_tag",
+      "footer_text",
+      "button_text",
+      "message_type"
+    ],
+    "message_ui_elements_reply": [
+      "message_row_id",
+      "element_type",
+      "reply_values",
+      "reply_description",
+      "flow_id"
+    ],
+    "message_vcard": [
+      "_id",
+      "message_row_id",
+      "vcard"
+    ],
+    "message_vcard_jid": [
+      "_id",
+      "vcard_jid_row_id",
+      "vcard_row_id",
+      "message_row_id"
+    ],
+    "message_view_once_media": [
+      "message_row_id",
+      "state"
+    ],
+    "messages_hydrated_four_row_template": [
+      "message_row_id",
+      "message_template_id"
+    ],
+    "messages_quotes": [
+      "_id",
+      "key_remote_jid",
+      "key_from_me",
+      "key_id",
+      "status",
+      "needs_push",
+      "data",
+      "timestamp",
+      "media_url",
+      "media_mime_type",
+      "media_wa_type",
+      "media_size",
+      "media_name",
+      "media_caption",
+      "media_hash",
+      "media_duration",
+      "origin",
+      "latitude",
+      "longitude",
+      "thumb_image",
+      "remote_resource",
+      "received_timestamp",
+      "send_timestamp",
+      "receipt_server_timestamp",
+      "receipt_device_timestamp",
+      "read_device_timestamp",
+      "played_device_timestamp",
+      "raw_data",
+      "recipient_count",
+      "participant_hash",
+      "starred",
+      "quoted_row_id",
+      "mentioned_jids",
+      "multicast_id",
+      "edit_version",
+      "media_enc_hash",
+      "payment_transaction_id",
+      "forwarded",
+      "preview_type",
+      "send_count",
+      "lookup_tables",
+      "future_message_type",
+      "message_add_on_flags"
+    ],
+    "missed_call_log_participant": [
+      "_id",
+      "call_logs_row_id",
+      "jid",
+      "call_result"
+    ],
+    "missed_call_logs": [
+      "_id",
+      "message_row_id",
+      "timestamp",
+      "video_call",
+      "group_jid_row_id",
+      "is_joinable_group_call",
+      "is_dnd_mode_on",
+      "offer_silence_reason"
+    ],
+    "mms_metadata": [
+      "_id",
+      "message_row_id",
+      "direct_path",
+      "media_key",
+      "media_key_timestamp",
+      "enc_thumb_hash",
+      "thumb_hash",
+      "thumb_width",
+      "thumb_height",
+      "transferred",
+      "micro_thumbnail",
+      "insert_timestamp",
+      "handle",
+      "type"
+    ],
+    "mms_thumbnail_metadata": [
+      "message_row_id",
+      "direct_path",
+      "media_key",
+      "media_key_timestamp",
+      "enc_thumb_hash",
+      "thumb_hash",
+      "thumb_width",
+      "thumb_height",
+      "transferred",
+      "micro_thumbnail",
+      "insert_timestamp",
+      "handle"
+    ],
+    "newsletter": [
+      "chat_row_id",
+      "name",
+      "name_id",
+      "description",
+      "description_id",
+      "picture_url",
+      "picture_id",
+      "preview_url",
+      "preview_id",
+      "invite_code",
+      "handle",
+      "subscribers_count",
+      "membership",
+      "privacy",
+      "verified",
+      "muted",
+      "oldest_message_retrieved",
+      "suspended",
+      "deleted",
+      "show_enforced_update_banner",
+      "reaction_setting",
+      "reaction_setting_blocklist",
+      "reaction_setting_update_ts",
+      "verification_source",
+      "admin_count",
+      "capabilities",
+      "wamo_sub_plan_id",
+      "wamo_sub_status",
+      "fts_index_state",
+      "last_fts_message_indexed",
+      "admin_activity_tone",
+      "follower_activity_tone",
+      "admin_activity_vibrate",
+      "follower_activity_vibrate",
+      "admin_profile_id",
+      "admin_profile_name",
+      "admin_profile_picture_id",
+      "admin_profile_picture_url",
+      "last_status_server_id",
+      "last_filled_status_server_id",
+      "refresh_after_interval_sec",
+      "admin_profiles_enabled",
+      "last_status_sent_time"
+    ],
+    "newsletter_admin_profile": [
+      "_id",
+      "chat_row_id",
+      "admin_profile_id",
+      "name",
+      "picture_id",
+      "picture_direct_path",
+      "timestamp"
+    ],
+    "newsletter_jarvis_config": [
+      "chat_row_id",
+      "config_json"
+    ],
+    "newsletter_linked_account": [
+      "_id",
+      "chat_row_id",
+      "name",
+      "link"
+    ],
+    "newsletter_media_clear": [
+      "_id",
+      "chat_row_id",
+      "media_type",
+      "cutoff_sort_id"
+    ],
+    "newsletter_message": [
+      "message_row_id",
+      "chat_row_id",
+      "server_message_id",
+      "comments_count",
+      "reaction_from_me",
+      "extra_newsletter_tables",
+      "extra_table_last_update_ts",
+      "reactions_from_me_ts",
+      "view_count",
+      "is_autodelete_eligible",
+      "is_wamo_sub",
+      "forwards_count",
+      "admin_profile_id",
+      "admin_profile_name",
+      "admin_profile_picture_id",
+      "admin_profile_picture_url",
+      "is_paid_partnership"
+    ],
+    "newsletter_message_reaction": [
+      "_id",
+      "message_row_id",
+      "reaction",
+      "reaction_count"
+    ],
+    "newsletter_my_reaction_orphan_message": [
+      "_id",
+      "chat_row_id",
+      "server_message_id",
+      "reaction_from_me",
+      "reactions_from_me_ts",
+      "votes_from_me",
+      "votes_from_me_ts"
+    ],
+    "newsletter_pinned_message": [
+      "message_row_id",
+      "chat_row_id",
+      "server_message_id",
+      "expiry_ts_seconds",
+      "pin_timestamp_ms"
+    ],
+    "newsletter_subscribers": [
+      "_id",
+      "chat_row_id",
+      "jid_row_id",
+      "display_name",
+      "profile_picture_direct_path",
+      "subscription_time",
+      "role",
+      "type_of_fetch",
+      "fetched_time",
+      "admin_profile_id",
+      "admin_profile_name",
+      "admin_profile_picture_id",
+      "admin_profile_picture_url"
+    ],
+    "optimised_delivery_info": [
+      "message_row_id",
+      "msg_disclosed_token",
+      "msg_undisclosed_token",
+      "msg_timestamp",
+      "token_timestamp",
+      "business_jid_row_id",
+      "msg_timestamp_v2"
+    ],
+    "parent_group_participants": [
+      "parent_group_jid_row_id",
+      "user_jid_row_id"
+    ],
+    "pay_transaction": [
+      "_id",
+      "message_row_id",
+      "remote_jid_row_id",
+      "key_id",
+      "interop_id",
+      "id",
+      "timestamp",
+      "status",
+      "error_code",
+      "sender_jid_row_id",
+      "receiver_jid_row_id",
+      "type",
+      "currency_code",
+      "amount_1000",
+      "credential_id",
+      "methods",
+      "bank_transaction_id",
+      "metadata",
+      "init_timestamp",
+      "request_key_id",
+      "country",
+      "version",
+      "future_data",
+      "service_id",
+      "background_id",
+      "purchase_initiator"
+    ],
+    "payment_background": [
+      "background_id",
+      "file_size",
+      "width",
+      "height",
+      "mime_type",
+      "placeholder_color",
+      "text_color",
+      "subtext_color",
+      "fullsize_url",
+      "description",
+      "lg",
+      "media_key",
+      "media_key_timestamp",
+      "file_sha256",
+      "file_enc_sha256",
+      "direct_path"
+    ],
+    "payment_background_order": [
+      "background_id",
+      "background_order"
+    ],
+    "payment_extended_metadata": [
+      "message_row_id",
+      "platform",
+      "type",
+      "message_params_json"
+    ],
+    "payment_link_metadata": [
+      "message_row_id",
+      "link_header_type",
+      "cta_button_text",
+      "params_json"
+    ],
+    "played_self_receipt": [
+      "message_row_id",
+      "to_jid_row_id",
+      "participant_jid_row_id",
+      "message_id"
+    ],
+    "poll_edit_snapshot": [
+      "_id",
+      "parent_message_row_id",
+      "previous_poll_name"
+    ],
+    "poll_name_hash_history": [
+      "_id",
+      "poll_message_row_id",
+      "edit_stanza_id",
+      "poll_name_hash"
+    ],
+    "poll_vote_delivered_option": [
+      "_id",
+      "parent_message_row_id",
+      "message_poll_option_id"
+    ],
+    "poll_vote_pending": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "sender_jid_row_id",
+      "message_timestamp_ms",
+      "poll_message_row_id",
+      "dependency_type",
+      "dependency_id",
+      "metadata_edit_stanza_id",
+      "metadata_poll_name_hash",
+      "selected_option_hashes",
+      "sender_timestamp_ms",
+      "unread",
+      "created_timestamp_ms"
+    ],
+    "premium_message_info": [
+      "message_row_id",
+      "campaign_id",
+      "chat_row_id",
+      "account_jid_row_id"
+    ],
+    "primary_device_version": [
+      "user_jid_row_id",
+      "version"
+    ],
+    "priority_inbox": [
+      "_id",
+      "priority_score",
+      "version",
+      "chat_row_id",
+      "is_priority",
+      "label_removed",
+      "time_created",
+      "deep_conversion_rate"
+    ],
+    "props": [
+      "_id",
+      "key",
+      "value"
+    ],
+    "question_reply_quoted_message": [
+      "message_row_id",
+      "question_text",
+      "response_text",
+      "server_question_id",
+      "question_message_type"
+    ],
+    "quick_replies": [
+      "_id",
+      "title",
+      "content",
+      "associated_label_ids"
+    ],
+    "quick_reply_attachments": [
+      "_id",
+      "quick_reply_id",
+      "uri",
+      "caption",
+      "media_type"
+    ],
+    "quick_reply_keywords": [
+      "_id",
+      "quick_reply_id",
+      "keyword_id"
+    ],
+    "quick_reply_usage": [
+      "_id",
+      "quick_reply_id",
+      "usage_date",
+      "usage_count"
+    ],
+    "receipt_coex": [
+      "_id",
+      "message_row_id",
+      "user_lid_row_id",
+      "receipt_coex_timestamp"
+    ],
+    "receipt_device": [
+      "_id",
+      "message_row_id",
+      "receipt_device_jid_row_id",
+      "receipt_device_timestamp",
+      "primary_device_version"
+    ],
+    "receipt_orphaned": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "receipt_device_jid_row_id",
+      "receipt_recipient_jid_row_id",
+      "status",
+      "timestamp"
+    ],
+    "receipt_user": [
+      "_id",
+      "message_row_id",
+      "receipt_user_jid_row_id",
+      "receipt_timestamp",
+      "read_timestamp",
+      "played_timestamp"
+    ],
+    "receipts": [
+      "_id",
+      "key_remote_jid",
+      "key_id",
+      "remote_resource",
+      "receipt_device_timestamp",
+      "read_device_timestamp",
+      "played_device_timestamp"
+    ],
+    "recently_selected_search_table": [
+      "recent_chat_row_id",
+      "search_timestamp"
+    ],
+    "reminder": [
+      "_id",
+      "reminder_id",
+      "message_row_id",
+      "call_log_row_id",
+      "surface",
+      "timestamp",
+      "notified"
+    ],
+    "reporting_info": [
+      "_id",
+      "message_row_id",
+      "reporting_tag",
+      "stanza_id",
+      "send_timestamp",
+      "receive_timestamp",
+      "stanza_id_text",
+      "receive_flow",
+      "is_message_add_on"
+    ],
+    "scheduled_calls": [
+      "creation_message_row_id",
+      "key_id",
+      "key_from_me",
+      "key_chat_row_id",
+      "call_type",
+      "scheduled_timestamp",
+      "call_title",
+      "creator_jid_row_id",
+      "is_upcoming",
+      "call_log_row_id"
+    ],
+    "scheduled_reminder_message": [
+      "message_row_id",
+      "scheduled_reminder_timestamp_ms",
+      "chat_row_id"
+    ],
+    "smart_suggestions_key_value": [
+      "_id",
+      "key",
+      "value"
+    ],
+    "smb_order": [
+      "_id",
+      "status",
+      "jid_row_id",
+      "reference_id",
+      "transaction_id",
+      "payment_type",
+      "content"
+    ],
+    "status": [
+      "_id",
+      "jid_row_id",
+      "message_table_id",
+      "last_read_message_table_id",
+      "last_read_receipt_sent_message_table_id",
+      "first_unread_message_table_id",
+      "autodownload_limit_message_table_id",
+      "timestamp",
+      "unseen_count",
+      "total_count",
+      "unseen_count_close_friends"
+    ],
+    "status_attribution": [
+      "_id",
+      "status_row_id",
+      "type",
+      "content"
+    ],
+    "status_crossposting_v3": [
+      "status_message_row_id",
+      "crossposting_session_id",
+      "crossposting_status_unique_id",
+      "state",
+      "media_file_path",
+      "direct_url_path",
+      "destination"
+    ],
+    "status_info_ranking_signals": [
+      "chat_jid",
+      "first_status_timestamp",
+      "last_expired_status_timestamp",
+      "cached_engagement_data",
+      "cached_engagement_timestamp"
+    ],
+    "status_list": [
+      "_id",
+      "key_remote_jid",
+      "message_table_id",
+      "last_read_message_table_id",
+      "last_read_receipt_sent_message_table_id",
+      "first_unread_message_table_id",
+      "autodownload_limit_message_table_id",
+      "timestamp",
+      "unseen_count",
+      "total_count"
+    ],
+    "status_message_info": [
+      "message_row_id",
+      "status_distribution_mode",
+      "is_mentioned",
+      "status_mentions",
+      "cannot_receive_reactions",
+      "cannot_be_ranked",
+      "has_embedded_music",
+      "status_mention_source",
+      "status_attribution_type",
+      "is_group_status",
+      "can_be_reshared",
+      "ranking_version",
+      "external_media_duration_seconds",
+      "original_status_message_row_id",
+      "original_poster_notification_type",
+      "status_source_type",
+      "selected_audience_list",
+      "override_notification_recipient_jid",
+      "can_receive_multi_reactions",
+      "audience_type",
+      "status_poster_contact_type",
+      "status_audience_custom_list_name",
+      "status_audience_custom_list_emoji",
+      "poster_status_id"
+    ],
+    "status_notification_info": [
+      "message_row_id",
+      "response_status_row_id",
+      "original_status_row_id",
+      "type"
+    ],
+    "status_privacy_custom_list": [
+      "row_id",
+      "list_id",
+      "name",
+      "emoji",
+      "is_selected",
+      "member_jids",
+      "source_group_jids",
+      "allow_list_selected"
+    ],
+    "status_quoted_message": [
+      "message_row_id",
+      "description_text",
+      "thumbnail",
+      "type",
+      "original_status_key_id",
+      "original_status_is_from_me",
+      "original_status_chat_id",
+      "original_status_sender_id",
+      "add_on_key_id",
+      "add_on_is_from_me",
+      "add_on_chat_id",
+      "add_on_sender_id"
+    ],
+    "suggest_as_you_type": [
+      "message_row_id"
+    ],
+    "suggested_replies": [
+      "message_row_id",
+      "customer_message_row_id",
+      "tokenized_customer_message",
+      "customer_message_embedding"
+    ],
+    "support_citation_metadata": [
+      "message_row_id",
+      "help_article_citations"
+    ],
+    "tee_chat_request_table": [
+      "message_row_id",
+      "chat_request_type",
+      "anchor_message_row_id",
+      "node_token",
+      "extra_data"
+    ],
+    "tee_message_info_table": [
+      "message_row_id",
+      "message_interaction_type",
+      "message_outgoing_status",
+      "message_source",
+      "message_replay_metadata"
+    ],
+    "template_messages_metadata": [
+      "message_row_id",
+      "message_template_id",
+      "message_hsm_tag",
+      "message_source_type",
+      "message_delivery_decision_id",
+      "message_delivery_decision_sources"
+    ],
+    "thread_id": [
+      "_id",
+      "chat_row_id",
+      "from_me",
+      "key_id",
+      "sender_jid_row_id",
+      "thread_type",
+      "pin_timestamp",
+      "deleted"
+    ],
+    "thread_messages": [
+      "_id",
+      "thread_id",
+      "message_row_id"
+    ],
+    "transcription_segment": [
+      "_id",
+      "message_row_id",
+      "substring_start",
+      "substring_length",
+      "timestamp",
+      "duration",
+      "confidence"
+    ],
+    "url_tracking_map_element": [
+      "_id",
+      "message_row_id",
+      "original_url",
+      "consented_users_url",
+      "unconsented_users_url",
+      "card_index"
+    ],
+    "user_device": [
+      "_id",
+      "user_jid_row_id",
+      "device_jid_row_id",
+      "key_index"
+    ],
+    "user_device_info": [
+      "user_jid_row_id",
+      "raw_id",
+      "timestamp",
+      "expected_timestamp",
+      "expected_ts_last_device_job_ts",
+      "expected_timestamp_update_ts",
+      "account_encryption_type"
+    ]
+  },
+  "whatsapp": "2.26.35.75"
+}
