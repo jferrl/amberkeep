@@ -394,8 +394,12 @@ export function getMigration(options: Cancellable = {}): Promise<Migration> {
  * Fetched rather than written into this page. The sentences live in the program, and
  * a copy here would drift from that one the first time anybody corrected a word.
  */
-export function getGuide(options: Cancellable = {}): Promise<Guide> {
-  return ask<Guide>(`${api}/migration/guide`, narrow({}), options);
+export function getGuide(language: string, options: Cancellable = {}): Promise<Guide> {
+  // Asked for rather than left to a header. This page knows what its reader reads,
+  // because they are reading the rest of it; the server knows only what a browser
+  // claims, and restore instructions in the wrong language are worse than ones in a
+  // language somebody has already accepted.
+  return ask<Guide>(`${api}/migration/guide`, narrow({ lang: language }), options);
 }
 
 /** checkBackup looks at a backup, and stops. */

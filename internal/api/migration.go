@@ -254,21 +254,13 @@ func (m *migration) state() map[string]any {
 // Sent rather than duplicated in the frontend, because it is the one place these
 // words live and a copy in TypeScript would drift from the copy in Go the first time
 // somebody corrected a sentence.
-func guidance() []map[string]any {
-	stages := []struct {
-		stage   guide.Stage
-		heading string
-	}{
-		{guide.Before, "Before you restore"},
-		{guide.Restoring, "Restoring, and what you will see"},
-		{guide.After, "Once the phone comes back"},
-		{guide.Wrong, "If it did not work"},
-	}
+func guidance(lang guide.Language) []map[string]any {
+	stages := []guide.Stage{guide.Before, guide.Restoring, guide.After, guide.Wrong}
 
 	out := make([]map[string]any, 0, len(stages))
-	for _, s := range stages {
+	for _, stage := range stages {
 		steps := make([]map[string]any, 0, 8)
-		for _, step := range guide.At(s.stage) {
+		for _, step := range guide.At(stage, lang) {
 			one := map[string]any{"id": step.ID, "title": step.Title, "body": step.Body}
 			if step.Expect != "" {
 				one["expect"] = step.Expect
@@ -282,7 +274,7 @@ func guidance() []map[string]any {
 			steps = append(steps, one)
 		}
 		out = append(out, map[string]any{
-			"stage": string(s.stage), "heading": s.heading, "steps": steps,
+			"stage": string(stage), "heading": guide.Heading(stage, lang), "steps": steps,
 		})
 	}
 	return out

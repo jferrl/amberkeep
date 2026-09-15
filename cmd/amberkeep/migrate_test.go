@@ -105,8 +105,14 @@ func TestTheCommandCanShowEveryStage(t *testing.T) {
 	for _, stage := range []guide.Stage{guide.Before, guide.Restoring, guide.After, guide.Wrong} {
 		t.Run(string(stage), func(t *testing.T) {
 			t.Parallel()
-			if heading := headingFor(stage); heading == string(stage) {
-				t.Errorf("%s has no heading of its own, so it shows as %q", stage, heading)
+
+			// In both languages. A stage with no heading falls back to its own
+			// identifier, which is how a screen ends up saying "restoring" at
+			// somebody in the middle of restoring.
+			for _, lang := range []guide.Language{guide.English, guide.Spanish} {
+				if heading := guide.Heading(stage, lang); heading == string(stage) || heading == "" {
+					t.Errorf("%s has no %s heading, so it shows as %q", stage, lang, heading)
+				}
 			}
 		})
 	}

@@ -13,8 +13,8 @@ import (
 func TestEveryStepIsUsable(t *testing.T) {
 	t.Parallel()
 
-	seen := make(map[string]bool, len(Steps()))
-	for _, step := range Steps() {
+	seen := make(map[string]bool, len(Steps(English)))
+	for _, step := range Steps(English) {
 		t.Run(step.ID, func(t *testing.T) {
 			if step.ID == "" {
 				t.Fatal("a step has no identifier, so nothing can refer to it")
@@ -41,7 +41,7 @@ func TestTheStagesAreAllThere(t *testing.T) {
 	for _, stage := range []Stage{Before, Restoring, After, Wrong} {
 		t.Run(string(stage), func(t *testing.T) {
 			t.Parallel()
-			if len(At(stage)) == 0 {
+			if len(At(stage, English)) == 0 {
 				t.Errorf("nothing is said about %s at all", stage)
 			}
 		})
@@ -59,7 +59,7 @@ func TestTheThingsThatLoseDataAreMarked(t *testing.T) {
 
 	want := map[string]bool{"safety-backup": true, "health-data-goes": true, "decline-icloud": true}
 
-	for _, step := range Critical() {
+	for _, step := range Critical(English) {
 		if !want[step.ID] {
 			t.Errorf("%q is marked as losing something if skipped, and does not: the mark "+
 				"means nothing if everything important carries it", step.ID)
@@ -74,10 +74,10 @@ func TestTheThingsThatLoseDataAreMarked(t *testing.T) {
 func TestFindingOneStep(t *testing.T) {
 	t.Parallel()
 
-	if _, ok := Find("decline-icloud"); !ok {
+	if _, ok := Find("decline-icloud", English); !ok {
 		t.Error("the step that undoes the whole migration in one tap cannot be found")
 	}
-	if _, ok := Find("no-such-step"); ok {
+	if _, ok := Find("no-such-step", English); ok {
 		t.Error("it found a step that does not exist")
 	}
 }
@@ -85,11 +85,11 @@ func TestFindingOneStep(t *testing.T) {
 func TestRenderingAStep(t *testing.T) {
 	t.Parallel()
 
-	step, ok := Find("safety-backup")
+	step, ok := Find("safety-backup", English)
 	if !ok {
 		t.Fatal("the step is gone")
 	}
-	said := step.Render()
+	said := step.Render(English)
 
 	for _, want := range []string{step.Title, "do not skip", "What you will see:", "about 30 minutes"} {
 		if !strings.Contains(said, want) {
@@ -117,8 +117,8 @@ func TestHowLongThingsTakeIsSaidInWords(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if got := plainDuration(tt.give); got != tt.want {
-				t.Errorf("plainDuration(%s) = %q, want %q", tt.give, got, tt.want)
+			if got := plainDuration(tt.give, English); got != tt.want {
+				t.Errorf("plainDuration(%s, English) = %q, want %q", tt.give, got, tt.want)
 			}
 		})
 	}

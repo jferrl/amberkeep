@@ -1,0 +1,91 @@
+{
+  "chrome": {
+    "anHour": "una hora",
+    "critical": "no te lo saltes",
+    "expect": "Lo que vas a ver",
+    "hours": "%d horas",
+    "minutes": "%d minutos",
+    "seconds": "%d segundos",
+    "takes": "Esto lleva unos %s."
+  },
+  "stages": {
+    "after": "Cuando el teléfono vuelva",
+    "before": "Antes de restaurar",
+    "restoring": "La restauración, y lo que vas a ver",
+    "wrong": "Si no ha funcionado"
+  },
+  "steps": {
+    "apps-and-passcode": {
+      "body": "Las aplicaciones se descargan otra vez de la App Store en vez de restaurarse,\nasí que el teléfono necesita la contraseña del ID de Apple y Wi-Fi, y durante\nun rato se verá medio vacío. El código de acceso no queda puesto: vuelve a\nponerlo.\n\nLas contraseñas guardadas, las redes Wi-Fi y los datos de Salud no están, por\nel motivo que se explicó antes de empezar nada de esto.",
+      "title": "El teléfono se termina de arreglar solo"
+    },
+    "check-it-worked": {
+      "body": "Cuatro cosas, en un minuto:\n\n  * El número de conversaciones tiene buena pinta.\n  * Abre la conversación más antigua que hayas movido y mira su primer mensaje.\n    La fecha debería ser la que decía el informe.\n  * Salen nombres en vez de números de teléfono, en las conversaciones que los\n    tenían.\n  * Las fotos que han venido aparecen como una línea de texto que dice qué se\n    envió. Es lo esperado: los archivos en sí no están en la copia.\n\nSi alguna de esas cosas está mal, no hagas otra copia de seguridad. La copia\narchivada sigue siendo el camino de vuelta, y hacer una copia ahora es\nprecisamente lo que la estropearía.",
+      "title": "Comprueba que de verdad ha funcionado"
+    },
+    "decline-icloud": {
+      "body": "Cuando se abra WhatsApp puede ofrecerte restaurar tu historial de chats desde\niCloud.\n\nRecházalo.\n\nAceptar reemplaza el historial de mensajes entero —incluido todo lo que se acaba\nde unir— por lo que sea que tenga iCloud. Esta es la única forma de deshacer\ntodo el trabajo con un solo toque, y se ofrece como si fuera una ayuda.",
+      "expect": "WhatsApp se abre en la lista de conversaciones con el historial unido dentro.",
+      "title": "Di que no a restaurar los chats desde iCloud"
+    },
+    "encryption-off": {
+      "body": "En Finder, con el teléfono seleccionado, desmarca «Encriptar copia de seguridad\nlocal».\n\nTe pedirá la contraseña que acabas de poner. Esto no borra la copia archivada:\nesa sigue encriptada y sigue donde está.",
+      "expect": "la marca desaparece. Puede que Finder empiece una copia nueva por su cuenta;\ndéjala terminar.",
+      "title": "Desactiva las copias encriptadas"
+    },
+    "error-211": {
+      "body": "Buscar mi iPhone seguía activado. No se escribió nada en el teléfono y no se ha\nperdido nada.\n\nDesactívalo y empieza la restauración otra vez.",
+      "title": "Si la restauración se paró con el error 211"
+    },
+    "find-my-back-on": {
+      "body": "Ajustes, tu nombre, Buscar, Buscar mi iPhone, activado.\n\nUn teléfono sin esto es un teléfono que no se puede encontrar ni borrar si se\npierde. Se desactivó durante una hora y por un motivo, y este es ese motivo\nterminando.",
+      "title": "Vuelve a activar Buscar mi iPhone"
+    },
+    "find-my-off": {
+      "body": "En el teléfono: Ajustes, tu nombre arriba del todo, Buscar, Buscar mi iPhone, y\ndesactívalo. Te pedirá la contraseña del ID de Apple.\n\nUna restauración con Buscar todavía activado se para justo al final con «error\n211» y nada más. No se escribe nada y no se pierde nada, pero es una hora\ngastada a cambio de un número en vez de una frase.\n\nApunta que lo has desactivado. Hay que volver a activarlo después, y para\nentonces es fácil olvidar que llegó a estar apagado.",
+      "expect": "el interruptor se pone gris y el teléfono lo confirma.",
+      "title": "Desactiva Buscar mi iPhone"
+    },
+    "fresh-backup": {
+      "body": "Haz otra copia en este Mac. Esta es la copia que se va a modificar y a\nrestaurar, y tiene que ser reciente: lo que se diga en el teléfono a partir de\naquí no estará dentro y se perderá al restaurar.\n\nNo digas nada por el teléfono desde ahora hasta que la restauración termine.",
+      "expect": "Finder muestra una fecha nueva sin candado al lado.",
+      "title": "Vuelve a hacer una copia, esta vez sin encriptar"
+    },
+    "go-back": {
+      "body": "La copia encriptada que archivaste en el primer paso es el camino de vuelta, y\nestá completa: todo como estaba, con los datos de Salud y las contraseñas\nincluidos.\n\nEn Finder, con el teléfono seleccionado, elige Restaurar copia de seguridad y\nselecciona la archivada. Te pedirá la contraseña que pusiste al principio.\n\nHaz esto antes de hacer ninguna copia nueva. Una copia nueva no sobrescribe una\narchivada, pero no merece la pena comprobar lo contrario estando disgustado.",
+      "title": "Volver atrás"
+    },
+    "health-data-goes": {
+      "body": "La copia desde la que se restaura tiene que estar sin encriptar, porque una\nencriptada está sellada con una clave que nunca sale del teléfono y no hay nada\nen un ordenador que pueda abrirla.\n\nUna copia sin encriptar no contiene los datos de Salud, ni las contraseñas\nguardadas, ni las redes Wi-Fi, ni el llavero. Restaurarla significa perder eso,\ny no hay forma de evitarlo: es cómo lo ha diseñado Apple, no una limitación de\neste programa.\n\nSi los datos de Salud importan más que el historial de mensajes, párate aquí. La\ncopia encriptada que archivaste en el paso anterior lo tiene todo, y restaurarla\ndeja el teléfono exactamente como está ahora.",
+      "expect": "nada todavía. Esto es una decisión, no una acción.",
+      "title": "Ten claro lo que no lleva una copia sin encriptar"
+    },
+    "looks-stalled": {
+      "body": "A media restauración, el teléfono muestra el logotipo de Apple con una barra de\nprogreso que no se mueve durante un buen rato. Es normal y es la parte más\nlarga.\n\nNo lo desconectes. No mantengas pulsado el botón de encendido. Un teléfono\ninterrumpido aquí es un teléfono que hay que restaurar otra vez desde el\nprincipio.",
+      "expect": "la barra acaba moviéndose, el teléfono se reinicia por segunda vez y aparece el\nAsistente de Configuración preguntando por el idioma y el Wi-Fi.",
+      "title": "La parte que parece que se ha colgado"
+    },
+    "power-and-space": {
+      "body": "El teléfono con su cable y el ordenador enchufado a la corriente. Una\nrestauración interrumpida por quedarse sin batería es la única forma de que\nesto salga realmente mal.\n\nEl ordenador necesita espacio libre para una segunda copia de la copia de\nseguridad, que ocupa lo mismo que la primera.",
+      "title": "Enchufa los dos y comprueba que hay sitio"
+    },
+    "reverify-number": {
+      "body": "A veces pide verificar el número por mensaje de texto. Deja la SIM en el\nteléfono hasta que esto termine, o el mensaje no podrá llegar.\n\nVerificar el número no toca los mensajes que ya están ahí.",
+      "title": "WhatsApp puede pedirte otra vez el número"
+    },
+    "safety-backup": {
+      "body": "Conecta el teléfono, abre Finder, elige el teléfono en la barra lateral y haz\nuna copia en este Mac con «Encriptar copia de seguridad local» ACTIVADO. Pon\nuna contraseña que no vayas a perder.\n\nDespués haz clic derecho en esa copia, en la lista de Finder, y elige Archivar.\n\nArchivar es la parte que la gente se salta y la que importa. Finder guarda una\nsola copia por teléfono y la sobrescribe la próxima vez. Sin archivarla, la\nsiguiente copia —la que este proceso está a punto de hacer— reemplaza el único\nejemplar de cómo estaba todo. Archivarla la pone donde Finder no la toca.\n\nEncriptada, porque solo una copia encriptada lleva los datos de Salud, las\ncontraseñas guardadas y las redes Wi-Fi. Esta es la copia a la que volverías.",
+      "expect": "la copia aparece en la lista de Finder con un candado y una fecha. Comprueba que\nel candado está ahí antes de seguir: sin candado no se encriptó, y los datos de\nSalud y las contraseñas no están dentro.",
+      "title": "Haz una copia de seguridad y archívala"
+    },
+    "start-restore": {
+      "body": "En Finder, con el teléfono seleccionado, elige Restaurar copia de seguridad y\nselecciona la que ha hecho este programa. Su fecha es la de hoy.\n\nNada de lo que hagas en el ordenador a partir de aquí cambia el resultado. Se\nestá escribiendo en el teléfono: déjalo conectado y no lo toques.",
+      "expect": "primero una barra de progreso en el ordenador, y después «Restauración en curso»\nen el teléfono.",
+      "title": "Restaura la copia modificada"
+    },
+    "wrong-backup": {
+      "body": "Finder lista las copias por dispositivo y fecha. La modificada es una copia de\nla original con la fecha de hoy, en el mismo sitio donde Finder guarda las\ndemás.\n\nSi no aparece, es que Finder no se ha dado cuenta. Sal de Finder y vuelve a\nabrirlo con el teléfono conectado.",
+      "title": "Si Finder no muestra la copia modificada"
+    }
+  }
+}

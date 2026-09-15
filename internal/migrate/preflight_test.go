@@ -43,7 +43,7 @@ func TestEveryFindingPointsAtSomethingThatExists(t *testing.T) {
 			t.Error("a finding names no step, so nothing can say what to do about it")
 			continue
 		}
-		if _, ok := guide.Find(step); !ok {
+		if _, ok := guide.Find(step, guide.English); !ok {
 			t.Errorf("a finding points at %q, and the guide has no such step", step)
 		}
 	}

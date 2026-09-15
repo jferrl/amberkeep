@@ -1,6 +1,6 @@
 import type { GuideStage, Migration } from "@/api/types";
 import { Button } from "@/components/ui/button";
-import { Guide, NotTranslated } from "@/components/migration/Guide";
+import { Guide } from "@/components/migration/Guide";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
@@ -68,7 +68,6 @@ export function MigrationDone({
         <Say>{t("migrateUnprovenHelp")}</Say>
       </Aside>
 
-      <NotTranslated language={language} />
       <Guide stages={stages} />
 
       <div>

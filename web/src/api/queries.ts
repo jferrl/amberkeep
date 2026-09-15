@@ -434,18 +434,18 @@ export function useMigration() {
  * It cannot change while this page is open: it is compiled into the program serving
  * the page. Asking for it again would be asking the same question of the same binary.
  */
-export function guideQuery() {
+export function guideQuery(language: string) {
   return queryOptions({
-    queryKey: queryKeys.guide,
-    queryFn: ({ signal }) => getGuide({ signal }),
+    queryKey: [...queryKeys.guide, language] as const,
+    queryFn: ({ signal }) => getGuide(language, { signal }),
     staleTime: neverStale,
     gcTime: neverStale,
   });
 }
 
 /** useGuide is what somebody has to be told, in the order they need it. */
-export function useGuide() {
-  return useQuery(guideQuery());
+export function useGuide(language: string) {
+  return useQuery(guideQuery(language));
 }
 
 /**

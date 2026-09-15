@@ -1,5 +1,4 @@
 import type { GuideStage, GuideStep } from "@/api/types";
-import { Aside, Say } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 
 /**
@@ -73,17 +72,5 @@ export function Step({ step, number }: { step: GuideStep; number: number }) {
         </p>
       )}
     </article>
-  );
-}
-
-/** A note that the guidance has not been translated yet, shown only when it matters. */
-export function NotTranslated({ language }: { language: string }) {
-  const t = useT();
-  if (language === "en") return null;
-
-  return (
-    <Aside heading={t("guideEnglishOnly")}>
-      <Say>{t("migrateUnprovenHelp")}</Say>
-    </Aside>
   );
 }

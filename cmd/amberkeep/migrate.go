@@ -64,10 +64,24 @@ func runMigrate(ctx context.Context, args []string) error {
 		hidden   = fs.Bool("hidden", false, "include conversations that exist only behind a hidden identity")
 		only     = fs.String("only", "", "move only this conversation, by address; the way to try one first")
 		write    = fs.Bool("write", false, "actually write, after typing the confirmation")
+		printed  = fs.Bool("guide", false, "print the restore instructions and stop, for reading away from the screen")
 	)
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+
+	// The whole guide, on its own. Somebody about to do this on a phone they depend
+	// on may reasonably want it on paper, or in front of them on a second screen,
+	// before anything has been chosen — and every other way to reach it requires
+	// starting a migration first.
+	if *printed {
+		told := os.Stdout
+		for _, stage := range []guide.Stage{guide.Before, guide.Restoring, guide.After, guide.Wrong} {
+			show(told, stage, spoken())
+		}
+		return nil
+	}
+
 	if *android == "" || *backup == "" {
 		fs.Usage()
 		return fmt.Errorf("both --android and --backup are needed")
@@ -103,11 +117,11 @@ func runMigrate(ctx context.Context, args []string) error {
 	if !*write {
 		fmt.Fprintf(told, "\nNothing has been written. This is what would happen.\n\n")
 		fmt.Fprintf(told, "To do it, read what follows, then run the same command again with --write.\n")
-		show(told, guide.Before)
+		show(told, guide.Before, spoken())
 		return nil
 	}
 
-	show(told, guide.Before)
+	show(told, guide.Before, spoken())
 	if err := confirm(asked, told); err != nil {
 		return err
 	}
@@ -159,10 +173,10 @@ func carryOut(ctx context.Context, from source.Archive, store string, plan migra
 	}
 
 	fmt.Fprintf(told, "\nDone. Nothing has touched the phone.\n")
-	show(told, guide.Restoring)
-	show(told, guide.After)
+	show(told, guide.Restoring, spoken())
+	show(told, guide.After, spoken())
 	fmt.Fprintf(told, "\nIf something goes wrong:\n")
-	show(told, guide.Wrong)
+	show(told, guide.Wrong, spoken())
 	return nil
 }
 
@@ -187,30 +201,14 @@ func confirm(in io.Reader, out io.Writer) error {
 }
 
 // show prints the steps of one stage.
-func show(w io.Writer, stage guide.Stage) {
-	steps := guide.At(stage)
+func show(w io.Writer, stage guide.Stage, lang guide.Language) {
+	steps := guide.At(stage, lang)
 	if len(steps) == 0 {
 		return
 	}
-	fmt.Fprintf(w, "\n%s\n%s\n", strings.ToUpper(headingFor(stage)), strings.Repeat("─", 64))
+	fmt.Fprintf(w, "\n%s\n%s\n", strings.ToUpper(guide.Heading(stage, lang)), strings.Repeat("─", 64))
 	for i, step := range steps {
-		fmt.Fprintf(w, "\n%d. %s\n", i+1, indent(step.Render()))
-	}
-}
-
-// headingFor names a stage the way somebody reading it would.
-func headingFor(stage guide.Stage) string {
-	switch stage {
-	case guide.Before:
-		return "Before you restore"
-	case guide.Restoring:
-		return "Restoring, and what you will see"
-	case guide.After:
-		return "Once the phone comes back"
-	case guide.Wrong:
-		return "If it did not work"
-	default:
-		return string(stage)
+		fmt.Fprintf(w, "\n%d. %s\n", i+1, indent(step.Render(spoken())))
 	}
 }
 
@@ -260,8 +258,8 @@ func reportReadiness(w io.Writer, ready migrate.Readiness) {
 	if blockers := ready.Blockers(); len(blockers) > 0 {
 		fmt.Fprintf(w, "\nWhat to do:\n")
 		for _, f := range blockers {
-			if step, ok := guide.Find(f.Step); ok {
-				fmt.Fprintf(w, "\n%s\n", indent("  "+step.Render()))
+			if step, ok := guide.Find(f.Step, spoken()); ok {
+				fmt.Fprintf(w, "\n%s\n", indent("  "+step.Render(spoken())))
 			}
 		}
 	}
@@ -314,4 +312,18 @@ func patchBackup(ctx context.Context, backup, into, store string) (backupfs.Patc
 		RelativePath: app.ChatStorage,
 		With:         store,
 	})
+}
+
+// spoken is the language this terminal reads.
+//
+// Taken from the environment rather than asked for: somebody running a command has
+// already told their system what they read, and asking again would be a flag nobody
+// sets. LC_ALL wins over LANG, which is the order every other program uses.
+func spoken() guide.Language {
+	for _, name := range []string{"LC_ALL", "LC_MESSAGES", "LANG"} {
+		if tag := os.Getenv(name); tag != "" {
+			return guide.Spoken(tag)
+		}
+	}
+	return guide.English
 }

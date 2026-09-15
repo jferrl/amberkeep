@@ -3,6 +3,8 @@ package api
 import (
 	"context"
 	"net/http"
+
+	"github.com/jferrl/amberkeep/internal/guide"
 )
 
 // The endpoints a migration uses.
@@ -20,11 +22,16 @@ func (s *server) handleMigration(w http.ResponseWriter, r *http.Request) {
 
 // handleGuide returns what somebody has to be told, and when.
 //
-// Served rather than written into the page, because these words live in one place and
-// a copy in the frontend would drift from this one the first time anybody corrected a
-// sentence.
+// Served rather than written into the page, because these words live in one place —
+// now a catalogue per language beside the steps themselves — and a copy in the
+// frontend would drift from this one the first time anybody corrected a sentence.
+//
+// The language is asked for rather than guessed. The page knows what its reader
+// reads; this server knows only what a header claims, and a restore instruction in
+// the wrong language is worse than one in a language somebody has already accepted.
 func (s *server) handleGuide(w http.ResponseWriter, r *http.Request) {
-	write(w, r, map[string]any{"stages": guidance()})
+	lang := guide.Spoken(r.URL.Query().Get("lang"))
+	write(w, r, map[string]any{"stages": guidance(lang)})
 }
 
 // handleCheck looks at a backup: whether it can be used at all, and what has to be

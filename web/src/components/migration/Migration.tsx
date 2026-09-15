@@ -69,7 +69,7 @@ export function Migration({
   onLeave: () => void;
 }) {
   const state = useMigration();
-  const guide = useGuide();
+  const guide = useGuide(language);
   const step = useMigrationStep();
 
   const [paths, setPaths] = useState<Paths>({
