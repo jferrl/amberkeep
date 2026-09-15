@@ -13,10 +13,13 @@ package thanks
 
 // Address is where to say it.
 //
-// Empty until there is somewhere, and everything that would show it shows nothing
-// while it is. A program that points somebody at a page that does not exist has
-// spent the only goodwill this line was ever going to earn.
-const Address = ""
+// Empty means there is nowhere, and everything that would show it shows nothing —
+// a program that points somebody at a page which does not exist has spent the only
+// goodwill this line was ever going to earn. It is written in full, scheme and all,
+// because a terminal makes an address clickable and a page needs one to link to;
+// what is shown to a person is the address without the scheme, which is how anybody
+// would write it down.
+const Address = "https://ko-fi.com/jferrl"
 
 // Asked reports whether there is anywhere to point somebody.
 func Asked() bool { return Address != "" }

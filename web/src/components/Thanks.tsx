@@ -1,4 +1,5 @@
 import { useT } from "@/i18n";
+import { outside } from "@/lib/desktop";
 
 /**
  * The one line this program has about money.
@@ -20,7 +21,24 @@ export function Thanks({ where }: { where: string | undefined }) {
 
   return (
     <p className="m-0 text-[0.8125rem] text-[var(--color-muted)]">
-      {t("thanksAsk", { where })}
+      {t("thanksAsk", { where: readable(where) })}{" "}
+      <a
+        href={where}
+        className="underline decoration-[var(--color-edge)] underline-offset-4 hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]"
+        onClick={(event) => {
+          // Never followed in place. In a window that would replace the program
+          // with a web page and leave somebody with no way back.
+          event.preventDefault();
+          outside(where);
+        }}
+      >
+        {readable(where)}
+      </a>
     </p>
   );
+}
+
+/** readable is the address as somebody would write it down, without the scheme. */
+function readable(address: string): string {
+  return address.replace(/^https?:\/\//, "");
 }

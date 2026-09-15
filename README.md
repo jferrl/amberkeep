@@ -270,8 +270,8 @@ another phone: all of it, with no account and no key.
 There is one line in the whole program about money, shown when an archive has been
 written out and when a migration has produced the backup — the two moments when
 something that mattered has just worked — and it says you can buy the author a coffee
-if you would like to. Suggested ten euros. Nothing is withheld, nothing is counted,
-and it is never mentioned again.
+if you would like to: [ko-fi.com/jferrl](https://ko-fi.com/jferrl), suggested ten
+euros. Nothing is withheld, nothing is counted, and it is never mentioned again.
 
 [Why it is free](docs/WHAT_IT_COSTS.md) · [what is next](docs/ROADMAP.md) ·
 [legal notices](docs/LEGAL_NOTICES.md)

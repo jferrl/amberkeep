@@ -109,3 +109,29 @@ export function asking(hear: (what: Asked) => void): () => void {
       (off as (name: string) => void)("amberkeep:menu");
   };
 }
+
+/**
+ * outside opens an address in the person's own browser.
+ *
+ * Always through here, never a plain link. In a window there is no address bar and
+ * no way back: a link followed in place would replace the program with a web page
+ * and strand somebody who only wanted to look at something. Wails has a call for
+ * handing an address to the operating system, and when it is absent — which is to
+ * say in a browser — a new tab is the same thing by other means.
+ *
+ * This is not the program fetching anything. Nothing is requested here; an address
+ * is handed to something else, because somebody clicked it.
+ */
+export function outside(address: string): void {
+  const wails = (
+    window as {
+      runtime?: { BrowserOpenURL?: (url: string) => void };
+    }
+  ).runtime;
+
+  if (typeof wails?.BrowserOpenURL === "function") {
+    wails.BrowserOpenURL(address);
+    return;
+  }
+  window.open(address, "_blank", "noopener,noreferrer");
+}

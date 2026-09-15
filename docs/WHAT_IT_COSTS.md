@@ -13,18 +13,18 @@ licence key at the moment they get their conversations back is not a business mo
 
 ## If it helped
 
-There is one line in the whole program about money, and at the moment there is nowhere
-for it to point, so it does not appear at all.
+There is one line in the whole program about money. It appears when an archive has been
+written out, and when a migration has produced the backup — the two moments when
+something that mattered has just worked — and it says you can buy the author a coffee
+if you would like to:
 
-When there is, it will appear when an archive has been written out and when a migration
-has produced the backup — the two moments when something that mattered has just worked
-— and it will say you can buy the author a coffee if you would like to. **Suggested ten
-euros.**
+**<https://ko-fi.com/jferrl>** · suggested ten euros
 
-Why not yet: receiving money in Spain raises questions about income tax and about
-compulsory self-employment contributions that are worth more per month than this is
-ever likely to earn. Until somebody qualified has answered them, the honest thing is to
-take nothing rather than to take it carelessly.
+It is voluntary in the way that word is supposed to mean: nothing is withheld, nothing
+is counted, nothing is remembered, and the program never mentions it again. It is not
+shown when something has failed, which would be asking somebody to pay for a
+disappointment. Clicking it opens your own browser; the program itself still contacts
+nothing.
 
 It is voluntary in the way that word is supposed to mean: nothing is withheld, nothing
 is counted, nothing is remembered, and the program never mentions it again. It is not

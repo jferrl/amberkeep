@@ -29,24 +29,22 @@ at the two moments when something that mattered has just worked. The reasoning i
 | | What | State |
 |---|---|---|
 | 1 | Decide what this costs | done — nothing |
-| 2 | Find out what receiving money would actually oblige | **the blocker**, and not a programming one |
-| 3 | Somewhere to say thanks: a Ko-fi page, suggested ten euros | after 2 |
-| 4 | Put its address in `thanks.Address` | one line, after 3 |
-| 5 | Signing certificates, if any ever arrives | the first thing worth buying, because it protects the person downloading rather than the revenue |
+| 2 | Somewhere to say thanks | done — <https://ko-fi.com/jferrl> |
+| 3 | Put its address in `thanks.Address` | done |
+| 4 | Ask somebody qualified what receiving it obliges | outstanding, and not a programming question |
+| 5 | Signing certificates, if enough ever arrives | the first thing worth buying, because it protects the person downloading rather than the revenue |
 
-Step 2 is why the rest is waiting, and it is arithmetic rather than reluctance.
+Step 4 is the one left and it is worth an hour of somebody's professional time rather
+than an afternoon of reading. A voluntary contribution with nothing given in return is
+outside VAT — which is why the line offers nothing in exchange and never will — but it
+is not outside income tax, and Spain then asks two questions with no settled answer:
+whether money received for a published program is a rendimiento de actividad económica
+in IRPF or a donation under ISD, and whether receiving it habitually obliges the author
+into RETA.
 
-A voluntary contribution with nothing given in return is outside VAT, which is why the
-line offers nothing in exchange and never will. What it is *not* outside is income tax.
-Spain then asks two questions that have no settled answer: whether money received for a
-published program is a rendimiento de actividad económica in IRPF or a donation under
-ISD, and whether receiving it habitually obliges the author into RETA — whose minimum
-contribution is larger than this is ever likely to earn in a month.
-
-So the position is: take nothing until that is answered by somebody qualified to answer
-it, which is an hour with a gestor rather than an afternoon of reading. `thanks.Address`
-stays empty, both places that would show the line show nothing, and the program is
-finished either way. Nothing here is waiting on the money.
+None of that is in the way of anybody using this. The program asks for nothing, shows
+one line at two good moments, and works the same whether or not a single coffee ever
+arrives.
 
 ## The legal side
 
