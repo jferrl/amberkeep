@@ -13,12 +13,18 @@ licence key at the moment they get their conversations back is not a business mo
 
 ## If it helped
 
-There is one line in the whole program about money. It appears when an archive has been
-written out, and when a migration has produced the backup — the two moments when
-something that mattered has just worked — and it says you can buy the author a coffee
-if you would like to.
+There is one line in the whole program about money, and at the moment there is nowhere
+for it to point, so it does not appear at all.
 
-**Suggested ten euros**, with five and twenty-five also on the page.
+When there is, it will appear when an archive has been written out and when a migration
+has produced the backup — the two moments when something that mattered has just worked
+— and it will say you can buy the author a coffee if you would like to. **Suggested ten
+euros.**
+
+Why not yet: receiving money in Spain raises questions about income tax and about
+compulsory self-employment contributions that are worth more per month than this is
+ever likely to earn. Until somebody qualified has answered them, the honest thing is to
+take nothing rather than to take it carelessly.
 
 It is voluntary in the way that word is supposed to mean: nothing is withheld, nothing
 is counted, nothing is remembered, and the program never mentions it again. It is not

@@ -29,14 +29,24 @@ at the two moments when something that mattered has just worked. The reasoning i
 | | What | State |
 |---|---|---|
 | 1 | Decide what this costs | done — nothing |
-| 2 | Somewhere to say thanks: a Ko-fi or Buy Me a Coffee page, suggested ten euros | needs an account, which needs a person with a bank |
-| 3 | Put its address in `thanks.Address` | one line, after 2 |
-| 4 | Signing certificates, if any money ever arrives | the first thing worth buying, because it protects the person downloading rather than the revenue |
+| 2 | Find out what receiving money would actually oblige | **the blocker**, and not a programming one |
+| 3 | Somewhere to say thanks: a Ko-fi page, suggested ten euros | after 2 |
+| 4 | Put its address in `thanks.Address` | one line, after 3 |
+| 5 | Signing certificates, if any ever arrives | the first thing worth buying, because it protects the person downloading rather than the revenue |
 
-Steps 2 and 3 are the whole of it. Until then `thanks.Address` is empty and both
-places that would show the line show nothing, because a program that points somebody
-at a page which does not exist has spent the only goodwill that line was ever going
-to earn.
+Step 2 is why the rest is waiting, and it is arithmetic rather than reluctance.
+
+A voluntary contribution with nothing given in return is outside VAT, which is why the
+line offers nothing in exchange and never will. What it is *not* outside is income tax.
+Spain then asks two questions that have no settled answer: whether money received for a
+published program is a rendimiento de actividad económica in IRPF or a donation under
+ISD, and whether receiving it habitually obliges the author into RETA — whose minimum
+contribution is larger than this is ever likely to earn in a month.
+
+So the position is: take nothing until that is answered by somebody qualified to answer
+it, which is an hour with a gestor rather than an afternoon of reading. `thanks.Address`
+stays empty, both places that would show the line show nothing, and the program is
+finished either way. Nothing here is waiting on the money.
 
 ## The legal side
 
