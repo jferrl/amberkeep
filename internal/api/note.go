@@ -87,3 +87,15 @@ func (n Note) Counting(of string, x int) Note {
 	n.Counts = append(append([]Count(nil), n.Counts...), Count{Of: of, N: x})
 	return n
 }
+
+// Trouble is why something a page asked for could not be answered: one sentence, and
+// the name of the advice that goes with it when there is any.
+//
+// Returned rather than raised, because "there are no backups" and "this program is
+// not allowed to look" are the same empty list and entirely different situations.
+type Trouble struct {
+	// Said is the sentence, in the program's own English.
+	Said string
+	// Guidance names what to do about it, for the page to say in its own language.
+	Guidance string
+}

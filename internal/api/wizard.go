@@ -51,8 +51,14 @@ func (s *server) handleBackups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body := map[string]any{"backups": backups, "looked": looked}
-	if problem != "" {
-		body["problem"] = problem
+	if problem.Said != "" {
+		body["problem"] = problem.Said
+	}
+	// The name of what to do about it rather than the words: the page reads in
+	// whichever language its reader chose, and it already has the words for every
+	// failure somebody can act on.
+	if problem.Guidance != "" {
+		body["guidance"] = problem.Guidance
 	}
 	write(w, r, body)
 }

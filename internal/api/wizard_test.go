@@ -26,7 +26,7 @@ import (
 // helper is an importer the tests drive.
 type helper struct {
 	backups []Backup
-	problem string
+	problem Trouble
 	// nowhere makes this a platform Apple ships nothing for, where there is no
 	// folder to look in rather than no backup in the folder.
 	nowhere bool
@@ -55,7 +55,7 @@ type helper struct {
 	saw   []string
 }
 
-func (h *helper) Backups() (backups []Backup, problem string) { return h.backups, h.problem }
+func (h *helper) Backups() (backups []Backup, problem Trouble) { return h.backups, h.problem }
 
 func (h *helper) Locations() []string {
 	if h.nowhere {
@@ -253,11 +253,19 @@ func TestListingTheBackupsOnThisComputer(t *testing.T) {
 	// completely different situations, and only one of them is worth acting on.
 	t.Run("a folder that could not be read is said out loud", func(t *testing.T) {
 		t.Parallel()
-		handler := wizard(t, &helper{problem: "Full Disk Access has not been granted"})
+		handler := wizard(t, &helper{problem: Trouble{
+			Said:     "Full Disk Access has not been granted",
+			Guidance: "backupfs.permission-denied",
+		}})
 
 		body := ask(t, handler, "/api/backups")
 		if body["problem"] != "Full Disk Access has not been granted" {
 			t.Errorf("problem = %v", body["problem"])
+		}
+		// And what to do about it by name, not in words: the page says that part in
+		// whichever language its reader chose.
+		if body["guidance"] != "backupfs.permission-denied" {
+			t.Errorf("guidance = %v", body["guidance"])
 		}
 		if found, ok := body["backups"].([]any); !ok || len(found) != 0 {
 			t.Errorf("backups = %v, want an empty list rather than null", body["backups"])

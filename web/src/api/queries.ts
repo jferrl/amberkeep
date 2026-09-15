@@ -22,6 +22,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 
+import type { Advice } from "./types";
 import type { Cancellable } from "./client";
 import {
   closeArchive,
@@ -277,6 +278,7 @@ export function useBackups(enabled = true) {
 export function useOfferedBackups(): {
   situation: Situation;
   problem: string | undefined;
+  guidance: string | undefined;
 } {
   const backups = useBackups();
 
@@ -293,6 +295,7 @@ export function useOfferedBackups(): {
       backups.data?.looked,
     ),
     problem,
+    guidance: backups.data?.guidance,
   };
 }
 
@@ -458,6 +461,19 @@ function adviceQuery(language: string) {
     staleTime: neverStale,
     gcTime: neverStale,
   });
+}
+
+/**
+ * useWhatToDo is the advice for one named failure, or nothing when the program
+ * named none. A failure with no advice gets its own sentence and nothing else,
+ * which is honest: there is something useful to say or there is not.
+ */
+export function useWhatToDo(
+  guidance: string | undefined,
+  language: string,
+): Advice | undefined {
+  const advice = useAdvice(language);
+  return guidance === undefined ? undefined : advice.data?.[guidance];
 }
 
 /**

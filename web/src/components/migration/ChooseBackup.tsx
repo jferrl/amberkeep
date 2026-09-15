@@ -1,6 +1,7 @@
-import { useBackups, useOfferedBackups } from "@/api/queries";
+import { useBackups, useOfferedBackups, useWhatToDo } from "@/api/queries";
 import type { Backup } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { Prose } from "@/components/wizard/Prose";
 import { Aside, Say } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
@@ -36,11 +37,18 @@ export function ChooseBackup({
 }) {
   const t = useT();
   const backups = useBackups();
-  const { situation, problem } = useOfferedBackups();
+  const { situation, problem, guidance } = useOfferedBackups();
   const found = backups.data?.backups ?? [];
 
   if (situation !== "some")
-    return <Nothing situation={situation} said={problem ?? ""} />;
+    return (
+      <Nothing
+        situation={situation}
+        said={problem ?? ""}
+        guidance={guidance}
+        language={language}
+      />
+    );
 
   return (
     <section className="flex flex-col gap-3">
@@ -132,23 +140,31 @@ function One({
  * None of them is a dead end here, because typing a path is still open underneath,
  * so each says what it is and stops rather than sending somebody away.
  */
-function Nothing({ situation, said }: { situation: Situation; said: string }) {
+function Nothing({
+  situation,
+  said,
+  guidance,
+  language,
+}: {
+  situation: Situation;
+  said: string;
+  guidance: string | undefined;
+  language: Language;
+}) {
   const t = useT();
+  const told = useWhatToDo(guidance, language);
 
   switch (situation) {
     case "looking":
       return <Say>{t("backupsReading")}</Say>;
 
     case "problem": {
-      // What comes back is a sentence, a blank line, then several lines of what to
-      // do with the exact folder in them. Only the server knows where it was
-      // refused, so its own words are kept and split where it split them.
-      const [sentence, ...rest] = said.split(/\n{2,}/);
-      const advice = rest.join("\n\n").trim();
+      // The program says what stopped it; what to do about it comes from the guide,
+      // in whichever language this page asked for.
       return (
         <Aside heading={t("backupsProblem")} tone="blocker">
           <p role="alert" className="m-0 font-medium">
-            {sentence ?? said}
+            {said}
           </p>
           {/*
             Folded away rather than shown, which is the one thing this screen does
@@ -161,15 +177,13 @@ function Nothing({ situation, said }: { situation: Situation; said: string }) {
             <summary className="cursor-pointer text-sm font-medium">
               {t("migrateBackupHowToFix")}
             </summary>
-            {advice === "" ? (
-              <div className="mt-2">
+            <div className="mt-2">
+              {told === undefined ? (
                 <Say>{t("backupsFullDisk")}</Say>
-              </div>
-            ) : (
-              <pre className="m-0 mt-2 overflow-x-auto bg-[var(--color-bg)] p-3 font-sans text-sm whitespace-pre-wrap">
-                {advice}
-              </pre>
-            )}
+              ) : (
+                <Prose text={told.body} />
+              )}
+            </div>
           </details>
         </Aside>
       );

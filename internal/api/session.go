@@ -227,10 +227,10 @@ func (s *session) state() map[string]any {
 // the web layer. This interface is the seam.
 type Importer interface {
 	// Backups lists the iPhone backups on this computer. A problem reaching them,
-	// such as a permission this program has not been granted, is returned as a
-	// sentence rather than an error, because an empty list and a locked folder mean
-	// very different things to somebody looking at the screen.
-	Backups() (backups []Backup, problem string)
+	// such as a permission this program has not been granted, is returned rather
+	// than raised, because an empty list and a locked folder mean very different
+	// things to somebody looking at the screen.
+	Backups() (backups []Backup, problem Trouble)
 
 	// Locations reports where this platform's Apple software puts backups. Empty
 	// means there is nowhere to look, not that nothing was found: Apple ships no

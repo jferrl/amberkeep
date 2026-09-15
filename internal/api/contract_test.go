@@ -370,11 +370,12 @@ func awaitMigration(t *testing.T, handler http.Handler, stage string) []byte {
 	}
 }
 
-// fullDiskAccess is the refusal macOS produces, kept whole because the page shows
-// it as it is.
-const fullDiskAccess = "the backup could not be read because of a permissions restriction; " +
-	"on macOS, grant access in System Settings > Privacy & Security > Full Disk Access\n\n" +
-	"Add your terminal, or whichever program is running this, then try again."
+// fullDiskAccess is the refusal macOS produces: the sentence as the program says it,
+// and the name of what to do about it, which the page says in its own language.
+var fullDiskAccess = Trouble{
+	Said:     "the backup could not be read because of a permissions restriction",
+	Guidance: "backupfs.permission-denied",
+}
 
 // fetching records one reply from a server holding the fixture archive and an index
 // over it.

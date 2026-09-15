@@ -357,9 +357,13 @@ func TestListingBackupsNeverReturnsNothingAtAll(t *testing.T) {
 			}
 		}
 	}
-	// A problem is a sentence for somebody to act on, not a stack trace.
-	if strings.Contains(problem, "goroutine") {
-		t.Errorf("problem = %q", problem)
+	// A problem is a sentence for somebody to act on, not a stack trace, and what to
+	// do about it travels as a name rather than as English prose.
+	if strings.Contains(problem.Said, "goroutine") {
+		t.Errorf("problem = %q", problem.Said)
+	}
+	if strings.Contains(problem.Guidance, " ") {
+		t.Errorf("guidance = %q, which is prose rather than a name", problem.Guidance)
 	}
 }
 

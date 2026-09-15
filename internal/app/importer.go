@@ -11,7 +11,6 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/backupfs"
-	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -48,7 +47,7 @@ func (i Importer) Locations() []string { return backupfs.Locations() }
 // what was found in the other; on macOS a refusal is nearly always Full Disk Access,
 // which is a thing somebody can go and fix, so it is worth saying rather than
 // showing an empty list and letting them conclude their backup is gone.
-func (i Importer) Backups() (backups []api.Backup, problem string) {
+func (i Importer) Backups() (backups []api.Backup, problem api.Trouble) {
 	found, err := backupfs.Backups()
 
 	list := make([]api.Backup, 0, len(found))
@@ -67,18 +66,15 @@ func (i Importer) Backups() (backups []api.Backup, problem string) {
 		})
 	}
 	if err == nil {
-		return list, ""
+		return list, api.Trouble{}
 	}
 
-	// English, because this interface carries no language and the one problem that
-	// matters here — macOS not letting the program near the backups — is a case the
-	// page recognises and explains in its own words. Anything else is a sentence
-	// somebody would otherwise have to search for.
-	problem = err.Error()
-	if told, ok := AdviseOn(err, guide.English); ok {
-		problem += "\n\n" + told.Body
-	}
-	return list, problem
+	// The sentence in this program's own English, and the name of what to do about
+	// it rather than the words. The page reads in whichever language its reader
+	// chose and already has every one of these; sending the English advice here was
+	// how a Spanish reader ended up being told, in English, to turn on Full Disk
+	// Access — on the one screen where the fix is a thing they can go and do.
+	return list, api.Trouble{Said: err.Error(), Guidance: GuidanceFor(err)}
 }
 
 // Extract takes WhatsApp's message store out of an iPhone backup, with the small

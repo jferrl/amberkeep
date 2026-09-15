@@ -1,8 +1,9 @@
-import { useBackups, useOfferedBackups } from "@/api/queries";
+import { useBackups, useOfferedBackups, useWhatToDo } from "@/api/queries";
 import type { Backup, Setup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
+import { Prose } from "@/components/wizard/Prose";
 import { Where } from "@/components/wizard/Where";
 import { useT } from "@/i18n";
 import type { Language } from "@/i18n";
@@ -42,7 +43,7 @@ export function Backups({
 }) {
   const t = useT();
   const backups = useBackups();
-  const { situation, problem } = useOfferedBackups();
+  const { situation, problem, guidance } = useOfferedBackups();
   const found = backups.data?.backups ?? [];
 
   return (
@@ -92,6 +93,8 @@ export function Backups({
         <Instead
           situation={situation}
           said={problem ?? ""}
+          guidance={guidance}
+          language={language}
           onInstead={onInstead}
         />
       )}
@@ -103,10 +106,14 @@ export function Backups({
 function Instead({
   situation,
   said,
+  guidance,
+  language,
   onInstead,
 }: {
   situation: Situation;
   said: string;
+  guidance: string | undefined;
+  language: Language;
   onInstead: () => void;
 }) {
   const t = useT();
@@ -115,7 +122,7 @@ function Instead({
     case "noImporter":
       return <NoImporter onInstead={onInstead} />;
     case "problem":
-      return <Problem said={said} />;
+      return <Problem said={said} guidance={guidance} language={language} />;
     case "looking":
       return <Say>{t("backupsReading")}</Say>;
     case "nowhere":
@@ -206,22 +213,27 @@ function NoImporter({ onInstead }: { onInstead: () => void }) {
  * This page's own advice is kept for the server that sends a bare sentence. Being
  * told it is a permission without being told where to grant it is no use at all.
  */
-function Problem({ said }: { said: string }) {
+function Problem({
+  said,
+  guidance,
+  language,
+}: {
+  said: string;
+  guidance: string | undefined;
+  language: Language;
+}) {
   const t = useT();
-  const [sentence, ...rest] = said.split(/\n{2,}/);
-  const advice = rest.join("\n\n").trim();
+  const told = useWhatToDo(guidance, language);
 
   return (
     <Aside heading={t("backupsProblem")} tone="blocker">
       <p role="alert" className="m-0 font-medium">
-        {sentence ?? said}
+        {said}
       </p>
-      {advice === "" ? (
+      {told === undefined ? (
         <Say>{t("backupsFullDisk")}</Say>
       ) : (
-        <pre className="m-0 overflow-x-auto bg-[var(--color-bg)] p-3 font-sans text-sm whitespace-pre-wrap">
-          {advice}
-        </pre>
+        <Prose text={told.body} />
       )}
     </Aside>
   );

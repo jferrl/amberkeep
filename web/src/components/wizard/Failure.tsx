@@ -10,7 +10,7 @@ export interface Failed {
   detail?: string | undefined;
   guidance?: string | undefined;
 }
-import { useAdvice } from "@/api/queries";
+import { useWhatToDo } from "@/api/queries";
 import { Button } from "@/components/ui/button";
 import { Prose } from "@/components/wizard/Prose";
 import { Shell } from "@/components/wizard/Shell";
@@ -50,9 +50,7 @@ export function Trouble({
   correctable?: boolean;
 }) {
   const t = useT();
-  const advice = useAdvice(language);
-  const told =
-    state.guidance === undefined ? undefined : advice.data?.[state.guidance];
+  const told = useWhatToDo(state.guidance, language);
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-[var(--color-accent)] p-4">

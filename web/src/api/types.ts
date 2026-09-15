@@ -491,6 +491,13 @@ export interface Backup {
 export interface BackupList {
   backups: readonly Backup[];
   problem?: string;
+  /**
+   * What to do about that problem, by name rather than in words.
+   *
+   * The same identifier a failed state carries: the words come from /api/advice, in
+   * the language this page asked for.
+   */
+  guidance?: string;
 
   /**
    * Where the program looked, which is how an empty list is read correctly.

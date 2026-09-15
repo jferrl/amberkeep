@@ -57,6 +57,13 @@ const advice: AdviceOnFailure = {
     title: "That database is not one this version recognises",
     body: "Try another.",
   },
+  "backupfs.permission-denied": {
+    title: "macOS will not let this program read your backups yet",
+    body:
+      "macOS keeps iPhone backups behind Full Disk Access, and this program does\n" +
+      "not have it.\n\n" +
+      "  System Settings > Privacy & Security > Full Disk Access",
+  },
   "backupfs.file-not-found": {
     title: "That file is not in this backup",
     body: "Check the path.\nDrag the file into a terminal to see its full path.",
@@ -370,19 +377,20 @@ describe("an encrypted iPhone backup", () => {
 
 describe("when the backups cannot be looked at", () => {
   /**
-   * The server's own words, in the shape it really sends them: a sentence, a blank
-   * line, and then several lines of advice with the folder it was refused in them.
-   * An empty list beside that message is what this whole case exists to prevent.
+   * The server's own words, in the shape it really sends them: one sentence with the
+   * folder it was refused in it, and the name of what to do about it. An empty list
+   * beside that message is what this whole case exists to prevent.
    */
   const refused =
     "the backup could not be read because of a permissions restriction: " +
-    "/Users/someone/Library/Application Support/MobileSync/Backup\n\n" +
-    "macOS keeps iPhone backups behind Full Disk Access, and this program does\n" +
-    "not have it.\n\n" +
-    "  System Settings > Privacy & Security > Full Disk Access";
+    "/Users/someone/Library/Application Support/MobileSync/Backup";
 
   beforeEach(() => {
-    backups = { backups: [], problem: refused };
+    backups = {
+      backups: [],
+      problem: refused,
+      guidance: "backupfs.permission-denied",
+    };
   });
 
   it("says what stopped it rather than showing an empty list", async () => {
@@ -403,18 +411,20 @@ describe("when the backups cannot be looked at", () => {
   });
 
   /**
-   * Being told it is a permission is no use without being told where to grant it,
-   * and only the server knows which folder it was actually refused.
+   * Being told it is a permission is no use without being told where to grant it.
+   * The program names that advice and the page says it, which is what lets somebody
+   * reading in Spanish be told where to click in Spanish.
    */
-  it("keeps the line breaks the advice was written with", async () => {
+  it("says where to grant it, in the words the program keeps for it", async () => {
     const user = userEvent.setup();
     render(<App language="en" />);
 
     await chooseRoute(user, /My iPhone is backed up to this computer/);
 
-    const advice = await screen.findByText(/Full Disk Access/);
-    expect(advice.tagName).toBe("PRE");
-    expect(advice.textContent).toContain("\n");
+    // The menu to follow keeps its own shape; the paragraph around it is prose.
+    const menu = await screen.findByText(/Privacy & Security/);
+    expect(menu.tagName).toBe("PRE");
+    expect(screen.getByText(/behind Full Disk Access/)).toBeInTheDocument();
   });
 
   /** A server that sends a bare sentence still leaves somebody knowing where to go. */
