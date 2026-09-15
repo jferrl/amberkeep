@@ -1,6 +1,7 @@
 import { styles } from "@/components/ui/control";
 import { useT } from "@/i18n";
 import { outside } from "@/lib/desktop";
+import { useThanks } from "@/lib/thanks";
 
 /**
  * The one line this program has about money.
@@ -9,8 +10,8 @@ import { outside } from "@/lib/desktop";
  * migration has produced the backup. Both are moments when something that mattered
  * has just worked, which is the only time a program has any business asking.
  *
- * It arrives with the result rather than being fetched, and it is absent until there
- * is somewhere to point at — a program that points somebody at a page that does not
+ * The address comes from the state every screen already polls, and is absent until
+ * there is somewhere to point at — a program that points somebody at a page that does not
  * exist has spent the only goodwill the line was ever going to earn.
  *
  * Ko-fi publishes a button for this. It is a script tag pointing at their servers,
@@ -19,8 +20,9 @@ import { outside } from "@/lib/desktop";
  * button is drawn here, in this program's own palette, and clicking it hands the
  * address to the operating system. Nothing is loaded from anybody.
  */
-export function Thanks({ where }: { where: string | undefined }) {
+export function Thanks() {
   const t = useT();
+  const where = useThanks();
   if (where === undefined || where === "") return null;
 
   return (

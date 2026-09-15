@@ -13,5 +13,6 @@ export default {
   "detail": "this file is a database, but not one this version can read",
   "guidance": "source.unrecognised-archive",
   "stage": "failed",
+  "thanks": "https://ko-fi.com/jferrl",
   "workspace": "/tmp/amberkeep-test"
 } as const;

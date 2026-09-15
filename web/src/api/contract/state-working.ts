@@ -15,6 +15,7 @@ export default {
   "note": "decryptingSize",
   "stage": "working",
   "step": "decrypting",
+  "thanks": "https://ko-fi.com/jferrl",
   "values": {
     "size": "236.4 MB"
   },

@@ -25,5 +25,6 @@ export default {
     "time_zone": "UTC"
   },
   "stage": "ready",
+  "thanks": "https://ko-fi.com/jferrl",
   "workspace": "/tmp/amberkeep-test"
 } as const;

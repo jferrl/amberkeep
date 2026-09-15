@@ -1,4 +1,5 @@
 import { useCallback, useDeferredValue, useEffect, useState } from "react";
+import type { ReactNode } from "react";
 
 import type { Chat, Hit } from "@/api/types";
 import {
@@ -11,6 +12,7 @@ import {
 import { Notices } from "@/components/Notices";
 import { Export } from "@/components/export/Export";
 import { Framed } from "@/components/wizard/Frame";
+import { ThanksProvider } from "@/lib/thanks";
 import { asking } from "@/lib/desktop";
 import { Sidebar } from "@/components/Sidebar";
 import { Thread, ThreadHeader } from "@/components/Thread";
@@ -44,35 +46,44 @@ export function App({ language }: { language: Language }) {
     [closing],
   );
 
+  // Where somebody can say thanks, provided once for every screen under here. The
+  // program sends it with the state it already polls, so nothing has to be handed it
+  // and there is one address.
+  const thanks = setup.data?.thanks;
+
   if (setup.data?.stage === "ready") {
     // Writing the archive out takes the whole window rather than a dialog over the
     // conversations. It is a job with its own progress and its own ending, and the
     // list underneath it would be a list nobody is reading.
-    return keeping ? (
-      // Framed like the wizard: it takes the whole window, so it needs the whole
-      // window's furniture. Without it this screen had no promise at the top, no
-      // notices at the bottom, and its first line of text under the close, minimise
-      // and zoom buttons.
-      <Framed>
-        <Export
+    return wrapped(
+      thanks,
+      keeping ? (
+        // Framed like the wizard: it takes the whole window, so it needs the whole
+        // window's furniture. Without it this screen had no promise at the top, no
+        // notices at the bottom, and its first line of text under the close, minimise
+        // and zoom buttons.
+        <Framed>
+          <Export
+            language={language}
+            onLeave={() => {
+              setKeeping(false);
+            }}
+          />
+        </Framed>
+      ) : (
+        <Browser
           language={language}
-          onLeave={() => {
-            setKeeping(false);
+          onKeep={() => {
+            setKeeping(true);
           }}
         />
-      </Framed>
-    ) : (
-      <Browser
-        language={language}
-        onKeep={() => {
-          setKeeping(true);
-        }}
-      />
+      ),
     );
   }
   if (setup.isPending) return <Waiting />;
 
-  return (
+  return wrapped(
+    thanks,
     <Wizard
       state={setup.data}
       unreachable={setup.error?.message}
@@ -80,8 +91,19 @@ export function App({ language }: { language: Language }) {
         void setup.refetch();
       }}
       language={language}
-    />
+    />,
   );
+}
+
+/**
+ * wrapped puts the address where every screen under it can find it.
+ *
+ * A function rather than three copies of the same provider, because the three things
+ * this returns — the archive, the screen that writes it out, and the wizard — are
+ * returned from three places and all of them need it.
+ */
+function wrapped(thanks: string | undefined, screen: ReactNode): ReactNode {
+  return <ThanksProvider value={thanks}>{screen}</ThanksProvider>;
 }
 
 /** The moment before the server has said what it is holding. */

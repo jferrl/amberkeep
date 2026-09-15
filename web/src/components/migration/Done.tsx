@@ -71,7 +71,7 @@ export function MigrationDone({
 
       <Guide stages={stages} />
 
-      <Thanks where={result?.thanks} />
+      <Thanks />
 
       <div>
         <Button variant="quiet" onClick={onAgain}>

@@ -11,5 +11,6 @@
  */
 export default {
   "stage": "empty",
+  "thanks": "https://ko-fi.com/jferrl",
   "workspace": "/tmp/amberkeep-test"
 } as const;

@@ -11,6 +11,7 @@ import type {
   MigrationPlan,
 } from "@/api/types";
 import { Migration } from "@/components/migration/Migration";
+import { ThanksProvider } from "@/lib/thanks";
 import { fetchTarget } from "@/test/fetchTarget";
 import { render } from "@/test/render";
 
@@ -189,8 +190,12 @@ function sentTo(at: string): Record<string, unknown> | undefined {
 }
 
 /** show puts the screen up and waits for the first thing it draws. */
-function show(onLeave = () => (left += 1)) {
-  render(<Migration language="en" onLeave={onLeave} />);
+function show(onLeave = () => (left += 1), thanks?: string) {
+  render(
+    <ThanksProvider value={thanks}>
+      <Migration language="en" onLeave={onLeave} />
+    </ThanksProvider>,
+  );
 }
 
 /** fillIn names the two halves and presses the button that looks at them. */
@@ -535,11 +540,10 @@ describe("when something is wrong", () => {
         created: 0,
         checks: 31,
         files: 27352,
-        thanks: "https://ko-fi.com/jferrl",
       },
     };
 
-    show();
+    show(undefined, "https://ko-fi.com/jferrl");
 
     const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");

@@ -12,6 +12,7 @@ import {
 import type { Setup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Framed } from "@/components/wizard/Frame";
+import { HomeProvider } from "@/components/wizard/home";
 import { Migration } from "@/components/migration/Migration";
 import { Android } from "@/components/wizard/Android";
 import { Backups } from "@/components/wizard/Backups";
@@ -130,31 +131,44 @@ export function Wizard({
 
   const failure = stage === "failed" && !read ? state : undefined;
 
+  // The way back to the first screen, offered from everywhere except the first
+  // screen itself and the screens where work is running: leaving in the middle of a
+  // decryption is not something this program would honour, so it is not offered.
+  const home =
+    route === "choose" || stage === "working"
+      ? undefined
+      : () => {
+          setRead(true);
+          setRoute("choose");
+        };
+
   return (
     <Framed
       {...(action.refused === undefined ? {} : { refused: action.refused })}
     >
-      <Screen
-        state={state}
-        unreachable={unreachable}
-        failure={failure}
-        route={route}
-        importing={importing}
-        into={into}
-        contacts={contacts}
-        typed={typed}
-        busy={action.busy}
-        language={language}
-        onRetry={onRetry}
-        onRoute={setRoute}
-        onInto={setEdited}
-        onContacts={setContacts}
-        onTyped={type}
-        onBack={back}
-        onAgain={again}
-        onStart={start}
-        extras={extras}
-      />
+      <HomeProvider value={home}>
+        <Screen
+          state={state}
+          unreachable={unreachable}
+          failure={failure}
+          route={route}
+          importing={importing}
+          into={into}
+          contacts={contacts}
+          typed={typed}
+          busy={action.busy}
+          language={language}
+          onRetry={onRetry}
+          onRoute={setRoute}
+          onInto={setEdited}
+          onContacts={setContacts}
+          onTyped={type}
+          onBack={back}
+          onAgain={again}
+          onStart={start}
+          extras={extras}
+        />
+      </HomeProvider>
     </Framed>
   );
 }

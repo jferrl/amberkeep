@@ -69,8 +69,7 @@ export default {
     "merged": 1,
     "created": 0,
     "checks": 31,
-    "files": 27352,
-    "thanks": "https://ko-fi.com/jferrl"
+    "files": 27352
   },
   "stage": "done"
 } as const;

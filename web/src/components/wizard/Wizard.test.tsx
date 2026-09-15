@@ -1317,3 +1317,76 @@ describe("what a dead end says", () => {
     expect(screen.getByText(/Step 2 of 2/)).toBeInTheDocument();
   });
 });
+
+/**
+ * Getting out of a flow without walking back through it.
+ *
+ * The Android walkthrough is six screens, and somebody who realises on the fifth
+ * that they picked the wrong thing had to press Back five times to say so.
+ */
+describe("the way back to the start", () => {
+  it("is one press from deep inside a walkthrough", async () => {
+    const user = userEvent.setup();
+    render(<App language="en" />);
+
+    await chooseRoute(user, /I have an Android phone/);
+    await walkThePhone(user);
+    expect(
+      await screen.findByLabelText(/The 64-digit key/),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Back to the start" }));
+
+    expect(
+      await screen.findByRole("heading", { name: /Where is your WhatsApp history/ }),
+    ).toBeVisible();
+  });
+
+  /** Leaving is not losing: what was typed is still there on the way back in. */
+  it("keeps what was typed for somebody who comes back", async () => {
+    const user = userEvent.setup();
+    render(<App language="en" />);
+
+    await chooseRoute(user, /I already have a file/);
+    await user.type(
+      await screen.findByLabelText("The full path to the file"),
+      "/tmp/msgstore.db",
+    );
+
+    await user.click(screen.getByRole("button", { name: "Back to the start" }));
+    await chooseRoute(user, /I already have a file/);
+
+    expect(await screen.findByLabelText("The full path to the file")).toHaveValue(
+      "/tmp/msgstore.db",
+    );
+  });
+
+  /** Not on the first screen, where it would lead nowhere. */
+  it("is not offered where there is nowhere to go", async () => {
+    render(<App language="en" />);
+
+    expect(
+      await screen.findByRole("heading", { name: /Where is your WhatsApp history/ }),
+    ).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Back to the start" }),
+    ).toBeNull();
+  });
+
+  /**
+   * And not while something is running. The work outlives the screen and carries on
+   * whatever anybody presses, so offering to leave would be offering something this
+   * program would not honour.
+   */
+  it("is not offered while work is running", async () => {
+    states = [
+      { stage: "working", workspace, step: "decrypting", detail: "Decrypting 236.4 MB." },
+    ];
+    render(<App language="en" />);
+
+    expect(await screen.findByText("Decrypting 236.4 MB.")).toBeVisible();
+    expect(
+      screen.queryByRole("button", { name: "Back to the start" }),
+    ).toBeNull();
+  });
+});

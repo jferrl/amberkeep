@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Export as State } from "@/api/types";
 import { Export } from "@/components/export/Export";
+import { ThanksProvider } from "@/lib/thanks";
 import { fetchTarget } from "@/test/fetchTarget";
 import { render } from "@/test/render";
 
@@ -68,14 +69,16 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function show() {
+function show(thanks?: string) {
   render(
-    <Export
-      language="en"
-      onLeave={() => {
-        left += 1;
-      }}
-    />,
+    <ThanksProvider value={thanks}>
+      <Export
+        language="en"
+        onLeave={() => {
+          left += 1;
+        }}
+      />
+    </ThanksProvider>,
   );
 }
 
@@ -183,21 +186,10 @@ describe("when it is done", () => {
     expect(
       await screen.findByText(/conversations written|conversaciones escritas/),
     ).toBeVisible();
-    // Nothing yet: this reply carried no address.
-    expect(screen.queryByRole("link", { name: /coffee/i })).toBeNull();
+    // Nothing yet: this build knows of nowhere to point at.
+    expect(screen.queryByRole("link", { name: /ko-fi/i })).toBeNull();
 
-    now = {
-      stage: "done",
-      result: {
-        into: "/Users/someone/Amberkeep/archive",
-        conversations: 412,
-        messages: 1121482,
-        bytes: 98_000_000,
-        formats: ["html"],
-        thanks: "https://ko-fi.com/jferrl",
-      },
-    };
-    show();
+    show("https://ko-fi.com/jferrl");
 
     const link = await screen.findByRole("link", { name: /ko-fi.com\/jferrl/ });
     expect(link).toHaveAttribute("href", "https://ko-fi.com/jferrl");

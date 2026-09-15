@@ -7,6 +7,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
+	"github.com/jferrl/amberkeep/internal/thanks"
 )
 
 // What the program is doing, and whether there is anything to read yet.
@@ -198,6 +199,13 @@ func (s *session) state() map[string]any {
 	defer s.mu.RUnlock()
 
 	out := map[string]any{"stage": string(s.stage), "workspace": s.workspace}
+	// Where somebody can say thanks, when there is anywhere. A property of the
+	// program rather than of anything it has just done, which is why it is here and
+	// not attached to a finished export: the screens decide where to show it, and
+	// there is one address.
+	if thanks.Asked() {
+		out["thanks"] = thanks.Address
+	}
 	if s.step != "" {
 		out["step"] = string(s.step)
 	}

@@ -282,5 +282,7 @@
   "onePicture": "1 foto",
   "picturesCount": "{count} fotos",
   "thanksAsk": "Si esto te ha servido, puedes invitarme a un café. Es voluntario, y aquí no depende nada de ello.",
-  "thanksButton": "Invítame a un café · {where}"
+  "thanksButton": "Invítame a un café · {where}",
+  "startOver": "Volver al principio",
+  "thanksFooter": "Si te ha servido:"
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { useHome } from "@/components/wizard/home";
 import { useT } from "@/i18n";
 
 /**
@@ -52,6 +53,7 @@ export function Shell({
   children: ReactNode;
 }) {
   const t = useT();
+  const home = useHome();
   const title = useRef<HTMLHeadingElement>(null);
 
   /**
@@ -89,11 +91,24 @@ export function Shell({
 
       {children}
 
-      {onBack !== undefined && (
-        <div>
-          <Button variant="quiet" onClick={onBack}>
-            {t("back")}
-          </Button>
+      {(onBack !== undefined || home !== undefined) && (
+        <div className="flex flex-wrap items-center gap-4">
+          {onBack !== undefined && (
+            <Button variant="quiet" onClick={onBack}>
+              {t("back")}
+            </Button>
+          )}
+          {/*
+            One press from anywhere, rather than back, back, back. It goes to the
+            first screen and does nothing else: whatever was typed is still typed
+            when somebody comes back, and nothing the server is holding is thrown
+            away by walking past it.
+          */}
+          {home !== undefined && (
+            <Button variant="quiet" onClick={home}>
+              {t("startOver")}
+            </Button>
+          )}
         </div>
       )}
     </main>

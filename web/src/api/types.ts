@@ -446,6 +446,14 @@ export interface Said {
 export interface Setup extends Said {
   stage: Stage;
   workspace: string;
+  /**
+   * Where somebody can say thanks, if they want to.
+   *
+   * A property of the program rather than of anything it has just done, so it is
+   * here rather than on a finished export: the screens decide where to show it, and
+   * there is one address. Absent when there is nowhere to point at.
+   */
+  thanks?: string;
   step?: SetupStep;
   guidance?: string;
   archive?: Archive;
@@ -627,8 +635,6 @@ export interface Migrated {
   checks: number;
   /** How many files the copied backup holds, unchanged from the original. */
   files: number;
-  /** Where somebody can say thanks, when there is anywhere. */
-  thanks?: string;
 }
 
 /** How far along a migration is, and everything it has worked out so far. */
@@ -691,13 +697,6 @@ export type ExportStage = "idle" | "writing" | "done" | "failed";
 export interface Exported {
   /** The folder to go and look in. */
   into: string;
-  /**
-   * Where somebody can say thanks, when there is anywhere.
-   *
-   * It travels with the result rather than being asked for, because this is one of
-   * the only two screens it belongs on: the ones that say it worked.
-   */
-  thanks?: string;
   conversations: number;
   messages: number;
   bytes: number;

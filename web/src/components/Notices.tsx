@@ -1,4 +1,6 @@
 import { useT } from "@/i18n";
+import { outside } from "@/lib/desktop";
+import { useThanks } from "@/lib/thanks";
 
 /**
  * The two things this program has to say about itself, wherever somebody is looking.
@@ -14,6 +16,7 @@ import { useT } from "@/i18n";
  */
 export function Notices() {
   const t = useT();
+  const where = useThanks();
 
   return (
     // mt-auto rather than a fixed position: on a short screen this sits at the
@@ -24,6 +27,26 @@ export function Notices() {
       <div className="mx-auto max-w-2xl">
         <p className="m-0">{t("notAffiliated")}</p>
         <p className="m-0 mt-1">{t("freeSoftware")}</p>
+        {/*
+          And where to say thanks, for anybody who goes looking for it rather than
+          waiting to be asked. A line among the notices rather than a button in the
+          way: the asking is done once, on the screen that says something worked.
+        */}
+        {where !== undefined && where !== "" && (
+          <p className="m-0 mt-1">
+            {t("thanksFooter")}{" "}
+            <a
+              href={where}
+              className="underline decoration-[var(--color-edge)] underline-offset-2 hover:text-[var(--color-ink)] hover:decoration-[var(--color-ink)]"
+              onClick={(event) => {
+                event.preventDefault();
+                outside(where);
+              }}
+            >
+              {where.replace(/^https?:\/\//, "")}
+            </a>
+          </p>
+        )}
       </div>
     </footer>
   );

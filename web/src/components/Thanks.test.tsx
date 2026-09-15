@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { Thanks } from "@/components/Thanks";
 import { LanguageProvider, translator } from "@/i18n";
+import { ThanksProvider } from "@/lib/thanks";
 
 /**
  * The one line this program has about money.
@@ -21,7 +22,9 @@ describe("saying thanks", () => {
   const shown = (where: string | undefined, language: "en" | "es" = "en") =>
     render(
       <LanguageProvider value={translator(language)}>
-        <Thanks where={where} />
+        <ThanksProvider value={where}>
+          <Thanks />
+        </ThanksProvider>
       </LanguageProvider>,
     );
 
