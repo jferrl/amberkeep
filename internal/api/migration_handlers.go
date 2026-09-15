@@ -47,7 +47,7 @@ func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	started := s.migration.begin(MigrationChecking, StepOpening, "Looking at the backup.", ask)
+	started := s.migration.begin(MigrationChecking, StepOpening, Saying("lookingAtBackup", "Looking at the backup."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
 		// closes the tab halfway through should come back to a finished migration.
@@ -81,7 +81,7 @@ func (s *server) handlePlanMigration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	started := s.migration.begin(MigrationPlanning, StepOpening, "Working out what would move.", ask)
+	started := s.migration.begin(MigrationPlanning, StepOpening, Saying("workingOutWhatMoves", "Working out what would move."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
 		// closes the tab halfway through should come back to a finished migration.
@@ -139,7 +139,8 @@ func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
 		ask.Into = said.Into
 	}
 
-	started := s.migration.begin(MigrationWorking, StepPreparing, "Moving the messages. Nothing is being uploaded.", ask)
+	started := s.migration.begin(MigrationWorking, StepPreparing,
+		Saying("movingMessages", "Moving the messages. Nothing is being uploaded."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
 		// closes the tab halfway through should come back to a finished migration.

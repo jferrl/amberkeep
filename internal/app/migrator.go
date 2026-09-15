@@ -32,7 +32,8 @@ func (m Migrator) Check(ctx context.Context, backup string) (migrate.Readiness, 
 
 // Plan works out what would move. It writes nothing.
 func (m Migrator) Plan(ctx context.Context, ask api.MigrationRequest, say api.Progress) (migrate.Plan, error) {
-	say(api.StepOpening, "Reading the archive and the phone's own messages.")
+	say(api.StepOpening, api.Saying("readingBothSides",
+		"Reading the archive and the phone's own messages."))
 
 	book, whatsApp := addressBook(ask.Contacts)
 	plan, _, from, err := PlanMigration(ctx, Planning{
@@ -56,7 +57,8 @@ func (m Migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migr
 ) (api.Migrated, error) {
 	book, whatsApp := addressBook(ask.Contacts)
 
-	say(api.StepOpening, "Taking the phone's messages out of the backup.")
+	say(api.StepOpening, api.Saying("takingPhoneMessages",
+		"Taking the phone's messages out of the backup."))
 	freshPlan, store, from, err := PlanMigration(ctx, Planning{
 		Android: ask.Android, Backup: ask.Backup, Pairing: ask.Pairing,
 		Book: book, WhatsApp: whatsApp, Country: m.Country,
@@ -77,15 +79,16 @@ func (m Migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migr
 			plan.Adding, freshPlan.Adding)
 	}
 
-	say(api.StepPreparing, fmt.Sprintf("Moving %s. Nothing is being uploaded.",
-		Plural(plan.Adding, "message", "messages")))
+	say(api.StepPreparing, api.Noted("movingCount", "Moving {messages}. Nothing is being uploaded.",
+		"messages", Plural(plan.Adding, "message", "messages")).
+		Counting("messages", plan.Adding))
 	merged := store + ".merged"
 	result, err := migrate.Apply(ctx, from, store, merged, freshPlan)
 	if err != nil {
 		return api.Migrated{}, err
 	}
 
-	say(api.StepPreparing, "Checking every message that was written.")
+	say(api.StepPreparing, api.Saying("checkingWritten", "Checking every message that was written."))
 	report, err := migrate.Verify(ctx, store, merged, freshPlan)
 	if err != nil {
 		return api.Migrated{}, err
@@ -94,7 +97,8 @@ func (m Migrator) Carry(ctx context.Context, ask api.MigrationRequest, plan migr
 		return api.Migrated{}, fmt.Errorf("%s: %s", report.Summary(), firstFailure(report))
 	}
 
-	say(api.StepPreparing, "Putting it into a copy of the backup. The original is not touched.")
+	say(api.StepPreparing, api.Saying("intoACopy",
+		"Putting it into a copy of the backup. The original is not touched."))
 	into := ask.Into
 	if into == "" {
 		into = besideTheBackup(ask.Backup)

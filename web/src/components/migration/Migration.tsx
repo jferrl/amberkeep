@@ -15,6 +15,7 @@ import type { Paths } from "@/components/migration/Paths";
 import { MigrationPlanned, theWord } from "@/components/migration/Plan";
 import { Working } from "@/components/wizard/Working";
 import { useT } from "@/i18n";
+import { carried } from "@/lib/said";
 import type { Language } from "@/i18n";
 
 /**
@@ -30,7 +31,7 @@ function progress(now: State): Parameters<typeof Working>[0]["state"] {
     stage: "working",
     workspace: "",
     ...(now.step === undefined ? {} : { step: now.step }),
-    ...(now.detail === undefined ? {} : { detail: now.detail }),
+    ...carried(now),
   };
 }
 

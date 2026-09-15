@@ -104,7 +104,7 @@ type migration struct {
 
 	stage    MigrationStage
 	step     Step
-	detail   string
+	said     Note
 	guidance string
 
 	ask      MigrationRequest
@@ -124,14 +124,14 @@ func (m *migration) busy() bool {
 }
 
 // begin marks the start of a piece of work.
-func (m *migration) begin(stage MigrationStage, step Step, detail string, ask MigrationRequest) bool {
+func (m *migration) begin(stage MigrationStage, step Step, said Note, ask MigrationRequest) bool {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.stage == MigrationChecking || m.stage == MigrationPlanning || m.stage == MigrationWorking {
 		return false
 	}
-	m.stage, m.step, m.detail, m.guidance = stage, step, detail, ""
+	m.stage, m.step, m.said, m.guidance = stage, step, said, ""
 	if ask.Backup != "" {
 		m.ask = ask
 	}
@@ -139,14 +139,14 @@ func (m *migration) begin(stage MigrationStage, step Step, detail string, ask Mi
 }
 
 // progress says what is happening now.
-func (m *migration) progress(step Step, detail string, _ ...Count) {
+func (m *migration) progress(step Step, said Note) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if !m.working() {
 		return
 	}
-	m.step, m.detail = step, detail
+	m.step, m.said = step, said
 }
 
 // working reports whether something is running. The caller holds the lock.
@@ -161,7 +161,7 @@ func (m *migration) checked(ready migrate.Readiness) {
 	defer m.mu.Unlock()
 
 	m.checks = &ready
-	m.stage, m.step, m.detail = MigrationChecked, "", ""
+	m.stage, m.step, m.said = MigrationChecked, "", Note{}
 }
 
 // planned records what would move. Also a full stop: this is what somebody reads
@@ -171,7 +171,7 @@ func (m *migration) planned(plan migrate.Plan) {
 	defer m.mu.Unlock()
 
 	m.plan = &plan
-	m.stage, m.step, m.detail = MigrationPlanned, "", ""
+	m.stage, m.step, m.said = MigrationPlanned, "", Note{}
 }
 
 // done records a finished migration.
@@ -180,7 +180,7 @@ func (m *migration) done(result Migrated) {
 	defer m.mu.Unlock()
 
 	m.finished = &result
-	m.stage, m.step, m.detail = MigrationDone, "", ""
+	m.stage, m.step, m.said = MigrationDone, "", Note{}
 }
 
 // failed records why something did not work, with the advice that goes with it.
@@ -189,7 +189,7 @@ func (m *migration) failed(detail, guidance string) {
 	defer m.mu.Unlock()
 
 	m.stage, m.step = MigrationFailed, ""
-	m.detail, m.guidance = detail, guidance
+	m.said, m.guidance = Note{Text: detail}, guidance
 }
 
 // forget goes back to the beginning, keeping nothing.
@@ -197,7 +197,7 @@ func (m *migration) forget() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.stage, m.step, m.detail, m.guidance = MigrationIdle, "", "", ""
+	m.stage, m.step, m.said, m.guidance = MigrationIdle, "", Note{}, ""
 	m.ask, m.checks, m.plan, m.finished = MigrationRequest{}, nil, nil, nil
 }
 
@@ -228,8 +228,17 @@ func (m *migration) state() map[string]any {
 	if m.step != "" {
 		out["step"] = string(m.step)
 	}
-	if m.detail != "" {
-		out["detail"] = m.detail
+	if m.said.Text != "" {
+		out["detail"] = m.said.Text
+	}
+	if m.said.Name != "" {
+		out["note"] = m.said.Name
+	}
+	if len(m.said.Values) > 0 {
+		out["values"] = m.said.Values
+	}
+	if len(m.said.Counts) > 0 {
+		out["counts"] = m.said.Counts
 	}
 	if m.guidance != "" {
 		out["guidance"] = m.guidance

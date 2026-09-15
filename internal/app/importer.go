@@ -85,9 +85,10 @@ func (i Importer) Extract(ctx context.Context, backup, into string, say api.Prog
 	}
 	defer func() { _ = archive.Close() }()
 
-	say(api.StepExtracting, fmt.Sprintf("Reading the backup of %s, made %s.",
-		FirstNonEmpty(archive.DeviceName, archive.UDID),
-		archive.LastBackup.Local().Format(time.DateOnly)))
+	say(api.StepExtracting, api.Noted("readingBackupOf",
+		"Reading the backup of {device}, made {when}.",
+		"device", FirstNonEmpty(archive.DeviceName, archive.UDID),
+		"when", archive.LastBackup.Local().Format(time.DateOnly)))
 
 	path, err := archive.ExtractDatabase(ctx, into, WhatsAppDomain, ChatStorage)
 	if err != nil {
@@ -97,7 +98,7 @@ func (i Importer) Extract(ctx context.Context, backup, into string, say api.Prog
 	// Without this an iPhone archive shows a decade of the words "image omitted".
 	// A failure here is not a failure of the import: the messages are already out,
 	// and an archive with no photographs is worth far more than no archive.
-	say(api.StepExtracting, "Taking the pictures out as well.")
+	say(api.StepExtracting, api.Saying("takingPictures", "Taking the pictures out as well."))
 	taken, bytes, err := ExtractPictures(ctx, archive, into)
 	switch {
 	case err != nil && ctx.Err() != nil:
@@ -105,8 +106,10 @@ func (i Importer) Extract(ctx context.Context, backup, into string, say api.Prog
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "note: the pictures could not all be taken out (%v)\n", err)
 	case taken > 0:
-		say(api.StepExtracting, fmt.Sprintf("Took out %s (%s).",
-			Plural(int(taken), "picture", "pictures"), HumanSize(bytes)))
+		say(api.StepExtracting, api.Noted("tookPictures", "Took out {pictures} ({size}).",
+			"pictures", Plural(int(taken), "picture", "pictures"),
+			"size", HumanSize(bytes)).
+			Counting("pictures", int(taken)))
 	}
 	return path, nil
 }
@@ -142,9 +145,9 @@ func (i Importer) Decrypt(ctx context.Context, file, keySource, into string, say
 	if err != nil {
 		return "", fmt.Errorf("reading the backup: %w", err)
 	}
-	say(api.StepDecrypting, fmt.Sprintf(
-		"Decrypting %s. Nothing is being uploaded: this happens on this computer.",
-		HumanSize(int64(len(encrypted)))))
+	say(api.StepDecrypting, api.Noted("decryptingSize",
+		"Decrypting {size}. Nothing is being uploaded: this happens on this computer.",
+		"size", HumanSize(int64(len(encrypted)))))
 
 	if err := ctx.Err(); err != nil {
 		return "", err
@@ -156,7 +159,8 @@ func (i Importer) Decrypt(ctx context.Context, file, keySource, into string, say
 	// A backup arrives with none of its indexes, which makes reading it several
 	// times slower than it needs to be. This file did not exist a moment ago and
 	// this program wrote it, so putting them back needs nobody's permission.
-	say(api.StepPreparing, "Adding the indexes the backup leaves out, so reading is quick.")
+	say(api.StepPreparing, api.Saying("addingIndexes",
+		"Adding the indexes the backup leaves out, so reading is quick."))
 	PrepareOutput(ctx, target)
 	return target, nil
 }
@@ -200,7 +204,7 @@ func (i Importer) index(ctx context.Context, path, book, whatsApp string, say ap
 
 	index, err := OpenIndex(ctx, path, IndexPath(path, ""), IndexSettings{
 		Notices: i.Notices, Me: i.Me, Book: book, WhatsApp: whatsApp, Country: i.Country,
-		Say: func(line string, counts ...api.Count) { say(api.StepIndexing, line, counts...) },
+		Say: func(said api.Note) { say(api.StepIndexing, said) },
 	})
 	switch {
 	case err == nil:

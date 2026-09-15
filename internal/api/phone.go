@@ -161,7 +161,7 @@ func (s *server) handleFetch(w http.ResponseWriter, r *http.Request) {
 	// minutes of copying and somebody who closes the tab should come back to a
 	// finished file rather than half of one. start hands it the background context.
 	//nolint:contextcheck // deliberate; see above
-	started := s.start(StepFetching, "Copying the backup off the phone.",
+	started := s.start(StepFetching, Saying("copyingOffPhone", "Copying the backup off the phone."),
 		func(ctx context.Context, say Progress) (string, error) {
 			file, err := s.phones.Fetch(ctx, ask.Serial, ask.Path, say)
 			if err != nil {

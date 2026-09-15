@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -253,10 +254,12 @@ func OpenIndex(ctx context.Context, db, at string, settings IndexSettings) (*sea
 				_ = index.Close()
 			case !stats.MatchesSource(db):
 				_ = index.Close()
-				settings.announce("The archive has changed since the index was built; building it again.")
+				settings.announce(api.Saying("archiveChanged",
+					"The archive has changed since the index was built; building it again."))
 			case stats.Notices != settings.Notices:
 				_ = index.Close()
-				settings.announce("The index was built with different settings; building it again.")
+				settings.announce(api.Saying("settingsChanged",
+					"The index was built with different settings; building it again."))
 			default:
 				return index, nil
 			}
@@ -276,7 +279,8 @@ func OpenIndex(ctx context.Context, db, at string, settings IndexSettings) (*sea
 		return nil, err
 	}
 
-	settings.announce("Building the search index. This happens once and takes a few minutes.")
+	settings.announce(api.Saying("buildingIndex",
+		"Building the search index. This happens once and takes a few minutes."))
 	started := time.Now()
 
 	index, err := search.Build(ctx, reader, at, db, search.Options{
@@ -299,8 +303,13 @@ func OpenIndex(ctx context.Context, db, at string, settings IndexSettings) (*sea
 		_ = index.Close()
 		return nil, err
 	}
-	settings.announce(fmt.Sprintf("Indexed %d messages from %d conversations in %s.",
-		stats.Messages, stats.Conversations, time.Since(started).Round(time.Second)))
+	settings.announce(api.Noted("indexed",
+		"Indexed {messages} messages from {conversations} conversations in {took}.",
+		"messages", strconv.Itoa(stats.Messages),
+		"conversations", strconv.Itoa(stats.Conversations),
+		"took", time.Since(started).Round(time.Second).String()).
+		Counting("messages", stats.Messages).
+		Counting("conversations", stats.Conversations))
 	return index, nil
 }
 
@@ -331,7 +340,7 @@ type IndexSettings struct {
 	// the sentence; a page has a reader whose language and number formatting the
 	// server does not know, and cannot learn without being told something it has no
 	// business holding.
-	Say func(string, ...api.Count)
+	Say func(api.Note)
 }
 
 // PlanMigration opens both sides and works out what would happen.
@@ -397,12 +406,12 @@ const ThumbnailSuffix = ".thumb"
 const MediaPrefix = "Message/"
 
 // announce reports one thing that has happened.
-func (s IndexSettings) announce(line string) {
+func (s IndexSettings) announce(said api.Note) {
 	if s.Say != nil {
-		s.Say(line)
+		s.Say(said)
 		return
 	}
-	fmt.Fprintln(os.Stderr, line)
+	fmt.Fprintln(os.Stderr, said.Text)
 }
 
 // counting reports how far the build has got.
@@ -413,11 +422,11 @@ func (s IndexSettings) counting(conversations, messages int) {
 	if s.Say != nil {
 		// The numbers travel, and the page phrases them. The sentence is sent too,
 		// because the command prints exactly this.
-		s.Say(
-			fmt.Sprintf("Indexed %d conversations and %d messages so far.", conversations, messages),
-			api.Count{Of: "conversations", N: conversations},
-			api.Count{Of: "messages", N: messages},
-		)
+		s.Say(api.Noted("indexedSoFar",
+			"Indexed {conversations} conversations and {messages} messages so far.",
+			"conversations", strconv.Itoa(conversations), "messages", strconv.Itoa(messages)).
+			Counting("conversations", conversations).
+			Counting("messages", messages))
 		return
 	}
 	fmt.Fprintf(os.Stderr, "\r%d conversations, %d messages...", conversations, messages)

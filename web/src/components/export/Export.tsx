@@ -11,6 +11,7 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Working } from "@/components/wizard/Working";
 import { useT } from "@/i18n";
+import { carried } from "@/lib/said";
 import type { Language, Phrase } from "@/i18n";
 import { count } from "@/lib/format";
 
@@ -58,7 +59,7 @@ export function Export({
             stage: "working",
             workspace: "",
             ...(state.step === undefined ? {} : { step: state.step }),
-            ...(state.detail === undefined ? {} : { detail: state.detail }),
+            ...carried(state),
           }}
           language={language}
         />

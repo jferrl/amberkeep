@@ -116,8 +116,9 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 		{
 			name: "something is running",
 			file: "state-working.ts",
-			what: "GET /api/state — work is running. `detail` is the server's own words and is\n" +
-				"shown as they are; it changes while the work runs, and is the only thing that does.",
+			what: "GET /api/state — work is running. `note` names the sentence so the page can\n" +
+				"say it in the reader's own language, `values` is what fills its holes, and\n" +
+				"`detail` is the same sentence in English, for a name this build has never met.",
 			reply: func(t *testing.T) []byte {
 				t.Helper()
 
@@ -126,13 +127,15 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 				gate := make(chan struct{})
 				t.Cleanup(func() { close(gate) })
 
-				bring := &helper{gate: gate, says: []string{"Decrypting 236.4 MB. Nothing is being uploaded."}}
+				bring := &helper{gate: gate, says: []Note{Noted("decryptingSize",
+					"Decrypting {size}. Nothing is being uploaded: this happens on this computer.",
+					"size", "236.4 MB")}}
 				handler := wizard(t, bring)
 				begin(t, handler, "/api/decrypt", map[string]string{
 					"file": "/backups/msgstore.db.crypt15", "key": "0123456789abcdef",
 				})
 				return await(t, handler, "working", func(body map[string]any) bool {
-					return body["detail"] == bring.says[0]
+					return body["detail"] == bring.says[0].Text
 				})
 			},
 		},

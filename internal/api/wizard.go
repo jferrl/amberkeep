@@ -81,7 +81,7 @@ func (s *server) handleOpen(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//nolint:contextcheck // the work outlives this request on purpose; see start.
-	s.begun(w, r, s.start(StepOpening, "Opening the archive.",
+	s.begun(w, r, s.start(StepOpening, Saying("openingArchive", "Opening the archive."),
 		func(context.Context, Progress) (string, error) { return ask.Path, nil }, ask.Contacts))
 }
 
@@ -99,7 +99,8 @@ func (s *server) handleExtract(w http.ResponseWriter, r *http.Request) {
 
 	into := s.workspaceFor(ask.Into)
 	//nolint:contextcheck // the work outlives this request on purpose; see start.
-	s.begun(w, r, s.start(StepExtracting, "Taking the messages out of the backup, with their pictures.",
+	s.begun(w, r, s.start(StepExtracting,
+		Saying("takingMessagesOut", "Taking the messages out of the backup, with their pictures."),
 		func(ctx context.Context, say Progress) (string, error) {
 			return s.importer.Extract(ctx, ask.Backup, into, say)
 		}, ask.Contacts))
@@ -127,7 +128,8 @@ func (s *server) handleDecrypt(w http.ResponseWriter, r *http.Request) {
 	into := s.workspaceFor(ask.Into)
 
 	//nolint:contextcheck // the work outlives this request on purpose; see start.
-	s.begun(w, r, s.start(StepDecrypting, "Decrypting the backup. Nothing is being uploaded.",
+	s.begun(w, r, s.start(StepDecrypting,
+		Saying("decryptingBackup", "Decrypting the backup. Nothing is being uploaded."),
 		func(ctx context.Context, say Progress) (string, error) {
 			return s.importer.Decrypt(ctx, ask.File, key, into, say)
 		}, ask.Contacts))
@@ -194,8 +196,8 @@ func (s *server) begun(w http.ResponseWriter, r *http.Request, started bool) {
 // closes the tab halfway through a decryption should come back to a finished
 // archive, not to a half-written file, and the request is over as soon as it has
 // been accepted.
-func (s *server) start(step Step, detail string, work func(context.Context, Progress) (string, error), contacts string) bool {
-	if !s.session.begin(step, detail) {
+func (s *server) start(step Step, said Note, work func(context.Context, Progress) (string, error), contacts string) bool {
+	if !s.session.begin(step, said) {
 		return false
 	}
 
@@ -209,7 +211,7 @@ func (s *server) start(step Step, detail string, work func(context.Context, Prog
 			return
 		}
 
-		say(StepOpening, "Reading the archive.")
+		say(StepOpening, Saying("readingArchive", "Reading the archive."))
 		archive, err := s.importer.Open(ctx, path, contacts, say)
 		if err != nil {
 			s.session.failed(sentence(err), s.advise(err))

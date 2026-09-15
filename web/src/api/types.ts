@@ -385,20 +385,37 @@ export interface Count {
 }
 
 /**
+ * A sentence the server wants said, named rather than only written out.
+ *
+ * `note` is what this page looks the sentence up by, so somebody who has been
+ * reading Spanish for twenty minutes is not handed English at the one point where
+ * the program goes quiet for several minutes over their whole history. `values` is
+ * what fills its holes — a device, a date, a size — and `counts` are the numbers in
+ * it, left as numbers, because 595236 is not how a Spanish reader writes 595.236.
+ *
+ * `detail` is the same sentence in English, already filled in. It is not dead
+ * weight: the command prints exactly that, and a page meeting a name from a newer
+ * server has to say something rather than nothing.
+ */
+export interface Said {
+  note?: string;
+  detail?: string;
+  values?: Readonly<Record<string, string>>;
+  counts?: readonly Count[];
+}
+
+/**
  * What the server is doing, and where it will put what it makes.
  *
  * `workspace` is present at every stage, including before anything has been chosen,
  * so that somebody can be told where files will be written before any are.
- * `detail` is one sentence and `guidance` is several lines with the line breaks
- * already in them: both are the server's own words and are rendered as text.
+ * `guidance` is several lines with the line breaks already in them, in the server's
+ * own words, and is rendered as text.
  */
-export interface Setup {
+export interface Setup extends Said {
   stage: Stage;
   workspace: string;
-  /** Numbers behind the detail, when the step has any, for this page to phrase. */
-  counts?: readonly Count[];
   step?: SetupStep;
-  detail?: string;
   guidance?: string;
   archive?: Archive;
 }
@@ -566,10 +583,9 @@ export interface Migrated {
 }
 
 /** How far along a migration is, and everything it has worked out so far. */
-export interface Migration {
+export interface Migration extends Said {
   stage: MigrationStage;
   step?: SetupStep;
-  detail?: string;
   guidance?: string;
   backup?: string;
   checks?: Readiness;
@@ -631,10 +647,9 @@ export interface Exported {
  * million messages takes about a minute, which is long enough that silence would
  * look like a program that had stopped.
  */
-export interface Export {
+export interface Export extends Said {
   stage: ExportStage;
   step?: SetupStep;
-  detail?: string;
   guidance?: string;
   result?: Exported;
 }

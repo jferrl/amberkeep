@@ -41,7 +41,7 @@ type helper struct {
 
 	// says is reported as the work runs, so a test can see what somebody watching
 	// would have been told.
-	says []string
+	says []Note
 
 	// gate, when set, holds the work open until it is closed, which is how a test
 	// looks at a server with something still running.
@@ -89,8 +89,8 @@ func (h *helper) arguments() []string {
 // work is one long operation: it says what it is doing, and then waits to be let
 // go, so a test can look at the server while it is still running.
 func (h *helper) work(say Progress, step Step) (string, error) {
-	for _, line := range h.says {
-		say(step, line)
+	for _, said := range h.says {
+		say(step, said)
 	}
 	if h.gate != nil {
 		<-h.gate
@@ -496,10 +496,11 @@ func TestOnlyOneThingAtATime(t *testing.T) {
 func TestProgressIsReportedWhileItRuns(t *testing.T) {
 	t.Parallel()
 
-	const said = "Indexed 400 conversations so far."
+	said := Noted("indexedSoFar", "Indexed {conversations} conversations so far.",
+		"conversations", "400").Counting("conversations", 400)
 
 	gate := make(chan struct{})
-	bring := &helper{gate: gate, produces: "/tmp/msgstore.db", says: []string{said}}
+	bring := &helper{gate: gate, produces: "/tmp/msgstore.db", says: []Note{said}}
 	handler := wizard(t, bring)
 
 	if status, _ := post(t, handler, "/api/extract", map[string]string{"backup": "/backups/abc"}); status != http.StatusAccepted {
@@ -510,15 +511,34 @@ func TestProgressIsReportedWhileItRuns(t *testing.T) {
 	// a person watching a bar that does not move assumes the program has hung. The
 	// work is still held open here, so this is what somebody would be looking at.
 	deadline := time.Now().Add(5 * time.Second)
+	var body map[string]any
 	for {
-		body := state(t, handler)
-		if body["detail"] == said {
+		body = state(t, handler)
+		if body["detail"] == said.Text {
 			break
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("nothing said what was happening: %v", body)
 		}
 		time.Sleep(time.Millisecond)
+	}
+
+	// And the sentence's name goes with it, along with what filled it and the number
+	// behind it. Without those the page can only show the English, which is what it
+	// used to do to a reader who had been reading Spanish up to that point.
+	if body["note"] != said.Name {
+		t.Errorf("the state named the sentence %v, want %q", body["note"], said.Name)
+	}
+	values, ok := body["values"].(map[string]any)
+	if !ok || values["conversations"] != "400" {
+		t.Errorf("what filled the sentence did not arrive: %v", body["values"])
+	}
+	counts, ok := body["counts"].([]any)
+	if !ok || len(counts) != 1 {
+		t.Fatalf("the numbers did not arrive: %v", body["counts"])
+	}
+	if first, ok := counts[0].(map[string]any); !ok || first["of"] != "conversations" || first["n"] != 400.0 {
+		t.Errorf("the number arrived as %v", counts[0])
 	}
 
 	close(gate)

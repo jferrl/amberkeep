@@ -1,8 +1,8 @@
-import type { Count, Setup, SetupStep } from "@/api/types";
+import type { Setup, SetupStep } from "@/api/types";
 import { Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
 import type { Language, Phrase } from "@/i18n";
-import { count as formatted } from "@/lib/format";
+import { said } from "@/lib/said";
 
 /**
  * What each part of the work is, said as a sentence rather than named as a stage.
@@ -18,31 +18,6 @@ const sentences: Partial<Record<SetupStep, Phrase>> = {
   indexing: "workingIndexing",
   opening: "workingOpening",
 };
-
-/**
- * The running commentary, in the reader's own language and numbers.
- *
- * Only for the counts this build knows how to phrase. Anything else falls back to
- * the server's sentence, which is at least true — a page that recognised nothing
- * would show a blank line where a number had been counting up.
- */
-function phrased(
-  counts: readonly Count[] | undefined,
-  language: Language,
-  t: ReturnType<typeof useT>,
-): string | undefined {
-  if (counts === undefined || counts.length === 0) return undefined;
-
-  const n = (of: string) => counts.find((c) => c.of === of)?.n;
-  const conversations = n("conversations");
-  const messages = n("messages");
-  if (conversations === undefined || messages === undefined) return undefined;
-
-  return t("workingIndexedSoFar", {
-    conversations: formatted(conversations, language),
-    messages: formatted(messages, language),
-  });
-}
 
 /**
  * Roughly how long each step takes, for the steps that take long enough to worry
@@ -93,10 +68,9 @@ export function Working({
   const doing = t(step ?? "workingSomething");
   const howLong = state.step === undefined ? undefined : takes[state.step];
 
-  // The server's own sentence is English and its numbers are unformatted, because it
-  // knows neither the reader's language nor how they write a thousand. When it sends
-  // the numbers as well, the sentence is composed here instead.
-  const said = phrased(state.counts, language, t) ?? state.detail ?? doing;
+  // The server names the sentence rather than only writing it, so it is composed
+  // here, where the reader's language and the way they write a thousand are known.
+  const line = said(state, language, t) ?? doing;
 
   return (
     <Shell step={1} heading={t("workingTitle")}>
@@ -106,8 +80,8 @@ export function Working({
           className="mt-1.5 size-3 shrink-0 animate-pulse rounded-full bg-[var(--color-accent)]"
         />
         <div className="flex flex-col gap-1" aria-live="polite">
-          <p className="m-0 text-lg font-medium">{said}</p>
-          {said !== doing && (
+          <p className="m-0 text-lg font-medium">{line}</p>
+          {line !== doing && (
             <p className="m-0 text-sm text-[var(--color-muted)]">{doing}</p>
           )}
         </div>

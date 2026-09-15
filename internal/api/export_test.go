@@ -34,7 +34,8 @@ func (w *writer) Export(_ context.Context, ask ExportRequest, say Progress) (Exp
 	if w.failed != nil {
 		return Exported{}, w.failed
 	}
-	say(StepWriting, "25 of 60 conversations written.")
+	say(StepWriting, Noted("writtenSoFar", "{written} of {conversations} conversations written.",
+		"written", "25", "conversations", "60").Counting("written", 25).Counting("conversations", 60))
 	w.into = ask.Into
 
 	// Something on disk, so a test can assert that the answer is not a fiction.

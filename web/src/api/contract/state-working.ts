@@ -6,12 +6,17 @@
 // so the unions the page declares are checked rather than widened to `string`.
 
 /**
- * GET /api/state — work is running. `detail` is the server's own words and is
- * shown as they are; it changes while the work runs, and is the only thing that does.
+ * GET /api/state — work is running. `note` names the sentence so the page can
+ * say it in the reader's own language, `values` is what fills its holes, and
+ * `detail` is the same sentence in English, for a name this build has never met.
  */
 export default {
-  "detail": "Decrypting 236.4 MB. Nothing is being uploaded.",
+  "detail": "Decrypting 236.4 MB. Nothing is being uploaded: this happens on this computer.",
+  "note": "decryptingSize",
   "stage": "working",
   "step": "decrypting",
+  "values": {
+    "size": "236.4 MB"
+  },
   "workspace": "/tmp/amberkeep-test"
 } as const;

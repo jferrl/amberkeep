@@ -109,10 +109,13 @@ func (p Phones) Fetch(ctx context.Context, serial, remote string, say api.Progre
 		return "", fmt.Errorf("making somewhere to put the backup: %w", err)
 	}
 
-	say(api.StepFetching, "Copying the backup off the phone. This takes a few minutes.")
+	say(api.StepFetching, api.Saying("copyingOffPhoneLong",
+		"Copying the backup off the phone. This takes a few minutes."))
 	return adb.Fetch(ctx, serial, remote, landing, func(line string) {
 		if line != "" {
-			say(api.StepFetching, line)
+			// A line from adb itself: a percentage and a path, with no sentence in
+			// it to translate.
+			say(api.StepFetching, api.Quoting(line))
 		}
 	})
 }

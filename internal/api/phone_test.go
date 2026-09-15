@@ -42,7 +42,7 @@ func (p *plugged) Fetch(_ context.Context, serial, remote string, say Progress) 
 	if p.failFetch != nil {
 		return "", p.failFetch
 	}
-	say(StepFetching, "1 file pulled.")
+	say(StepFetching, Quoting("1 file pulled."))
 	return p.file, nil
 }
 

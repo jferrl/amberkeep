@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/api"
@@ -130,16 +131,16 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 		if done%25 == 0 {
 			// "7450 of 10500" is wrong in English as well as Spanish. The numbers go
 			// and the page writes the sentence, the way the index build already does.
-			say(api.StepWriting,
-				fmt.Sprintf("%d of %d conversations written.", done, len(chats)),
-				api.Count{Of: "written", N: done},
-				api.Count{Of: "conversations", N: len(chats)},
-			)
+			say(api.StepWriting, api.Noted("writtenSoFar",
+				"{written} of {conversations} conversations written.",
+				"written", strconv.Itoa(done), "conversations", strconv.Itoa(len(chats))).
+				Counting("written", done).
+				Counting("conversations", len(chats)))
 		}
 	}
 
 	if indexed && len(entries) > 0 {
-		say(api.StepWriting, "Writing the index page.")
+		say(api.StepWriting, api.Saying("writingIndexPage", "Writing the index page."))
 		result, err := export.WriteIndex(entries, opts)
 		if err != nil {
 			return api.Exported{}, fmt.Errorf("writing the index: %w", err)

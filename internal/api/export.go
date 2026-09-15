@@ -86,10 +86,16 @@ type Exportable interface {
 }
 
 // Export is how far along an export is, and what it produced.
+//
+// The running commentary is a Note rather than a sentence, so a page writing "7.450
+// de 10.500 conversaciones escritas" can, instead of being handed the English and
+// the raw digits. It is embedded rather than held in a field of its own because what
+// the page is told has not changed shape: a detail, and now a name and the numbers
+// beside it.
 type Export struct {
-	Stage  ExportStage `json:"stage"`
-	Step   Step        `json:"step,omitempty"`
-	Detail string      `json:"detail,omitempty"`
+	Stage ExportStage `json:"stage"`
+	Step  Step        `json:"step,omitempty"`
+	Note
 	// Guidance is the several lines of what to do about a failure.
 	Guidance string    `json:"guidance,omitempty"`
 	Result   *Exported `json:"result,omitempty"`
@@ -119,17 +125,17 @@ func (e *exporting) begin() bool {
 	if e.state.Stage == ExportWriting {
 		return false
 	}
-	e.state = Export{Stage: ExportWriting, Step: StepWriting, Detail: "Starting."}
+	e.state = Export{Stage: ExportWriting, Step: StepWriting, Note: Saying("starting", "Starting.")}
 	return true
 }
 
-func (e *exporting) progress(step Step, detail string, _ ...Count) {
+func (e *exporting) progress(step Step, said Note) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	if e.state.Stage != ExportWriting {
 		return
 	}
-	e.state.Step, e.state.Detail = step, detail
+	e.state.Step, e.state.Note = step, said
 }
 
 func (e *exporting) done(result Exported) {
@@ -141,7 +147,7 @@ func (e *exporting) done(result Exported) {
 func (e *exporting) failed(detail, guidance string) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.state = Export{Stage: ExportFailed, Detail: detail, Guidance: guidance}
+	e.state = Export{Stage: ExportFailed, Note: Note{Text: detail}, Guidance: guidance}
 }
 
 func (e *exporting) forget() {

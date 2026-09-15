@@ -55,24 +55,7 @@ const (
 // watching a bar that does not move assumes the program has hung. The two long
 // operations therefore report as they go, and the only thing the page polls is the
 // state this writes into.
-type Progress func(step Step, detail string, counts ...Count)
-
-// Count is a number the work has reached, for a page to phrase itself.
-//
-// The sentence used to be built here and sent as prose, which made every progress
-// line English — and unformatted, so a Spanish reader watching an index build was
-// told about "595236 messages" rather than 595.236. The server knows the number and
-// the page knows the reader, so the number travels and the sentence is composed
-// where the language is.
-//
-// The prose is still sent beside it, because the command prints exactly that and a
-// page meeting a count it does not recognise should say something rather than
-// nothing.
-type Count struct {
-	// Of is what was counted: "conversations", "messages".
-	Of string `json:"of"`
-	N  int    `json:"n"`
-}
+type Progress func(step Step, said Note)
 
 // opened is an archive and everything derived from it that is needed on every
 // request.
@@ -110,9 +93,8 @@ type session struct {
 
 	stage    Stage
 	step     Step
-	detail   string
+	said     Note
 	guidance string
-	counts   []Count
 
 	// workspace is where anything this program writes will go. It is shown before
 	// anything is written, because somebody has to be able to find their archive
@@ -144,26 +126,26 @@ func (s *session) archive() *opened {
 // Whether something is running is not asked separately anywhere, on purpose: a
 // caller that looked first and started afterwards would leave a gap for a second
 // request to land in, and two decryptions writing to the same file would ruin both.
-func (s *session) begin(step Step, detail string) bool {
+func (s *session) begin(step Step, said Note) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.stage == StageWorking {
 		return false
 	}
-	s.stage, s.step, s.detail, s.guidance = StageWorking, step, detail, ""
+	s.stage, s.step, s.said, s.guidance = StageWorking, step, said, ""
 	return true
 }
 
 // progress says what is happening now, without changing what stage it is in.
-func (s *session) progress(step Step, detail string, counts ...Count) {
+func (s *session) progress(step Step, said Note) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	if s.stage != StageWorking {
 		return
 	}
-	s.step, s.detail, s.counts = step, detail, counts
+	s.step, s.said = step, said
 }
 
 // ready hands over a finished archive, and lets go of whatever was open before.
@@ -176,7 +158,7 @@ func (s *session) ready(open *opened) {
 	s.mu.Lock()
 	previous := s.open
 	s.open = open
-	s.stage, s.step, s.detail, s.guidance = StageReady, "", "", ""
+	s.stage, s.step, s.said, s.guidance = StageReady, "", Note{}, ""
 	s.mu.Unlock()
 
 	previous.close()
@@ -189,7 +171,7 @@ func (s *session) failed(detail, guidance string) {
 	defer s.mu.Unlock()
 
 	s.stage, s.step = StageFailed, ""
-	s.detail, s.guidance = detail, guidance
+	s.said, s.guidance = Note{Text: detail}, guidance
 }
 
 // close forgets the archive and goes back to the beginning.
@@ -197,7 +179,7 @@ func (s *session) close() {
 	s.mu.Lock()
 	previous := s.open
 	s.open = nil
-	s.stage, s.step, s.detail, s.guidance = StageEmpty, "", "", ""
+	s.stage, s.step, s.said, s.guidance = StageEmpty, "", Note{}, ""
 	s.mu.Unlock()
 
 	previous.close()
@@ -219,14 +201,20 @@ func (s *session) state() map[string]any {
 	if s.step != "" {
 		out["step"] = string(s.step)
 	}
-	if s.detail != "" {
-		out["detail"] = s.detail
+	if s.said.Text != "" {
+		out["detail"] = s.said.Text
+	}
+	if s.said.Name != "" {
+		out["note"] = s.said.Name
+	}
+	if len(s.said.Values) > 0 {
+		out["values"] = s.said.Values
 	}
 	if s.guidance != "" {
 		out["guidance"] = s.guidance
 	}
-	if len(s.counts) > 0 {
-		out["counts"] = s.counts
+	if len(s.said.Counts) > 0 {
+		out["counts"] = s.said.Counts
 	}
 	return out
 }
