@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/jferrl/amberkeep/internal/licence"
+	"github.com/jferrl/amberkeep/internal/thanks"
 )
 
 // Writing the archive out, from a browser.
@@ -75,6 +75,10 @@ type Exported struct {
 	Messages      int      `json:"messages"`
 	Bytes         int64    `json:"bytes"`
 	Formats       []string `json:"formats"`
+	// Thanks is where somebody can say so, when there is anywhere. It travels with
+	// the moment rather than being asked for separately, because this is the only
+	// screen it belongs on: the one that says the history is theirs now.
+	Thanks string `json:"thanks,omitempty"`
 }
 
 // Exportable is an archive that can write itself out.
@@ -143,6 +147,9 @@ func (e *exporting) progress(step Step, said Note) {
 func (e *exporting) done(result Exported) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
+	// The one screen in this program worth asking on, and only when there is
+	// somewhere to point at.
+	result.Thanks = thanks.Address
 	e.state = Export{Stage: ExportDone, Result: &result}
 }
 
@@ -184,12 +191,6 @@ func (s *server) handleWriteExport(w http.ResponseWriter, r *http.Request) {
 	}
 	if len(ask.Formats) == 0 {
 		http.Error(w, "say which formats to write: html, text or json", http.StatusBadRequest)
-		return
-	}
-	// One of the two things this program asks to be paid for, refused before any
-	// work starts. While there is nowhere to buy a licence this answers yes.
-	if err := licence.Allows(licence.Archive); err != nil {
-		http.Error(w, err.Error(), http.StatusPaymentRequired)
 		return
 	}
 	if ask.Into == "" {

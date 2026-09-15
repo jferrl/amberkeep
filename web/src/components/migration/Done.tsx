@@ -1,5 +1,6 @@
 import type { GuideStage, Migration } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { Thanks } from "@/components/Thanks";
 import { Guide } from "@/components/migration/Guide";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
@@ -69,6 +70,8 @@ export function MigrationDone({
       </Aside>
 
       <Guide stages={stages} />
+
+      <Thanks where={result?.thanks} />
 
       <div>
         <Button variant="quiet" onClick={onAgain}>

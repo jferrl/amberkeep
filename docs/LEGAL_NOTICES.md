@@ -66,11 +66,10 @@ another person's account.
 
 ## Still outstanding
 
-Two things no program can fill in for the person selling it, and both are needed
-before money changes hands:
-
-1. **Who is selling, from where, under which law** — the trading name, the address,
-   and the jurisdiction whose consumer law applies. A merchant of record handles the
-   VAT; it does not answer this.
-2. **A trademark search** on the name in class 9, at EUIPO and USPTO, before it
-   appears on an invoice.
+1. **A trademark search** on the name in class 9, at EUIPO and USPTO. Less urgent
+   than it was — nothing is being sold, so there is no invoice with the name on it —
+   and still worth doing before the name is on anything public for long.
+2. **Nothing else.** [Amberkeep is free](WHAT_IT_COSTS.md): there is no sale, no
+   licence and no VAT, so the trading name, the address and the jurisdiction whose
+   consumer law applies are questions this project no longer has to answer. A
+   voluntary contribution given for nothing in return is not a sale.

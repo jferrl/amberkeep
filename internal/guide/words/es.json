@@ -80,10 +80,6 @@
       "body": "No se ha podido leer el almacén de mensajes del iPhone. Comprueba que la\nruta es correcta, que el archivo terminó de copiarse y que los dos archivos\nque terminan en -wal y -shm se copiaron con él.",
       "title": "No se ha podido leer el almacén de mensajes del iPhone"
     },
-    "licence.needed": {
-      "body": "Guardar una copia de tu historial y pasar un historial a un iPhone son las dos\ncosas por las que Amberkeep pide que se le pague. Leerlo, buscar en él y\ncomprobarlo son gratis, y van a seguir siéndolo.\n\nSi tienes una clave, este ordenador no la conoce todavía:\n\n  amberkeep licence --add AMBERKEEP-1....\n\nUna licencia se compra una vez, funciona sin conexión y sigue funcionando en la\nversión que compraste. Lo que cuesta cada cosa está en\ndocs/PRICING_AND_LICENSING.md.",
-      "title": "Esto necesita una licencia"
-    },
     "search.index-unreadable": {
       "body": "No se ha podido usar el índice de búsqueda. Es un archivo derivado y nada\ndel archivo depende de él, así que la solución es volver a hacerlo:\n\n  amberkeep search --db msgstore.db --rebuild \"lo que buscas\"\n\nSi sigue pasando, mira si queda sitio en el disco: un índice ocupa\naproximadamente un tercio de lo que ocupa el archivo.",
       "title": "No se ha podido usar el índice de búsqueda"
@@ -133,6 +129,7 @@
     "not-encrypted": "La copia de seguridad no está cifrada",
     "nothing-carries": "no hay nada en ella que se pueda pasar",
     "safety-backup": "Hay una copia de seguridad hecha y archivada",
+    "thanks-ask": "Si esto te ha servido, puedes invitarme a un café en {where}. Es voluntario, y aquí no depende nada de ello.",
     "warn-folded": "{conversations} conversaciones resultaron ser la misma persona que el iPhone ya tiene con otro nombre, y se escribirán dentro de la conversación que ya existe en vez de añadirse al lado.",
     "warn-folded-one": "Una conversación resultó ser la misma persona que el iPhone ya tiene con otro nombre, y se escribirá dentro de la conversación que ya existe en vez de añadirse al lado.",
     "warn-groups-left-out": "{groups} grupos se han dejado fuera porque no se han incluido los grupos.",

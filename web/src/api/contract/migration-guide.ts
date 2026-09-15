@@ -33,6 +33,7 @@ export default {
     "not-encrypted": "The backup is not encrypted",
     "nothing-carries": "nothing in it can be carried across",
     "safety-backup": "A safety backup exists and has been archived",
+    "thanks-ask": "If this helped, you can buy me a coffee at {where}. It is voluntary, and nothing here depends on it.",
     "warn-folded": "{conversations} conversations turned out to be the same person the iPhone already has under another name, and will be written into the conversation that is already there rather than added beside it.",
     "warn-folded-one": "One conversation turned out to be the same person the iPhone already has under another name, and will be written into the conversation that is already there rather than added beside it.",
     "warn-groups-left-out": "{groups} groups were left out because groups were not included.",

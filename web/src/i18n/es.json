@@ -280,5 +280,6 @@
   "noteCheckingWritten": "Comprobando todos los mensajes escritos.",
   "noteIntoACopy": "Metiéndolo en una copia de la copia de seguridad. El original no se toca.",
   "onePicture": "1 foto",
-  "picturesCount": "{count} fotos"
+  "picturesCount": "{count} fotos",
+  "thanksAsk": "Si esto te ha servido, puedes invitarme a un café en {where}. Es voluntario, y aquí no depende nada de ello."
 }

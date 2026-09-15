@@ -6,6 +6,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/migrate"
+	"github.com/jferrl/amberkeep/internal/thanks"
 )
 
 // Moving a history onto a phone, from a browser.
@@ -96,6 +97,9 @@ type Migrated struct {
 	Checks int `json:"checks"`
 	// Files is how many files the copied backup holds, unchanged from the original.
 	Files int `json:"files"`
+	// Thanks is where somebody can say so, when there is anywhere. The other of the
+	// two moments in this program worth asking at, and for the same reason.
+	Thanks string `json:"thanks,omitempty"`
 }
 
 // migration is where a migration has got to.
@@ -179,6 +183,7 @@ func (m *migration) done(result Migrated) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	result.Thanks = thanks.Address
 	m.finished = &result
 	m.stage, m.step, m.said = MigrationDone, "", Note{}
 }

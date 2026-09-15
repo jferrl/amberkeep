@@ -21,21 +21,22 @@ came to be known. `amberkeep canary` already finds them.
 
 ## The money
 
-Nothing here charges anybody yet. The order matters: the licence has to exist before
-there is anything to sell, and the shop has to exist before a price means anything.
+There is none, and that is settled: Amberkeep is free, with one line offering a coffee
+at the two moments when something that mattered has just worked. The reasoning is in
+[ADR 10](adr/0010-a-tip-jar.md) and what it means for anybody using it is in
+[WHAT_IT_COSTS.md](WHAT_IT_COSTS.md).
 
 | | What | State |
 |---|---|---|
-| 1 | Decide and publish what costs what | done — [PRICING_AND_LICENSING.md](PRICING_AND_LICENSING.md) |
-| 2 | Offline licence keys: a key that verifies on a machine with no network, because this program makes no network calls and a licence is not going to be the exception | built, and inert until there is a shop |
-| 3 | A merchant of record — Paddle — to take the money and handle VAT in every country somebody buys from | needs an account, which needs a person with a bank |
-| 4 | Somewhere to buy it: a page that says what it does, what it costs, and what it will not do | after 3 |
-| 5 | Turn the gate on: exports and migration ask for a licence, everything else stays free | deliberately last |
+| 1 | Decide what this costs | done — nothing |
+| 2 | Somewhere to say thanks: a Ko-fi or Buy Me a Coffee page, suggested ten euros | needs an account, which needs a person with a bank |
+| 3 | Put its address in `thanks.Address` | one line, after 2 |
+| 4 | Signing certificates, if any money ever arrives | the first thing worth buying, because it protects the person downloading rather than the revenue |
 
-Step 5 is `licence.Sells()` returning true instead of false, plus the screen that
-says what to do about it — the four places that ask the question already exist, and
-so do the words, in both languages. It is last on purpose: until a licence can be
-bought, a program that asks for one is a program that cannot be used.
+Steps 2 and 3 are the whole of it. Until then `thanks.Address` is empty and both
+places that would show the line show nothing, because a program that points somebody
+at a page which does not exist has spent the only goodwill that line was ever going
+to earn.
 
 ## The legal side
 

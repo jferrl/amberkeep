@@ -7,7 +7,6 @@ import (
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/guide"
-	"github.com/jferrl/amberkeep/internal/licence"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 	"github.com/jferrl/amberkeep/internal/source/android"
@@ -57,11 +56,6 @@ func GuidanceFor(err error) string {
 	var unrecognised *source.Error
 	if errors.As(err, &unrecognised) {
 		return unrecognised.Guidance
-	}
-
-	var needed *licence.Error
-	if errors.As(err, &needed) {
-		return needed.Guidance
 	}
 
 	if errors.Is(err, export.ErrExists) {

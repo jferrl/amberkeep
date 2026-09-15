@@ -10,7 +10,6 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/export"
-	"github.com/jferrl/amberkeep/internal/licence"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -38,13 +37,6 @@ func runExport(ctx context.Context, args []string) error {
 		fs.Usage()
 		return fmt.Errorf("--db is needed")
 	}
-	// Asked before anything is read, so that somebody is told at the start rather
-	// than after a minute of work. It answers yes to everything while there is
-	// nowhere to buy a licence.
-	if err := licence.Allows(licence.Archive); err != nil {
-		return err
-	}
-
 	wanted, err := parseFormats(*formats)
 	if err != nil {
 		return err
@@ -180,6 +172,7 @@ func runExport(ctx context.Context, args []string) error {
 		fmt.Printf("\nNo names were available, so conversations are labelled by phone number.\n")
 		fmt.Printf("Pass --contacts with an address book export to fix that.\n")
 	}
+	sayThanks(os.Stdout)
 	return nil
 }
 

@@ -13,9 +13,9 @@ import (
 	"github.com/jferrl/amberkeep/internal/app"
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/guide"
-	"github.com/jferrl/amberkeep/internal/licence"
 	"github.com/jferrl/amberkeep/internal/migrate"
 	"github.com/jferrl/amberkeep/internal/source"
+	"github.com/jferrl/amberkeep/internal/thanks"
 )
 
 // Moving an Android history onto an iPhone, one told step at a time.
@@ -122,14 +122,6 @@ func runMigrate(ctx context.Context, args []string) error {
 		return nil
 	}
 
-	// The plan is free and the writing is not: somebody sees exactly what would
-	// happen to their own history before any of this is about money. Asked before
-	// the confirmation rather than after, because being made to type a word and
-	// then told no would be a poor way to learn the price.
-	if err := licence.Allows(licence.Migration); err != nil {
-		return err
-	}
-
 	show(told, guide.Before, spoken())
 	if err := confirm(asked, told); err != nil {
 		return err
@@ -186,6 +178,7 @@ func carryOut(ctx context.Context, from source.Archive, store string, plan migra
 	show(told, guide.After, spoken())
 	fmt.Fprintf(told, "\nIf something goes wrong:\n")
 	show(told, guide.Wrong, spoken())
+	sayThanks(told)
 	return nil
 }
 
@@ -327,6 +320,21 @@ func patchBackup(ctx context.Context, backup, into, store string) (backupfs.Patc
 		RelativePath: app.ChatStorage,
 		With:         store,
 	})
+}
+
+// sayThanks writes the one line this program has about money, in the language the
+// terminal reads and only where there is somewhere to point at.
+//
+// Two places call it: an archive that has just been written out, and a migration that
+// has just produced a backup. Both are moments when something that mattered worked.
+// Nothing calls it on a failure, at startup, or twice.
+func sayThanks(to io.Writer) {
+	if !thanks.Asked() {
+		return
+	}
+	if said, ok := guide.Sentence("thanks-ask", map[string]string{"where": thanks.Address}, spoken()); ok {
+		fmt.Fprintf(to, "\n%s\n", said)
+	}
 }
 
 // spoken is the language this terminal reads.

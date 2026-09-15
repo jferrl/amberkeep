@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/jferrl/amberkeep/internal/guide"
-	"github.com/jferrl/amberkeep/internal/licence"
 )
 
 // The endpoints a migration uses.
@@ -143,13 +142,6 @@ func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
 	}
 	if said.Confirm != theWord {
 		http.Error(w, "type "+theWord+" to go on", http.StatusBadRequest)
-		return
-	}
-	// The other one. Working out what would move is free and seeing it is free;
-	// writing the backup that goes onto a phone is not. Refused after the word so
-	// that the order of the screens is unchanged, and before anything is written.
-	if err := licence.Allows(licence.Migration); err != nil {
-		http.Error(w, err.Error(), http.StatusPaymentRequired)
 		return
 	}
 

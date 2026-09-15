@@ -6,6 +6,7 @@ import { useExport, useExportStep } from "@/api/queries";
 import type { Export as State, Format } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Thanks } from "@/components/Thanks";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
@@ -313,6 +314,8 @@ function Written({
       )}
 
       <Say>{t("exportDoneKeep")}</Say>
+
+      <Thanks where={result?.thanks} />
 
       <div className="flex flex-wrap gap-2">
         <Button variant="primary" onClick={onLeave}>
