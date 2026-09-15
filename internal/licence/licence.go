@@ -36,12 +36,19 @@ import (
 	"time"
 )
 
-// Sells reports whether there is a shop.
+// sells is whether there is a shop.
 //
 // One place, deliberately: when there is somewhere to buy a licence this becomes
 // true, and everything that asks what it may do starts asking. Until then every gate
 // in the program is open, which is the honest state of a product with no checkout.
-func Sells() bool { return false }
+//
+// A variable rather than a constant so that the tests can open the shop and close it
+// again. The gated paths are the ones that must work on the day it opens for real,
+// and testing them then would be finding out too late.
+var sells = false
+
+// Sells reports whether there is a shop.
+func Sells() bool { return sells }
 
 // Grant is something a licence covers.
 type Grant string

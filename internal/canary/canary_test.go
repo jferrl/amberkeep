@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -285,5 +286,87 @@ func TestTheCorpusIsShapesAndNothingElse(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestItCountsTheOlderLayoutToo covers the database WhatsApp wrote before 2021, where
+// what a message is lives in a different table under a different name. A build that
+// could not look at one would be a build that says nothing about the archives most
+// likely to hold something it has never seen.
+func TestItCountsTheOlderLayoutToo(t *testing.T) {
+	t.Parallel()
+
+	path := written(t,
+		`CREATE TABLE messages (_id INTEGER PRIMARY KEY, key_remote_jid TEXT, media_wa_type INTEGER, data TEXT)`,
+		`INSERT INTO messages (key_remote_jid, media_wa_type, data) VALUES
+			('34600111222@s.whatsapp.net', 0, 'a'), ('34600111222@s.whatsapp.net', 201, 'b')`)
+
+	report, err := Look(context.Background(), path, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Schema.Platform != "android" {
+		t.Fatalf("platform = %q", report.Schema.Platform)
+	}
+	if report.Counted != "messages.media_wa_type" {
+		t.Errorf("it counted %q, want the older layout's column", report.Counted)
+	}
+	if report.Recognised != 1 || len(report.Unknown) != 1 || report.Unknown[0].Type != 201 {
+		t.Errorf("recognised %d, unknown %v", report.Recognised, report.Unknown)
+	}
+}
+
+// TestThereIsNothingToCountWithoutMessages covers a database that is recognisably
+// WhatsApp's and has no messages table to count from: the report says what it can and
+// stops, rather than failing.
+func TestThereIsNothingToCountWithoutMessages(t *testing.T) {
+	t.Parallel()
+
+	path := written(t, `CREATE TABLE ZWACHATSESSION (Z_PK INTEGER PRIMARY KEY, ZPARTNERNAME TEXT)`)
+
+	report, err := Look(context.Background(), path, "test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if report.Counted != "" || len(report.Unknown) != 0 {
+		t.Errorf("it counted %q: %v", report.Counted, report.Unknown)
+	}
+	if len(report.Schema.Tables) != 1 {
+		t.Errorf("tables = %v", report.Schema.Tables)
+	}
+}
+
+// TestSomethingThatIsNotADatabaseIsSaidSo covers the ordinary mistake: a photograph,
+// a text file, a path with a typo in it.
+func TestSomethingThatIsNotADatabaseIsSaidSo(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name string
+		path func(*testing.T) string
+	}{
+		{
+			name: "a file that is not there",
+			path: func(t *testing.T) string { return filepath.Join(t.TempDir(), "nothing.db") },
+		},
+		{
+			name: "a file that is not a database",
+			path: func(t *testing.T) string {
+				path := filepath.Join(t.TempDir(), "holiday.jpg")
+				if err := os.WriteFile(path, []byte("not a database"), 0o600); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if _, err := Look(context.Background(), tt.path(t), "test"); err == nil {
+				t.Error("it was read as a WhatsApp database")
+			}
+		})
 	}
 }

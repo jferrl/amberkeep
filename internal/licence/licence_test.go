@@ -256,3 +256,102 @@ func TestAMissingLicenceSaysWhichOne(t *testing.T) {
 		})
 	}
 }
+
+// open puts the shop up for the length of one test. Everything below is what the
+// program will do on the day that happens for real, which is the wrong day to find
+// out that it does something else.
+func open(t *testing.T) {
+	t.Helper()
+	was := sells
+	sells = true
+	t.Cleanup(func() { sells = was })
+}
+
+func TestWithAShopOpenALicenceIsAsked(t *testing.T) {
+	signer := signing(t)
+	open(t)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+
+	// Nothing here yet.
+	err := Allows(Archive)
+	if !errors.Is(err, ErrNeeded) {
+		t.Fatalf("with no licence, Allows said %v", err)
+	}
+
+	// One of the two.
+	key, err := Write(Licence{Grants: []Grant{Archive}, Issued: "2026-09-15"}, signer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Keep(key); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Allows(Archive); err != nil {
+		t.Errorf("what was bought is refused: %v", err)
+	}
+	if err := Allows(Migration); !errors.Is(err, ErrNeeded) {
+		t.Errorf("what was not bought is allowed: %v", err)
+	}
+}
+
+// TestALapsedLicenceRefusesOnlyTheNewerBuild is the promise in the pricing, from the
+// side that enforces it.
+func TestALapsedLicenceRefusesOnlyTheNewerBuild(t *testing.T) {
+	signer := signing(t)
+	open(t)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+
+	key, err := Write(Licence{
+		Grants: []Grant{Archive}, Issued: "2026-09-15", Updates: "2027-09-15",
+	}, signer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Keep(key); err != nil {
+		t.Fatal(err)
+	}
+
+	was := built
+	t.Cleanup(func() { built = was })
+
+	built = "2027-06-01" // a build from within the twelve months
+	if err := Allows(Archive); err != nil {
+		t.Errorf("the build they paid for is refused: %v", err)
+	}
+	if Built().IsZero() {
+		t.Error("a build that says when it was made reports no date")
+	}
+
+	built = "2028-01-01" // one from after them
+	if err := Allows(Archive); !errors.Is(err, ErrNeeded) {
+		t.Errorf("a build past the updates was allowed: %v", err)
+	}
+
+	built = "whenever" // and a build that says something that is not a day
+	if !Built().IsZero() {
+		t.Error("an unreadable build date is a date")
+	}
+	if err := Allows(Archive); err != nil {
+		t.Errorf("a build that does not say when it was made is refused: %v", err)
+	}
+}
+
+// TestAKeyCannotBeWrittenWithoutAKey covers the seller's side of a mistake: an empty
+// or truncated signing key must not produce something that looks like a licence.
+func TestAKeyCannotBeWrittenWithoutAKey(t *testing.T) {
+	t.Parallel()
+
+	if _, err := Write(Licence{Grants: []Grant{Archive}}, nil); err == nil {
+		t.Error("a licence was signed with nothing")
+	}
+	if _, err := Write(Licence{Grants: []Grant{Archive}}, make(ed25519.PrivateKey, 7)); err == nil {
+		t.Error("a licence was signed with seven bytes")
+	}
+}
