@@ -19,6 +19,18 @@ import { expect, test } from "./server";
 
 test.beforeEach(async ({ page, wizard }) => {
   await page.goto(wizard.opening);
+
+  // Every test here starts with the server holding nothing. How far along a
+  // migration is belongs to the server and survives a reload — which is the right
+  // behaviour, and it means one test that stops halfway decides what the next one
+  // opens on. Said once, here, rather than left to the order the tests happen to run
+  // in. The address carries the launch secret in a cookie by now, from the line above.
+  const letGo = await page.request.post(
+    new URL("/api/migration/forget", wizard.opening).toString(),
+    { data: {} },
+  );
+  expect(letGo.ok()).toBe(true);
+
   await page.getByRole("button", { name: /move an Android history onto my iPhone/ }).click();
 });
 
@@ -39,17 +51,15 @@ test("is offered as a way in, and opens on what it cannot promise", async ({ pag
  * The same claim the rest of the program makes, on the screens that handle a whole
  * message history and end with a phone being written to.
  */
-test("talks to nothing but the program that served it", async ({ page, wizard }) => {
-  const elsewhere: string[] = [];
-  page.on("request", (request) => {
-    const to = new URL(request.url());
-    const home = new URL(wizard.opening);
-    if (to.host !== home.host && to.protocol !== "data:") elsewhere.push(request.url());
-  });
-
+test("talks to nothing but the program that served it", async ({ page, wizard, watched }) => {
   await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
   await page.waitForTimeout(500);
 
+  const home = new URL(wizard.opening);
+  const elsewhere = watched.filter((address) => {
+    const to = new URL(address);
+    return to.host !== home.host && to.protocol !== "data:";
+  });
   expect(elsewhere).toEqual([]);
 });
 
@@ -129,22 +139,11 @@ test("lets somebody go back and change what they named", async ({ page }) => {
  * runner has none and may not even be allowed to look — so what is asserted is that
  * it asked, and that typing a path stays possible whatever the answer was.
  */
-test("asks the program for the backups it has already made", async ({ page, wizard }) => {
-  // This one navigates itself rather than using the shared beforeEach. The listener
-  // has to be attached before the screen is reached, or the request it is watching
-  // for has already happened — which is how this passed on one machine and failed on
-  // a faster one.
-  const asked: string[] = [];
-  page.on("request", (request) => {
-    const { pathname } = new URL(request.url());
-    if (pathname.startsWith("/api/")) asked.push(pathname);
-  });
-
-  await page.goto(wizard.opening);
-  await page.getByRole("button", { name: /move an Android history onto my iPhone/ }).click();
-
+test("asks the program for the backups it has already made", async ({ page, watched }) => {
   await expect(page.getByLabel(/The iPhone backup folder/)).toBeVisible();
-  await expect.poll(() => asked).toContain("/api/backups");
+  await expect
+    .poll(() => watched.map((address) => new URL(address).pathname))
+    .toContain("/api/backups");
 
   // Whatever it found, the path can still be typed: an external disk or a copy
   // somebody made is not in that list and is perfectly good.
