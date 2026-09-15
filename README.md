@@ -90,13 +90,18 @@ And on a real iPhone store of 554 conversations and 161,026 messages:
 
 ## Installing it
 
-Download the archive for your computer from
-[Releases](https://github.com/jferrl/amberkeep/releases), unpack it, and run
-`amberkeep`. One file, no installer, nothing to uninstall.
+From [Releases](https://github.com/jferrl/amberkeep/releases):
 
-The binaries are not signed, so macOS says it cannot check the app and Windows
-SmartScreen warns. On macOS, `xattr -d com.apple.quarantine ./amberkeep` after
-downloading. Every archive's SHA-256 is published beside it.
+- **`Amberkeep_*_macos.dmg`** — the application, for every Mac. One disk image with
+  both architectures in it, so it runs natively on Apple silicon and on an Intel Mac.
+- **`Amberkeep_*_windows_amd64.zip`** — the application for 64-bit Windows.
+- **`amberkeep_*.tar.gz` / `.zip`** — the command-line tool, one static binary, for
+  macOS, Windows and Linux on both architectures. Unpack it and run `amberkeep`. No
+  installer, nothing to uninstall.
+
+Nothing is signed, so macOS says it cannot check the application and Windows
+SmartScreen warns. [Opening it the first time](#opening-it-the-first-time), above,
+is how to get past both. Every archive's SHA-256 is published beside it.
 
 Or build it yourself, which needs nothing but Go:
 

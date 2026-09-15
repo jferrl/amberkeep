@@ -18,10 +18,24 @@ rm -rf "$out"
 mkdir -p "$out/Contents/MacOS" "$out/Contents/Resources"
 cp "$here/build/darwin/Info.plist" "$out/Contents/Info.plist"
 
-# The program first. The icon is worth having and is not worth failing over, so
-# anything that can go wrong with it goes wrong after there is something to run.
-CGO_ENABLED=1 go build -C "$here" -tags desktop,production -trimpath \
-	-ldflags "-s -w" -o "$out/Contents/MacOS/amberkeep" ./...
+# The program first, for both kinds of Mac. The icon is worth having and is not worth
+# failing over, so anything that can go wrong with it goes wrong after there is
+# something to run.
+#
+# Two builds and a lipo rather than one for whichever machine is doing the building.
+# A Mac bought before 2020 is an Intel one, an archive of somebody's whole message
+# history is exactly the thing kept on a machine that old, and a disk image that
+# opens on half of them is worse than no disk image: it fails at the download with an
+# error about the application being damaged, which is not what is wrong.
+slices=()
+for arch in arm64 amd64; do
+	CGO_ENABLED=1 GOARCH="$arch" go build -C "$here" -tags desktop,production -trimpath \
+		-ldflags "-s -w" -o "$out/Contents/MacOS/amberkeep-$arch" ./...
+	slices+=("$out/Contents/MacOS/amberkeep-$arch")
+done
+lipo -create -output "$out/Contents/MacOS/amberkeep" "${slices[@]}"
+rm -f "${slices[@]}"
+lipo -archs "$out/Contents/MacOS/amberkeep"
 
 # The icon is rendered from the brand mark rather than committed as a binary, which
 # needs a browser — the frontend's, since it already has one. A machine without it
