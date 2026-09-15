@@ -89,9 +89,15 @@ func TestListingPhones(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
+			// The stand-in is written before this goes parallel, and deliberately.
+			// Writing an executable and running it are two steps, and on Linux a
+			// sibling test that forks in between inherits the descriptor the file is
+			// still open for writing on, so the exec fails with "text file busy".
+			// Everything written before t.Parallel happens while nothing else in this
+			// package is running.
 			adb, _ := pretending(t, tt.said)
+
+			t.Parallel()
 			phones, err := adb.Phones(context.Background())
 			if err != nil {
 				t.Fatalf("Phones() failed: %v", err)
@@ -119,12 +125,13 @@ func TestListingPhones(t *testing.T) {
 // paragraph on: a file sitting beside the one somebody wants, looking almost
 // identical, and useless on its own.
 func TestTheIncrementFragmentsAreNamed(t *testing.T) {
-	t.Parallel()
-
 	const listing = "-rw-rw---- 1 root sdcard_rw 247382016 2026-09-12 03:00 msgstore.db.crypt15\n" +
 		"-rw-rw---- 1 root sdcard_rw   1048576 2026-09-13 03:00 msgstore-increment-1.db.crypt15"
 
+	// Written before this goes parallel; see the note in TestListingPhones.
 	adb, _ := pretending(t, listing)
+
+	t.Parallel()
 	found, err := adb.Backups(context.Background(), "R5CT30ABCDE")
 	if err != nil {
 		t.Fatalf("Backups() failed: %v", err)
@@ -151,9 +158,10 @@ func TestTheIncrementFragmentsAreNamed(t *testing.T) {
 
 // TestItCannotBeTalkedIntoWriting is the promise this package exists to keep.
 func TestItCannotBeTalkedIntoWriting(t *testing.T) {
-	t.Parallel()
-
+	// Written before this goes parallel; see the note in TestListingPhones.
 	adb, asked := pretending(t, "")
+
+	t.Parallel()
 
 	// A serial is put on a command line, so anything that is not one is refused
 	// before it gets there.
@@ -196,9 +204,10 @@ func TestItCannotBeTalkedIntoWriting(t *testing.T) {
 
 // TestAPullIsAPull covers the one command that moves bytes, and what it is given.
 func TestAPullIsAPull(t *testing.T) {
-	t.Parallel()
-
+	// Written before this goes parallel; see the note in TestListingPhones.
 	adb, asked := pretending(t, "1 file pulled, 0 skipped.")
+
+	t.Parallel()
 	into := t.TempDir()
 
 	local, err := adb.Fetch(context.Background(), "R5CT30ABCDE",
