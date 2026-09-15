@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -22,7 +23,10 @@ func TestASellerCanMakeAKeyAndIssueALicence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if mode := info.Mode().Perm(); mode != 0o600 {
+	// Windows has no such bit — it reports every file as readable and writable by
+	// everybody and keeps the real answer in an ACL — so the mode is only worth
+	// asserting where it means something.
+	if mode := info.Mode().Perm(); runtime.GOOS != "windows" && mode != 0o600 {
 		t.Errorf("the signing key is %v, and should be readable by nobody else", mode)
 	}
 

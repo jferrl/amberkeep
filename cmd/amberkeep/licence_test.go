@@ -14,9 +14,7 @@ import (
 // TestTheLicenceCommandSaysWhatIsHere covers the screen somebody reads when they are
 // wondering whether the thing they paid for arrived.
 func TestTheLicenceCommandSaysWhatIsHere(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	// A computer with nothing on it.
 	said := capture(t, func() error {
@@ -57,9 +55,7 @@ func TestTheLicenceCommandSaysWhatIsHere(t *testing.T) {
 // TestALicenceCoveringOneThingSaysWhichOne covers the sentence somebody reads when
 // they bought the archive and reached the migration.
 func TestALicenceCoveringOneThingSaysWhichOne(t *testing.T) {
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	said := capture(t, func() error {
 		return run(context.Background(), []string{"licence", "--add", issued(t, licence.Migration)})
@@ -99,4 +95,17 @@ func signingKey(t *testing.T) ed25519.PrivateKey {
 		t.Fatal(err)
 	}
 	return private
+}
+
+// settings points this test at a settings directory of its own, on every platform:
+// os.UserConfigDir reads XDG_CONFIG_HOME or HOME on Linux and macOS and %AppData% on
+// Windows, and a test that sets only the first two writes into the settings of
+// whoever ran it.
+func settings(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
+	t.Setenv("AppData", filepath.Join(dir, "AppData"))
 }

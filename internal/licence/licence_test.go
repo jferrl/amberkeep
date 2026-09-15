@@ -25,6 +25,21 @@ func signing(t *testing.T) ed25519.PrivateKey {
 	return private
 }
 
+// settings points this test at a settings directory of its own.
+//
+// All three, because os.UserConfigDir reads a different one on each platform:
+// XDG_CONFIG_HOME then HOME on Linux and macOS, %AppData% on Windows. Setting only
+// the first two left the Windows runs writing into the real settings of whoever ran
+// them, where one test then found the key another had left and reported it as forged.
+func settings(t *testing.T) {
+	t.Helper()
+
+	dir := t.TempDir()
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
+	t.Setenv("AppData", filepath.Join(dir, "AppData"))
+}
+
 func TestAKeyCarriesWhatWasBought(t *testing.T) {
 	signer := signing(t)
 
@@ -158,9 +173,7 @@ func TestNothingIsSoldYet(t *testing.T) {
 
 func TestAKeyIsKeptWhereTheOperatingSystemKeepsSettings(t *testing.T) {
 	signer := signing(t)
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	if _, err := Held(); !errors.Is(err, ErrNoLicence) {
 		t.Errorf("a computer with no licence said %v", err)
@@ -202,9 +215,7 @@ func TestAKeyIsKeptWhereTheOperatingSystemKeepsSettings(t *testing.T) {
 // somebody with a file full of rubbish and a program that says nothing about it.
 func TestAKeyThatIsNotOneIsNeverKept(t *testing.T) {
 	signing(t)
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	if _, err := Keep("hunter2"); !errors.Is(err, ErrMalformed) {
 		t.Errorf("Keep of a non-key = %v", err)
@@ -271,9 +282,7 @@ func TestWithAShopOpenALicenceIsAsked(t *testing.T) {
 	signer := signing(t)
 	open(t)
 
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	// Nothing here yet.
 	err := Allows(Archive)
@@ -304,9 +313,7 @@ func TestALapsedLicenceRefusesOnlyTheNewerBuild(t *testing.T) {
 	signer := signing(t)
 	open(t)
 
-	home := t.TempDir()
-	t.Setenv("HOME", home)
-	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
+	settings(t)
 
 	key, err := Write(Licence{
 		Grants: []Grant{Archive}, Issued: "2026-09-15", Updates: "2027-09-15",
