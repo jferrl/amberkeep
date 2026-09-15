@@ -4,6 +4,7 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Step } from "@/components/migration/Guide";
 import { useT } from "@/i18n";
+import type { Language } from "@/i18n";
 
 /**
  * What could be checked, and the far larger part that could not.
@@ -16,6 +17,7 @@ import { useT } from "@/i18n";
 export function MigrationChecks({
   state,
   stages,
+  language,
   onPlan,
   onBack,
   busy,
@@ -23,6 +25,7 @@ export function MigrationChecks({
 }: {
   state: Migration;
   stages: readonly GuideStage[];
+  language: Language;
   onPlan: () => void;
   onBack: () => void;
   busy: boolean;
@@ -41,7 +44,7 @@ export function MigrationChecks({
       lead={t("migrateChecksHelp")}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

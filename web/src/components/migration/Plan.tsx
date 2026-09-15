@@ -87,7 +87,7 @@ export function MigrationPlanned({
       lead={t("migratePlanHelp")}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

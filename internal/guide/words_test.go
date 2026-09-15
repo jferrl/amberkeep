@@ -162,3 +162,43 @@ func TestHowLongIsSaidInBothLanguages(t *testing.T) {
 		}
 	}
 }
+
+// TestEveryFailureIsExplainedInEveryLanguage covers the advice, which is the prose a
+// person reads at the worst moment they will have with this program. A failure
+// explained in English to somebody who has been reading Spanish since the first
+// screen is the point where they decide the tool is not for them.
+func TestEveryFailureIsExplainedInEveryLanguage(t *testing.T) {
+	t.Parallel()
+
+	english := AllAdvice(English)
+	if len(english) < 20 {
+		t.Fatalf("there are only %d pieces of advice; every failure somebody can act on needs one", len(english))
+	}
+
+	for id, told := range english {
+		if told.Title == "" || told.Body == "" {
+			t.Errorf("%s has no %s", id, map[bool]string{true: "heading", false: "body"}[told.Title == ""])
+		}
+
+		spanish, ok := AdviceOn(id, Spanish)
+		switch {
+		case !ok:
+			t.Errorf("%s is not explained in Spanish", id)
+		case spanish.Body == told.Body:
+			t.Errorf("%s is the English advice in both languages", id)
+		case spanish.Title == "":
+			t.Errorf("%s has no Spanish heading", id)
+		}
+	}
+}
+
+// TestAdviceNobodyWroteIsAbsentRatherThanEmpty covers the other half: a failure with
+// nothing useful to say gets the error's own sentence, and inventing advice for it
+// would be worse than saying nothing.
+func TestAdviceNobodyWroteIsAbsentRatherThanEmpty(t *testing.T) {
+	t.Parallel()
+
+	if told, ok := AdviceOn("nothing.like-this", Spanish); ok {
+		t.Errorf("advice was invented for an unknown failure: %q", told.Title)
+	}
+}

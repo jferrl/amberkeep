@@ -1,4 +1,102 @@
 {
+  "advice": {
+    "android.legacy-schema-unsupported": {
+      "body": "This backup uses the database layout WhatsApp used before 2021, which this\nversion cannot read yet.\n\nIf the phone still works, making a fresh backup will produce the current\nlayout. Otherwise this is worth reporting: the older layout is documented\nand supporting it is a matter of work rather than discovery.",
+      "title": "This backup uses the layout WhatsApp used before 2021"
+    },
+    "android.not-a-message-database": {
+      "body": "This is a database, but not the one that holds messages.\n\nAfter decrypting you should have a file called msgstore.db. Two other files\nsit beside it in a backup and are easy to confuse with it: wa.db holds\ncontacts, and chatsettingsbackup.db holds preferences.",
+      "title": "That database is not the one with the messages in it"
+    },
+    "android.unreadable": {
+      "body": "The file could not be opened at all. Check that the path is right, that the\nfile finished copying, and that you have permission to read it.",
+      "title": "That file could not be opened at all"
+    },
+    "backupfs.corrupt-manifest": {
+      "body": "The backup's own index could not be read, which usually means the backup\ndid not finish.\n\nMake a fresh one. A half-written backup cannot be repaired, and using one\nwould give an archive missing whatever had not been copied yet.",
+      "title": "The backup's own index could not be read"
+    },
+    "backupfs.encrypted": {
+      "body": "This backup is encrypted, so nothing but the phone it came from can read\nit. That is Apple's design and not something any program can work around.\n\nTurn encryption off and make a fresh backup:\n\n  Finder > the phone in the sidebar > uncheck \"Encrypt local backup\"\n\nIt asks for the password that was set. Your chats are unaffected, but an\nunencrypted backup leaves out saved passwords and Health data, so turn it\nback on when you are done.\n\nMake the safety copy first: Finder keeps one backup per device and\noverwrites it. Right-click the existing backup in Manage Backups and choose\nArchive, and it will survive.",
+      "title": "That backup is encrypted"
+    },
+    "backupfs.file-not-found": {
+      "body": "That file is not in this backup.\n\nWhatsApp's message store is called ChatStorage.sqlite. If it is missing,\nthe phone may not have had WhatsApp installed when the backup was made, or\nthe backup may have finished early. Check the backup's date and make a\nfresh one if it looks old.",
+      "title": "That file is not in this backup"
+    },
+    "backupfs.not-a-backup": {
+      "body": "That folder is not an iPhone backup.\n\nA backup folder is named after the device's identifier, a long string of\ndigits and letters, and holds Manifest.db, Manifest.plist, Info.plist and\nStatus.plist. The folder above it holds one such folder per device.\n\nRun \"amberkeep backups\" to find them.",
+      "title": "That folder is not an iPhone backup"
+    },
+    "backupfs.not-a-file": {
+      "body": "That entry in the backup is a folder rather than a file, so there is\nnothing to take out of it.",
+      "title": "That entry in the backup is a folder"
+    },
+    "backupfs.permission-denied": {
+      "body": "macOS keeps iPhone backups behind Full Disk Access, and this program does\nnot have it.\n\n  System Settings > Privacy & Security > Full Disk Access\n\nAdd your terminal, or whichever program is running this, then run the\ncommand again. Nothing is granted to anybody else by doing so, and it can\nbe taken away afterwards.\n\nIf you would rather not, copy the backup folder somewhere ordinary in\nFinder and point at the copy instead:\n\n  amberkeep extract --backup /path/to/the/copy --out .",
+      "title": "macOS will not let this program read your backups yet"
+    },
+    "backupfs.unreadable": {
+      "body": "The backup could not be read. Check the path, and that the backup finished\ncopying if it came from somewhere else.",
+      "title": "The backup could not be read"
+    },
+    "crypt15.crypt14-needs-root": {
+      "body": "This is an older backup format, locked with a key WhatsApp keeps inside its\nown private storage on the phone. Reaching it needs root access.\n\nThe straightforward path is to make a new backup instead: turn on\nend-to-end encrypted backup with a 64-digit key, tap Back Up, and use the\nmsgstore.db.crypt15 file it produces.",
+      "title": "This is the older backup format, and it needs root"
+    },
+    "crypt15.key-format": {
+      "body": "The key is the 64-digit one WhatsApp shows you, in eight groups of eight\ncharacters. Spaces, dashes and line breaks in the file are fine.\n\nIf you only have a password, it cannot be used here: WhatsApp releases the\nkey to the app after checking the password and never lets it leave the\nphone. Switch the backup to a 64-digit key and back up again. No chats are\nlost by doing this.\n\n  WhatsApp > Settings > Chats > Chat backup > End-to-end encrypted backup",
+      "title": "That is not a 64-digit key"
+    },
+    "crypt15.malformed-file": {
+      "body": "This does not look like a WhatsApp backup.\n\nThe file you want is called msgstore.db.crypt15 and lives in\nAndroid/media/com.whatsapp/WhatsApp/Databases on the phone. The files\nbeginning \"msgstore-increment\" are partial and cannot be read on their own.",
+      "title": "That file is not a WhatsApp backup"
+    },
+    "crypt15.passkey-not-supported": {
+      "body": "This backup is locked with a passkey, which never leaves the phone, so no\nprogram on a computer can open it.\n\nSwitch to a 64-digit key and make a fresh backup. Your chats are untouched\nby the change.\n\n  WhatsApp > Settings > Chats > Chat backup > End-to-end encrypted backup",
+      "title": "This backup is locked with a passkey"
+    },
+    "crypt15.unexpected-plaintext": {
+      "body": "The key was right and the file is intact, but its contents are in a shape\nthis version does not recognise. That usually means the backup came from a\nnewer WhatsApp release than this build knows about.\n\nIt is worth reporting, with the WhatsApp version that made the backup.",
+      "title": "This backup is in a shape this version does not know"
+    },
+    "crypt15.wrong-key": {
+      "body": "Two things produce this, and they cannot be told apart from outside:\n\n  * The key belongs to a different backup. Check you copied the key that\n    WhatsApp showed for this phone and this account.\n  * The file is incomplete. Copy it off the phone again and compare the\n    size with the original before trying once more.",
+      "title": "That key does not open this backup"
+    },
+    "export.archive-exists": {
+      "body": "An archive is already there, and it will not be overwritten by accident.\n\nChoose an empty directory with --out, or pass --force to replace what is\nthere. Nothing else in the directory is touched either way.",
+      "title": "There is already an archive there"
+    },
+    "ios.encrypted-backup": {
+      "body": "This file is still encrypted, which is what an encrypted iPhone backup\nholds instead of a database.\n\nTurn backup encryption off in Finder, iTunes or the Apple Devices app and\nmake a fresh backup. Turning it off asks for the password that was set.\n\nYour chats are not affected by the change, but Health and saved passwords\nare left out of an unencrypted backup, so turn encryption back on\nafterwards.",
+      "title": "That file is still encrypted"
+    },
+    "ios.not-a-message-store": {
+      "body": "This is a database, but not the one an iPhone keeps messages in.\n\nThe file you want is called ChatStorage.sqlite. It lives inside an iPhone\nbackup, under the group container for WhatsApp, and comes with two files\nbeside it whose names end in -wal and -shm. All three are needed: the one\nending -wal holds whatever had not yet been written into the main file.",
+      "title": "That database is not the one an iPhone keeps messages in"
+    },
+    "ios.unreadable": {
+      "body": "The iPhone message store could not be read. Check that the path is right,\nthat the file finished copying, and that the two files ending -wal and -shm\nwere copied with it.",
+      "title": "The iPhone message store could not be read"
+    },
+    "search.index-unreadable": {
+      "body": "The search index could not be used. It is a derived file and nothing in the\narchive depends on it, so the fix is to build it again:\n\n  amberkeep search --db msgstore.db --rebuild \"your search\"\n\nIf that keeps happening, check there is room on the disk: an index is\nroughly a third the size of the archive.",
+      "title": "The search index could not be used"
+    },
+    "search.no-full-text-support": {
+      "body": "This build cannot search, which should not be possible in a release and is\nworth reporting.\n\nEverything else still works: the archive can be exported and read as web\npages, which carry their own search.",
+      "title": "This build cannot search"
+    },
+    "search.nothing-to-search-for": {
+      "body": "There are no words in that search.\n\nType what you remember of the message. A part of a word works too, with a\nstar at the end: vermu* finds vermut and vermuts.",
+      "title": "There are no words in that search"
+    },
+    "source.unrecognised-archive": {
+      "body": "This is a database, but not one this version recognises.\n\nTwo files can be opened here: an Android msgstore.db, after decrypting, and\nan iPhone ChatStorage.sqlite taken from a backup. The other databases that\nsit beside them hold contacts and settings rather than messages.",
+      "title": "That database is not one this version recognises"
+    }
+  },
   "chrome": {
     "anHour": "an hour",
     "critical": "do not skip",

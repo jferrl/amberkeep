@@ -397,6 +397,24 @@ export interface Count {
  * weight: the command prints exactly that, and a page meeting a name from a newer
  * server has to say something rather than nothing.
  */
+/**
+ * What to say about a failure somebody can act on.
+ *
+ * Every failure worth advising on carries an identifier from the part of the program
+ * that raised it, and this is what that identifier means. Fetched rather than written
+ * here: the same words are printed by the command, and a copy on this side would
+ * drift from that one the first time anybody corrected a sentence.
+ */
+export interface Advice {
+  /** title is the one line, read at a glance, instead of the error's own words. */
+  title: string;
+  /** body is the several lines under it, line breaks already in them. */
+  body: string;
+}
+
+/** AdviceOnFailure is every piece of advice, by the identifier a failure carries. */
+export type AdviceOnFailure = Readonly<Record<string, Advice>>;
+
 export interface Said {
   note?: string;
   detail?: string;
@@ -409,8 +427,8 @@ export interface Said {
  *
  * `workspace` is present at every stage, including before anything has been chosen,
  * so that somebody can be told where files will be written before any are.
- * `guidance` is several lines with the line breaks already in them, in the server's
- * own words, and is rendered as text.
+ * `guidance` names the advice that goes with a failure rather than carrying its
+ * words: the words come from /api/advice, in the language this page asked for.
  */
 export interface Setup extends Said {
   stage: Stage;

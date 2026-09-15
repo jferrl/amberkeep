@@ -14,6 +14,7 @@
  */
 
 import type {
+  AdviceOnFailure,
   Archive,
   Export,
   BackupList,
@@ -400,6 +401,20 @@ export function getGuide(language: string, options: Cancellable = {}): Promise<G
   // claims, and restore instructions in the wrong language are worse than ones in a
   // language somebody has already accepted.
   return ask<Guide>(`${api}/migration/guide`, narrow({ lang: language }), options);
+}
+
+/**
+ * getAdvice is what to say about every failure somebody can act on.
+ *
+ * All of them at once, and early, rather than one when it happens: a failure is the
+ * moment a page least wants to be waiting on another request, and there are two
+ * dozen of these in a few kilobytes.
+ */
+export function getAdvice(
+  language: string,
+  options: Cancellable = {},
+): Promise<AdviceOnFailure> {
+  return ask<AdviceOnFailure>(`${api}/advice`, narrow({ lang: language }), options);
 }
 
 /** checkBackup looks at a backup, and stops. */

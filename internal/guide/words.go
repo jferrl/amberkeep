@@ -58,6 +58,8 @@ type catalogue struct {
 	// Chrome is the renderer's own few phrases, which are as user-facing as the
 	// steps and were English literals in the middle of it.
 	Chrome map[string]string `json:"chrome"`
+	// Advice is what to say about a failure, by the identifier the error carries.
+	Advice map[string]Advice `json:"advice"`
 }
 
 // said is every language's catalogue, read once.

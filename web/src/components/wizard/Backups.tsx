@@ -57,7 +57,7 @@ export function Backups({
       lead={situation === "some" ? t("backupsHelp") : undefined}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

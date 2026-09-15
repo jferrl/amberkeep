@@ -1,4 +1,102 @@
 {
+  "advice": {
+    "android.legacy-schema-unsupported": {
+      "body": "Esta copia de seguridad usa la estructura de base de datos que WhatsApp\nusaba antes de 2021, y esta versión todavía no sabe leerla.\n\nSi el teléfono aún funciona, hacer una copia nueva producirá la estructura\nactual. Si no, merece la pena contarlo: la estructura antigua está\ndocumentada y admitirla es cuestión de trabajo, no de investigación.",
+      "title": "Esta copia usa la estructura que WhatsApp usaba antes de 2021"
+    },
+    "android.not-a-message-database": {
+      "body": "Esto es una base de datos, pero no la que guarda los mensajes.\n\nDespués de descifrar deberías tener un archivo llamado msgstore.db. En una\ncopia de seguridad hay otros dos al lado que se confunden fácilmente con él:\nwa.db guarda los contactos y chatsettingsbackup.db, las preferencias.",
+      "title": "Esa base de datos no es la de los mensajes"
+    },
+    "android.unreadable": {
+      "body": "No se ha podido abrir el archivo. Comprueba que la ruta es correcta, que el\narchivo terminó de copiarse y que tienes permiso para leerlo.",
+      "title": "No se ha podido abrir el archivo"
+    },
+    "backupfs.corrupt-manifest": {
+      "body": "No se ha podido leer el índice de la propia copia de seguridad, lo que suele\nsignificar que la copia no terminó.\n\nHaz una nueva. Una copia a medio escribir no se puede reparar, y usarla\ndaría un archivo al que le falta todo lo que aún no se había copiado.",
+      "title": "No se ha podido leer el índice de la propia copia"
+    },
+    "backupfs.encrypted": {
+      "body": "Esta copia de seguridad está cifrada, así que no puede leerla nada que no\nsea el teléfono del que salió. Es el diseño de Apple y no hay programa que\npueda rodearlo.\n\nDesactiva el cifrado y haz una copia nueva:\n\n  Finder > el teléfono en la barra lateral > desmarca «Encriptar copia de\n  seguridad local»\n\nTe pedirá la contraseña que se puso. Tus chats no se ven afectados, pero una\ncopia sin cifrar deja fuera las contraseñas guardadas y los datos de Salud,\nasí que vuelve a activarlo cuando termines.\n\nGuarda antes la copia que ya tienes: Finder guarda una copia por teléfono y\nla sustituye por la siguiente. Haz clic derecho sobre ella en Gestionar\ncopias de seguridad y elige Archivar; así sobrevive.",
+      "title": "Esa copia de seguridad está cifrada"
+    },
+    "backupfs.file-not-found": {
+      "body": "Ese archivo no está en esta copia de seguridad.\n\nEl almacén de mensajes de WhatsApp se llama ChatStorage.sqlite. Si no está,\npuede que el teléfono no tuviera WhatsApp instalado cuando se hizo la copia,\no que la copia terminara antes de tiempo. Mira la fecha de la copia y haz\nuna nueva si parece antigua.",
+      "title": "Ese archivo no está en esta copia de seguridad"
+    },
+    "backupfs.not-a-backup": {
+      "body": "Esa carpeta no es una copia de seguridad de iPhone.\n\nLa carpeta de una copia lleva por nombre el identificador del dispositivo,\nuna cadena larga de números y letras, y dentro tiene Manifest.db,\nManifest.plist, Info.plist y Status.plist. La carpeta de encima tiene una\ncarpeta así por cada teléfono.\n\nEjecuta \"amberkeep backups\" para encontrarlas.",
+      "title": "Esa carpeta no es una copia de seguridad de iPhone"
+    },
+    "backupfs.not-a-file": {
+      "body": "Eso que hay en la copia de seguridad es una carpeta y no un archivo, así que\nno hay nada que sacar de ahí.",
+      "title": "Eso que hay en la copia es una carpeta"
+    },
+    "backupfs.permission-denied": {
+      "body": "macOS guarda las copias de seguridad del iPhone detrás del Acceso total al\ndisco, y este programa no lo tiene.\n\n  Ajustes del Sistema > Privacidad y seguridad > Acceso total al disco\n\nAñade tu terminal, o el programa desde el que estés ejecutando esto, y\nvuelve a lanzar el comando. Con eso no le das permiso a nadie más, y se\npuede quitar después.\n\nSi prefieres no hacerlo, copia en Finder la carpeta de la copia a un sitio\nnormal y apunta a la copia:\n\n  amberkeep extract --backup /ruta/a/la/copia --out .",
+      "title": "macOS todavía no deja a este programa leer tus copias"
+    },
+    "backupfs.unreadable": {
+      "body": "No se ha podido leer la copia de seguridad. Comprueba la ruta, y que la\ncopia terminó de copiarse si vino de otro sitio.",
+      "title": "No se ha podido leer la copia de seguridad"
+    },
+    "crypt15.crypt14-needs-root": {
+      "body": "Este es un formato de copia de seguridad más antiguo, protegido con una\nclave que WhatsApp guarda en su propio almacenamiento privado dentro del\nteléfono. Llegar hasta ella necesita acceso root.\n\nLo sencillo es hacer una copia nueva: activa la copia de seguridad cifrada\nde extremo a extremo con una clave de 64 dígitos, pulsa Guardar y usa el\narchivo msgstore.db.crypt15 que sale de ahí.",
+      "title": "Esta copia usa el formato antiguo, que necesita root"
+    },
+    "crypt15.key-format": {
+      "body": "La clave es la de 64 dígitos que te enseña WhatsApp, en ocho grupos de ocho\ncaracteres. Los espacios, los guiones y los saltos de línea del archivo dan\nigual.\n\nSi solo tienes una contraseña, aquí no sirve: WhatsApp comprueba la\ncontraseña en el propio teléfono y solo entonces entrega la clave a la\naplicación, así que la clave nunca sale de allí. Cambia la copia de\nseguridad a una clave de 64 dígitos y vuelve a hacerla. No se pierde ningún\nchat por hacerlo.\n\n  WhatsApp > Ajustes > Chats > Copia de seguridad > Copia de seguridad\n  cifrada de extremo a extremo",
+      "title": "Eso no es una clave de 64 dígitos"
+    },
+    "crypt15.malformed-file": {
+      "body": "Esto no parece una copia de seguridad de WhatsApp.\n\nEl archivo que buscas se llama msgstore.db.crypt15 y está en\nAndroid/media/com.whatsapp/WhatsApp/Databases, dentro del teléfono. Los\narchivos que empiezan por \"msgstore-increment\" son fragmentos y no se pueden\nleer por sí solos.",
+      "title": "Ese archivo no es una copia de seguridad de WhatsApp"
+    },
+    "crypt15.passkey-not-supported": {
+      "body": "Esta copia de seguridad está protegida con una clave de acceso, que nunca\nsale del teléfono, así que ningún programa de un ordenador puede abrirla.\n\nCambia a una clave de 64 dígitos y haz una copia nueva. Tus chats no se ven\nafectados por el cambio.\n\n  WhatsApp > Ajustes > Chats > Copia de seguridad > Copia de seguridad\n  cifrada de extremo a extremo",
+      "title": "Esta copia está protegida con una clave de acceso"
+    },
+    "crypt15.unexpected-plaintext": {
+      "body": "La clave era correcta y el archivo está íntegro, pero su contenido tiene una\nforma que esta versión no reconoce. Eso suele significar que la copia la\nhizo una versión de WhatsApp más nueva que la que este programa conoce.\n\nMerece la pena contarlo, indicando la versión de WhatsApp que hizo la copia.",
+      "title": "Esta copia tiene una forma que esta versión no conoce"
+    },
+    "crypt15.wrong-key": {
+      "body": "Esto lo producen dos cosas, y desde fuera no se pueden distinguir:\n\n  * La clave es de otra copia de seguridad. Comprueba que copiaste la clave\n    que WhatsApp enseñó para este teléfono y esta cuenta.\n  * El archivo está incompleto. Vuelve a copiarlo del teléfono y compara el\n    tamaño con el original antes de intentarlo otra vez.",
+      "title": "Esa clave no abre esta copia de seguridad"
+    },
+    "export.archive-exists": {
+      "body": "Ahí ya hay un archivo, y no se va a sobrescribir sin querer.\n\nElige una carpeta vacía con --out, o pasa --force para sustituir lo que hay.\nEn ningún caso se toca nada más de esa carpeta.",
+      "title": "Ahí ya hay un archivo"
+    },
+    "ios.encrypted-backup": {
+      "body": "Este archivo sigue cifrado, que es lo que guarda una copia de seguridad\ncifrada del iPhone en lugar de una base de datos.\n\nDesactiva el cifrado de las copias en Finder, en iTunes o en la app\nDispositivos Apple y haz una copia nueva. Desactivarlo pide la contraseña\nque se puso.\n\nTus chats no se ven afectados por el cambio, pero los datos de Salud y las\ncontraseñas guardadas quedan fuera de una copia sin cifrar, así que vuelve a\nactivar el cifrado después.",
+      "title": "Ese archivo sigue cifrado"
+    },
+    "ios.not-a-message-store": {
+      "body": "Esto es una base de datos, pero no en la que un iPhone guarda los mensajes.\n\nEl archivo que buscas se llama ChatStorage.sqlite. Está dentro de una copia\nde seguridad del iPhone, en el contenedor de grupo de WhatsApp, y viene con\notros dos al lado cuyos nombres terminan en -wal y -shm. Hacen falta los\ntres: el que termina en -wal guarda lo que todavía no se había escrito en el\narchivo principal.",
+      "title": "Esa base de datos no es donde el iPhone guarda los mensajes"
+    },
+    "ios.unreadable": {
+      "body": "No se ha podido leer el almacén de mensajes del iPhone. Comprueba que la\nruta es correcta, que el archivo terminó de copiarse y que los dos archivos\nque terminan en -wal y -shm se copiaron con él.",
+      "title": "No se ha podido leer el almacén de mensajes del iPhone"
+    },
+    "search.index-unreadable": {
+      "body": "No se ha podido usar el índice de búsqueda. Es un archivo derivado y nada\ndel archivo depende de él, así que la solución es volver a hacerlo:\n\n  amberkeep search --db msgstore.db --rebuild \"lo que buscas\"\n\nSi sigue pasando, mira si queda sitio en el disco: un índice ocupa\naproximadamente un tercio de lo que ocupa el archivo.",
+      "title": "No se ha podido usar el índice de búsqueda"
+    },
+    "search.no-full-text-support": {
+      "body": "Esta versión no puede buscar, cosa que no debería ocurrir en una versión\npublicada y que merece la pena contar.\n\nTodo lo demás sigue funcionando: el archivo se puede exportar y leer como\npáginas web, que llevan su propia búsqueda.",
+      "title": "Esta versión no puede buscar"
+    },
+    "search.nothing-to-search-for": {
+      "body": "En esa búsqueda no hay ninguna palabra.\n\nEscribe lo que recuerdes del mensaje. También vale un trozo de palabra, con\nun asterisco al final: vermu* encuentra vermut y vermuts.",
+      "title": "En esa búsqueda no hay ninguna palabra"
+    },
+    "source.unrecognised-archive": {
+      "body": "Esto es una base de datos, pero no de las que esta versión reconoce.\n\nAquí se pueden abrir dos archivos: un msgstore.db de Android, ya descifrado,\ny un ChatStorage.sqlite de iPhone sacado de una copia de seguridad. Las\ndemás bases de datos que hay al lado guardan contactos y ajustes, no\nmensajes.",
+      "title": "Esa base de datos no es de las que esta versión reconoce"
+    }
+  },
   "chrome": {
     "anHour": "una hora",
     "critical": "no te lo saltes",

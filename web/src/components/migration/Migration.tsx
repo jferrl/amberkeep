@@ -6,7 +6,12 @@ import {
   forgetMigration,
   planMigration,
 } from "@/api/client";
-import { useGuide, useMigration, useMigrationStep } from "@/api/queries";
+import {
+  useAdvice,
+  useGuide,
+  useMigration,
+  useMigrationStep,
+} from "@/api/queries";
 import type { Migration as State } from "@/api/types";
 import { MigrationChecks } from "@/components/migration/Checks";
 import { MigrationDone } from "@/components/migration/Done";
@@ -71,6 +76,10 @@ export function Migration({
 }) {
   const state = useMigration();
   const guide = useGuide(language);
+  // Fetched while nothing has gone wrong, so the screen that explains a failure is
+  // not the one waiting on a request. The answer is read from the cache wherever it
+  // is needed.
+  useAdvice(language);
   const step = useMigrationStep();
 
   const [paths, setPaths] = useState<Paths>({
@@ -118,6 +127,7 @@ export function Migration({
     case "checked":
       return (
         <MigrationChecks
+          language={language}
           state={now}
           stages={stages}
           busy={step.busy}

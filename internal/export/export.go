@@ -88,6 +88,11 @@ const writeBuffer = 1 << 16
 // ErrExists reports that a file is already there and Overwrite was not set.
 var ErrExists = errors.New("the file already exists")
 
+// GuidanceExists names what to say about it. Every other package that can fail in a
+// way somebody could act on names its advice the same way, and the words themselves
+// live in internal/guide, in both languages.
+const GuidanceExists = "export.archive-exists"
+
 // Words are the exported page's own few words.
 type Words struct {
 	Title       string

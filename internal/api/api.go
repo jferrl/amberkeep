@@ -95,9 +95,12 @@ type Options struct {
 	// somebody before anything is written there, so they can find it afterwards.
 	Workspace string
 
-	// Advise turns a failure into the several lines of help that go with it. The
-	// wording lives with the commands, which is where every other failure in this
-	// program is explained.
+	// Advise names the advice that goes with a failure, or says there is none.
+	//
+	// An identifier rather than the words: a page reads in whichever language its
+	// reader chose, and a failure is the worst place in a program to change
+	// language on somebody. The words come from /api/advice, in both languages,
+	// and the identifier is what says which of them to show.
 	Advise func(error) string
 }
 
@@ -263,6 +266,7 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 
 	mux.HandleFunc("GET /api/migration", s.handleMigration)
 	mux.HandleFunc("GET /api/migration/guide", s.handleGuide)
+	mux.HandleFunc("GET /api/advice", s.handleAdvice)
 	mux.HandleFunc("POST /api/migration/check", s.handleCheck)
 	mux.HandleFunc("POST /api/migration/plan", s.handlePlanMigration)
 	mux.HandleFunc("POST /api/migration/carry-out", s.handleCarryOut)

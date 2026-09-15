@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 )
@@ -57,7 +56,9 @@ func writing(t *testing.T, out *writer) http.Handler {
 
 	handler, err := New(context.Background(), out, Options{
 		Location: time.UTC, Workspace: t.TempDir(), Me: "You",
-		Advise: func(err error) string { return "what to do about: " + err.Error() },
+		// An identifier, which is what a real one returns: the words live in
+		// internal/guide, in both languages, and the page looks them up.
+		Advise: func(err error) string { return "source.unrecognised-archive" },
 	})
 	if err != nil {
 		t.Fatalf("New() failed: %v", err)
@@ -212,7 +213,7 @@ func TestAnExportThatFailsSaysWhatToDo(t *testing.T) {
 	if detail, _ := state["detail"].(string); detail == "" {
 		t.Error("it did not say what went wrong")
 	}
-	if guidance, _ := state["guidance"].(string); !strings.HasPrefix(guidance, "what to do about: ") {
+	if guidance, _ := state["guidance"].(string); guidance != "source.unrecognised-archive" {
 		t.Errorf("guidance = %q", guidance)
 	}
 }

@@ -140,6 +140,17 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 			},
 		},
 		{
+			name: "what to do about a failure",
+			file: "advice.ts",
+			what: "GET /api/advice?lang=es — what to say about every failure somebody can act\n" +
+				"on, in the language the page asked for. A failed state names one of these\n" +
+				"rather than carrying its words.\n\n" +
+				"One entry of the reply, not all two dozen: the whole of it is the guide's own\n" +
+				"prose, and recording that here would put a second copy of it in this page's\n" +
+				"source and make correcting a sentence a re-recording.",
+			reply: oneOf(recording(&helper{}, "/api/advice?lang=es"), "crypt15.wrong-key"),
+		},
+		{
 			name: "there is an archive to read",
 			file: "state-ready.ts",
 			what: "GET /api/state — there is an archive. It describes itself here so the page\n" +
@@ -357,6 +368,31 @@ func fetching(path string) func(*testing.T) []byte {
 	return func(t *testing.T) []byte {
 		t.Helper()
 		return get(t, searchable(t), path)
+	}
+}
+
+// oneOf keeps a single entry of a reply that is a map of many.
+//
+// What is being checked is the shape a page has to read, and for a reply whose keys
+// are prose identifiers, one entry proves that as well as all of them and does not
+// copy the prose into the page's source.
+func oneOf(reply func(*testing.T) []byte, key string) func(*testing.T) []byte {
+	return func(t *testing.T) []byte {
+		t.Helper()
+
+		var all map[string]json.RawMessage
+		if err := json.Unmarshal(reply(t), &all); err != nil {
+			t.Fatalf("the reply is not a map: %v", err)
+		}
+		one, ok := all[key]
+		if !ok {
+			t.Fatalf("the reply has no %q; it has %d entries", key, len(all))
+		}
+		kept, err := json.Marshal(map[string]json.RawMessage{key: one})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return kept
 	}
 }
 

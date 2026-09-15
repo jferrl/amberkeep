@@ -34,6 +34,19 @@ func (s *server) handleGuide(w http.ResponseWriter, r *http.Request) {
 	write(w, r, map[string]any{"stages": guidance(lang)})
 }
 
+// handleAdvice returns what to say about every failure somebody can act on.
+//
+// All of them at once, rather than one when it happens. A page can only ask about a
+// failure after the failure, which is the moment it least wants to be waiting on
+// another request — and there are two dozen of these, which is a few kilobytes.
+//
+// Every state that can fail carries an identifier rather than words, and this is the
+// other half of that: the identifier says which of these to show, and the language
+// is the page's to choose.
+func (s *server) handleAdvice(w http.ResponseWriter, r *http.Request) {
+	write(w, r, guide.AllAdvice(guide.Spoken(r.URL.Query().Get("lang"))))
+}
+
 // handleCheck looks at a backup: whether it can be used at all, and what has to be
 // true that nothing here can see.
 func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {

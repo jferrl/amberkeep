@@ -29,6 +29,7 @@ import {
   getBackups,
   getExport,
   getChats,
+  getAdvice,
   getGuide,
   getMessages,
   getMigration,
@@ -100,6 +101,7 @@ export const queryKeys = {
   backups: ["backups"] as const,
   migration: ["migration"] as const,
   guide: ["guide"] as const,
+  advice: ["advice"] as const,
   archive: ["archive"] as const,
   chats: (q: string) => ["chats", q] as const,
   messages: (jid: string) => ["messages", jid] as const,
@@ -446,6 +448,27 @@ export function guideQuery(language: string) {
 /** useGuide is what somebody has to be told, in the order they need it. */
 export function useGuide(language: string) {
   return useQuery(guideQuery(language));
+}
+
+/** adviceQuery is what to say about every failure, in one reader's language. */
+function adviceQuery(language: string) {
+  return queryOptions({
+    queryKey: [...queryKeys.advice, language] as const,
+    queryFn: ({ signal }) => getAdvice(language, { signal }),
+    staleTime: neverStale,
+    gcTime: neverStale,
+  });
+}
+
+/**
+ * useAdvice is what to say about a failure, in the reader's own language.
+ *
+ * Asked for before anything has failed, by the screens somebody is on while the
+ * work runs, so that when it does fail the words are already here. Two dozen
+ * entries in a few kilobytes, fetched once and never refetched.
+ */
+export function useAdvice(language: string) {
+  return useQuery(adviceQuery(language));
 }
 
 /**

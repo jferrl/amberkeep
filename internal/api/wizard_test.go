@@ -130,7 +130,7 @@ func wizard(t *testing.T, bring Importer) *Server {
 		Location: time.UTC, Workspace: "/tmp/amberkeep-test",
 		Importer: bring,
 		Advise: func(err error) string {
-			return "what to do about: " + err.Error()
+			return "source.unrecognised-archive"
 		},
 	})
 	if err != nil {
@@ -433,7 +433,7 @@ func TestAFailureSaysWhatToDoAboutIt(t *testing.T) {
 				t.Fatal("a failure said nothing about what went wrong")
 			}
 			// Nobody should be left at a dead end with a sentence they cannot act on.
-			if guidance, _ := failed["guidance"].(string); !strings.HasPrefix(guidance, "what to do about: ") {
+			if guidance, _ := failed["guidance"].(string); guidance != "source.unrecognised-archive" {
 				t.Errorf("guidance = %q", guidance)
 			}
 		})

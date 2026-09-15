@@ -66,8 +66,11 @@ func execute() int {
 		return 130
 	default:
 		fmt.Fprintf(os.Stderr, "\n%s\n", err)
-		if advice := app.AdviseOn(err); advice != "" {
-			fmt.Fprintf(os.Stderr, "\n%s\n", advice)
+		// The advice is in whatever this terminal reads, even though the line above
+		// is not: the error's own words come from the middle of the program and are
+		// one sentence, and what to do about it is the part somebody acts on.
+		if told, ok := app.AdviseOn(err, spoken()); ok {
+			fmt.Fprintf(os.Stderr, "\n%s\n\n%s\n", told.Title, told.Body)
 		}
 		return 1
 	}

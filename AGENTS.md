@@ -41,9 +41,12 @@ own format, with nothing neutral to move them to.
   Never assume a column exists: ask the schema and adapt. Every reader does this and
   every reader must keep doing it.
 - **Errors carry a stable guidance identifier.** Each package has one typed error set
-  whose `Is` matches on that identifier. `cmd/amberkeep/guidance.go` turns each into
-  several lines of advice, and a test fails the build if an error is added without
-  any. Nobody should have to search the internet to get past a problem we understand.
+  whose `Is` matches on that identifier. `internal/app/guidance.go` turns an error
+  into one of those identifiers; `internal/guide/words/*.json` turns the identifier
+  into a heading and several lines of advice, in every language, for the terminal and
+  the page alike. A test fails the build if an error is added without any, or if the
+  advice exists in one language and not the other. Nobody should have to search the
+  internet to get past a problem we understand, in any language.
 - **Unrecognised is not the same as dropped.** A message of a kind this build does not
   know is carried through with its original type number and rendered as such. Never
   invent a meaning for a code no reliable source documents. Say UNKNOWN instead.

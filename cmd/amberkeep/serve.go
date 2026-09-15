@@ -110,7 +110,7 @@ func runServe(ctx context.Context, args []string) error {
 		Phones:    app.Phones{Workspace: *work},
 		Migrator:  move,
 		Workspace: *work,
-		Advise:    app.AdviseOn,
+		Advise:    app.GuidanceFor,
 	})
 	if err != nil {
 		if reader != nil {

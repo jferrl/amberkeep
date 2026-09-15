@@ -8,6 +8,7 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Shell } from "@/components/wizard/Shell";
 import type { Typed } from "@/components/wizard/route";
 import { useT } from "@/i18n";
+import type { Language } from "@/i18n";
 
 /**
  * Opening a file somebody already has.
@@ -25,6 +26,7 @@ import { useT } from "@/i18n";
  */
 export function Existing({
   contacts,
+  language,
   typed,
   onContacts,
   onTyped,
@@ -34,6 +36,7 @@ export function Existing({
   failure,
 }: {
   contacts: string;
+  language: Language;
   typed: Typed;
   onContacts: (contacts: string) => void;
   onTyped: (change: Partial<Typed>) => void;
@@ -64,7 +67,7 @@ export function Existing({
       lead={t("fileHelp")}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/backupfs"
+	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -69,9 +70,13 @@ func (i Importer) Backups() (backups []api.Backup, problem string) {
 		return list, ""
 	}
 
+	// English, because this interface carries no language and the one problem that
+	// matters here — macOS not letting the program near the backups — is a case the
+	// page recognises and explains in its own words. Anything else is a sentence
+	// somebody would otherwise have to search for.
 	problem = err.Error()
-	if help := AdviseOn(err); help != "" {
-		problem += "\n\n" + help
+	if told, ok := AdviseOn(err, guide.English); ok {
+		problem += "\n\n" + told.Body
 	}
 	return list, problem
 }

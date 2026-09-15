@@ -4,6 +4,7 @@ import type { Extras } from "@/api/client";
 import { decrypt, fetchFromPhone, extract, openFile } from "@/api/client";
 import {
   isMissingImporter,
+  useAdvice,
   useBackups,
   useClose,
   useSetupAction,
@@ -122,6 +123,11 @@ export function Wizard({
     setRead(true);
     setRoute("choose");
   };
+
+  // Asked for here, while nothing has gone wrong yet, so that the screen which
+  // explains a failure is not the one waiting on a request. Nothing is done with the
+  // answer: whichever screen needs it reads it from the same cache.
+  useAdvice(language);
 
   const failure = stage === "failed" && !read ? state : undefined;
 
@@ -272,6 +278,7 @@ function Screen({
     case "existing":
       return (
         <Existing
+          language={language}
           contacts={contacts}
           typed={typed}
           busy={busy}
@@ -291,7 +298,7 @@ function Screen({
     case "choose":
       // Nothing to correct behind a failure met here, so it gets a screen of its own.
       if (failure !== undefined)
-        return <Failure state={failure} onBack={onAgain} />;
+        return <Failure state={failure} language={language} onBack={onAgain} />;
       return <Choose onChoose={onRoute} importing={importing} />;
   }
 }

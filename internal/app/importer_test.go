@@ -36,7 +36,7 @@ func wizardOver(t *testing.T, workspace string) *api.Server {
 		Location:  time.UTC,
 		Workspace: workspace,
 		Importer:  Importer{Me: "You"},
-		Advise:    AdviseOn,
+		Advise:    GuidanceFor,
 	})
 	if err != nil {
 		t.Fatalf("starting the wizard: %v", err)

@@ -69,7 +69,7 @@ export function MigrationPaths({
       lead={t("migratePathsHelp")}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

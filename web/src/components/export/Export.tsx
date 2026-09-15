@@ -81,6 +81,7 @@ export function Export({
       return (
         <Choices
           into={into}
+          language={language}
           onInto={setInto}
           formats={formats}
           onFormats={setFormats}
@@ -110,6 +111,7 @@ const offered: { format: Format; title: Phrase; help: Phrase }[] = [
 /** What to write, and where to put it. */
 function Choices({
   into,
+  language,
   onInto,
   formats,
   onFormats,
@@ -122,6 +124,7 @@ function Choices({
   onWrite,
 }: {
   into: string;
+  language: Language;
   onInto: (into: string) => void;
   formats: Format[];
   onFormats: (formats: Format[]) => void;
@@ -157,7 +160,7 @@ function Choices({
       lead={t("exportHelp")}
       trouble={
         failure === undefined ? undefined : (
-          <Trouble state={failure} correctable />
+          <Trouble state={failure} language={language} correctable />
         )
       }
       onBack={onBack}

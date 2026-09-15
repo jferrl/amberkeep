@@ -9,6 +9,7 @@ import loadedMessageReply from "./contract/message-with-everything";
 import messagesReply from "./contract/messages";
 import migrationCheckedReply from "./contract/migration-checked";
 import migrationDoneReply from "./contract/migration-done";
+import adviceReply from "./contract/advice";
 import migrationGuideReply from "./contract/migration-guide";
 import migrationIdleReply from "./contract/migration-idle";
 import migrationPlannedReply from "./contract/migration-planned";
@@ -18,6 +19,7 @@ import stateFailedReply from "./contract/state-failed";
 import stateReadyReply from "./contract/state-ready";
 import stateWorkingReply from "./contract/state-working";
 import type {
+  AdviceOnFailure,
   Archive,
   BackupList,
   ChatList,
@@ -297,6 +299,21 @@ describe("the migration", () => {
     expect(done.stage).toBe("done");
     expect(done.result?.backup).toBeTruthy();
     expect(done.result?.checks).toBeGreaterThan(0);
+  });
+
+  /**
+   * A failed state names its advice; this is what the name means. Recorded in
+   * Spanish, because the point of the identifier is that the words are not English
+   * by construction.
+   */
+  it("says what to do about a failure, in the language it was asked in", () => {
+    const advice = records<AdviceOnFailure>()(adviceReply);
+    const told = advice["crypt15.wrong-key"];
+
+    expect(told).toBeDefined();
+    expect(told?.title).toBeTruthy();
+    expect(told?.body).toContain("\n");
+    expect(told?.title).not.toMatch(/does not open this backup/);
   });
 
   /** The words come from the program, so correcting one corrects it everywhere. */

@@ -10,6 +10,7 @@ export interface Failed {
   detail?: string | undefined;
   guidance?: string | undefined;
 }
+import { useAdvice } from "@/api/queries";
 import { Button } from "@/components/ui/button";
 import { Shell } from "@/components/wizard/Shell";
 import { useT } from "@/i18n";
@@ -17,18 +18,26 @@ import { useT } from "@/i18n";
 /**
  * Work that did not finish, and what to do about it.
  *
- * The detail is the server's own sentence about what went wrong and the guidance is
- * several lines of what to try, written for somebody who has just been told no. The
- * guidance arrives with its line breaks already in it and is rendered as
+ * The state names its advice rather than carrying it — the words come from the
+ * program, in the reader's own language — and what it does carry is the engine's own
+ * sentence about what went wrong, which is one line and is in English wherever the
+ * failure was not one anybody anticipated. So the heading is the advice's when there
+ * is advice, and the engine's sentence goes underneath it, where it keeps whatever
+ * specifics it had: the name of a file, the path that was not there.
+ *
+ * Everything arrives with its line breaks already in it and is rendered as
  * preformatted text: a text node, wrapped, never markup. That is not a styling
  * choice — the sentences come out of the engine's error set, and the day one of them
  * quotes a file name with an angle bracket in it must be a day nothing happens.
  */
 export function Trouble({
   state,
+  language,
   correctable,
 }: {
   state: Failed;
+  /** Which language to say what to do in. */
+  language: string;
   /**
    * Whether the thing that caused this is still on screen to be put right.
    *
@@ -40,18 +49,34 @@ export function Trouble({
   correctable?: boolean;
 }) {
   const t = useT();
+  const advice = useAdvice(language);
+  const told =
+    state.guidance === undefined ? undefined : advice.data?.[state.guidance];
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-[var(--color-accent)] p-4">
-      <p role="alert" className="m-0 text-lg font-medium">
-        {state.detail ?? t("failedTitle")}
-      </p>
+      {/*
+        Both lines are the alert, not just the first. What went wrong is a heading
+        somebody can read at a glance and a sentence carrying the specifics — the
+        name of the file, the path that was not there — and a screen reader that
+        announced only the heading would leave out the half that says which file.
+        The advice below is outside it: it is several lines, read at leisure.
+      */}
+      <div role="alert" className="flex flex-col gap-1">
+        <p className="m-0 text-lg font-medium">
+          {told?.title ?? state.detail ?? t("failedTitle")}
+        </p>
 
-      {state.guidance !== undefined && (
+        {told !== undefined && state.detail !== undefined && (
+          <p className="m-0 text-sm text-[var(--color-muted)]">{state.detail}</p>
+        )}
+      </div>
+
+      {told !== undefined && (
         <div className="flex flex-col gap-1.5">
           <h2 className="m-0 text-sm font-semibold">{t("failedGuidance")}</h2>
           <pre className="m-0 overflow-x-auto bg-[var(--color-surface)] p-3 font-sans text-sm whitespace-pre-wrap">
-            {state.guidance}
+            {told.body}
           </pre>
         </div>
       )}
@@ -77,16 +102,18 @@ export function Trouble({
  */
 export function Failure({
   state,
+  language,
   onBack,
 }: {
   state: Failed;
+  language: string;
   onBack: () => void;
 }) {
   const t = useT();
 
   return (
     <Shell step={1} heading={t("failedTitle")}>
-      <Trouble state={state} />
+      <Trouble state={state} language={language} />
       <div>
         <Button variant="primary" onClick={onBack}>
           {t("tryAgain")}

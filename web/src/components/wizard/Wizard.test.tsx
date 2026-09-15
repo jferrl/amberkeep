@@ -4,7 +4,7 @@ import type { UserEvent } from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { App } from "@/App";
-import type { BackupList, Setup } from "@/api/types";
+import type { AdviceOnFailure, BackupList, Setup } from "@/api/types";
 import { fetchTarget } from "@/test/fetchTarget";
 import { render } from "@/test/render";
 
@@ -36,6 +36,28 @@ let states: Setup[];
 // The real shape, not one written down beside it: a stand-in that can drift from the
 // server is a stand-in that proves nothing.
 let backups: BackupList;
+
+/**
+ * What the program says about a failure, as the real one serves it.
+ *
+ * A failed state names its advice and this is where the words come from, which is
+ * how the same failure reads in Spanish without a second copy of these sentences
+ * living in the page.
+ */
+const advice: AdviceOnFailure = {
+  "crypt15.wrong-key": {
+    title: "That key does not open this backup",
+    body: "Check that the key is the one this phone showed you.\nKeys are not shared between phones.",
+  },
+  "source.unrecognised-archive": {
+    title: "That database is not one this version recognises",
+    body: "Try another.",
+  },
+  "backupfs.file-not-found": {
+    title: "That file is not in this backup",
+    body: "Check the path.\nDrag the file into a terminal to see its full path.",
+  },
+};
 let closing: Response | undefined;
 let refusing: Response | undefined;
 let leadsTo: Setup | undefined;
@@ -100,6 +122,7 @@ beforeEach(() => {
 
     if (at.startsWith("/api/state"))
       return Promise.resolve(answer(nextState()));
+    if (at.startsWith("/api/advice")) return Promise.resolve(answer(advice));
     if (at.startsWith("/api/backups")) return Promise.resolve(answer(backups));
     if (at.startsWith("/api/archive")) {
       return Promise.resolve(
@@ -466,8 +489,7 @@ describe("when the work fails", () => {
     stage: "failed",
     workspace,
     detail: "the key did not decrypt this backup",
-    guidance:
-      "Check that the key is the one this phone showed you.\nKeys are not shared between phones.",
+    guidance: "crypt15.wrong-key",
   };
 
   it("shows what went wrong and the advice underneath it", async () => {
@@ -478,7 +500,7 @@ describe("when the work fails", () => {
       "the key did not decrypt this backup",
     );
     expect(
-      screen.getByText(/Keys are not shared between phones/),
+      await screen.findByText(/Keys are not shared between phones/),
     ).toBeInTheDocument();
   });
 
@@ -525,7 +547,7 @@ describe("when the work fails", () => {
         stage: "failed",
         workspace,
         detail: "not a database",
-        guidance: "Try another.",
+        guidance: "source.unrecognised-archive",
       },
     ];
     await waitFor(
@@ -1068,8 +1090,7 @@ describe("a failure with the form still behind it", () => {
     stage: "failed",
     workspace,
     detail: "no such file",
-    guidance:
-      "Check the path.\nDrag the file into a terminal to see its full path.",
+    guidance: "backupfs.file-not-found",
   };
 
   /** Failure is not terminal here: the next attempt is taken without a reset. */

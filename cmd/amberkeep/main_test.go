@@ -20,6 +20,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/crypt15"
 	"github.com/jferrl/amberkeep/internal/export"
+	"github.com/jferrl/amberkeep/internal/guide"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 	"github.com/jferrl/amberkeep/internal/source/android"
@@ -239,12 +240,28 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		t.Run(err.Error()[:min(40, len(err.Error()))], func(t *testing.T) {
 			t.Parallel()
 
-			got := app.AdviseOn(err)
-			if got == "" {
-				t.Errorf("no advice for %q", err)
+			told, ok := app.AdviseOn(err, guide.English)
+			if !ok {
+				t.Fatalf("no advice for %q", err)
 			}
-			if strings.Count(got, "\n") < 1 {
+			if told.Title == "" {
+				t.Errorf("the advice for %q has no heading to read at a glance", err)
+			}
+			if strings.Count(told.Body, "\n") < 1 {
 				t.Errorf("the advice for %q is a single line; it should say what to do", err)
+			}
+
+			// And in Spanish. A failure is where somebody decides whether this
+			// program is going to work at all, and being handed English there is
+			// what the rest of the program stopped doing.
+			spanish, ok := app.AdviseOn(err, guide.Spanish)
+			switch {
+			case !ok:
+				t.Errorf("no Spanish advice for %q", err)
+			case spanish.Body == told.Body:
+				t.Errorf("the advice for %q is the English one in both languages", err)
+			case spanish.Title == "":
+				t.Errorf("the Spanish advice for %q has no heading", err)
 			}
 		})
 	}
@@ -253,14 +270,14 @@ func TestEveryFailureCarriesAdvice(t *testing.T) {
 		t.Parallel()
 
 		wrapped := fmt.Errorf("exporting a conversation: %w", export.ErrExists)
-		if app.AdviseOn(wrapped) == "" {
+		if _, ok := app.AdviseOn(wrapped, guide.English); !ok {
 			t.Error("wrapping an error lost its advice")
 		}
 	})
 
 	t.Run("a failure nobody anticipated gets none", func(t *testing.T) {
 		t.Parallel()
-		if app.AdviseOn(errors.New("the disk caught fire")) != "" {
+		if _, ok := app.AdviseOn(errors.New("the disk caught fire"), guide.English); ok {
 			t.Error("advice was invented for an unknown failure")
 		}
 	})
@@ -378,7 +395,7 @@ func TestEndToEnd(t *testing.T) {
 		if !errors.Is(err, export.ErrExists) {
 			t.Errorf("the second export error = %v, want it to refuse", err)
 		}
-		if app.AdviseOn(err) == "" {
+		if _, ok := app.AdviseOn(err, guide.English); !ok {
 			t.Error("the refusal carried no advice about --force")
 		}
 	})
@@ -458,7 +475,7 @@ func TestEndToEnd(t *testing.T) {
 		if !errors.Is(err, search.ErrEmptyQuery) {
 			t.Errorf("the search error = %v, want it to say there is nothing to search for", err)
 		}
-		if app.AdviseOn(err) == "" {
+		if _, ok := app.AdviseOn(err, guide.English); !ok {
 			t.Error("the refusal carried no advice")
 		}
 	})
