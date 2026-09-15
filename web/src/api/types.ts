@@ -519,6 +519,15 @@ export type MigrationStage =
 export interface Finding {
   /** The guided step that says what to do about it. */
   step: string;
+  /**
+   * `check` names the sentence saying what was looked at and `note` the one saying
+   * what was found; `values` fills their holes. The guide carries both sentences in
+   * the reader's own language, and `title` and `detail` are the same two in English,
+   * for a name this build has never met.
+   */
+  check?: string;
+  note?: string;
+  values?: Readonly<Record<string, string>>;
   title: string;
   passed: boolean;
   blocking: boolean;
@@ -642,6 +651,13 @@ export interface GuideStage {
  */
 export interface Guide {
   stages: readonly GuideStage[];
+  /**
+   * What a preflight check says it looked at, and what it found, by name.
+   *
+   * Sent with the steps because they are read on the same screen and come from the
+   * same catalogue: the checks are the sentences a finding names.
+   */
+  checks?: Readonly<Record<string, string>>;
 }
 
 /** How far along writing an archive out is. */

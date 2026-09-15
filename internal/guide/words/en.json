@@ -97,6 +97,25 @@
       "title": "That database is not one this version recognises"
     }
   },
+  "checks": {
+    "a-day-ago": "taken a day ago; anything said on the phone since is not in it",
+    "an-hour-ago": "taken an hour ago",
+    "cannot-see-safety": "nothing here can see this; it is the only way back and it has to be done by hand",
+    "days-ago": "taken {days} days ago; anything said on the phone since is not in it",
+    "has-room": "There is room for a copy of the backup",
+    "holds-messages": "The backup holds WhatsApp's messages",
+    "hours-ago": "taken {hours} hours ago",
+    "is-a-backup": "That folder is a backup",
+    "is-encrypted": "it is encrypted, and an encrypted backup is sealed with a key that never leaves the phone",
+    "is-recent": "The backup is recent",
+    "needs-space": "it needs about {size} GB free",
+    "no-backup-files": "it has none of the four files every Finder, iTunes and Apple Devices backup has",
+    "no-date": "it does not say when it was taken",
+    "no-store": "there is no {file} in it",
+    "not-encrypted": "The backup is not encrypted",
+    "safety-backup": "A safety backup exists and has been archived",
+    "within-the-hour": "taken within the hour"
+  },
   "chrome": {
     "anHour": "an hour",
     "critical": "do not skip",

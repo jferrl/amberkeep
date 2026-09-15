@@ -106,14 +106,19 @@ func TestHowOldTheBackupIsSaid(t *testing.T) {
 		name string
 		age  time.Duration
 		zero bool
+		// note is the sentence it names, and says is part of that sentence in
+		// English. Both, because the name is what a Spanish reader is shown and the
+		// English is what a terminal prints, and a check that got one right and the
+		// other wrong would look correct from either side alone.
+		note string
 		says string
 	}{
-		{name: "minutes ago", age: 20 * time.Minute, says: "within the hour"},
-		{name: "this morning", age: 5 * time.Hour, says: "5 hours ago"},
-		{name: "exactly one hour", age: time.Hour, says: "1 hour ago"},
-		{name: "yesterday", age: 30 * time.Hour, says: "1 day ago"},
-		{name: "last week", age: 8 * 24 * time.Hour, says: "8 days ago"},
-		{name: "a backup that does not say", zero: true, says: "does not say when"},
+		{name: "minutes ago", age: 20 * time.Minute, note: "within-the-hour", says: "within the hour"},
+		{name: "this morning", age: 5 * time.Hour, note: "hours-ago", says: "5 hours ago"},
+		{name: "exactly one hour", age: time.Hour, note: "an-hour-ago", says: "an hour ago"},
+		{name: "yesterday", age: 30 * time.Hour, note: "a-day-ago", says: "a day ago"},
+		{name: "last week", age: 8 * 24 * time.Hour, note: "days-ago", says: "8 days ago"},
+		{name: "a backup that does not say", zero: true, note: "no-date", says: "does not say when"},
 	}
 
 	for _, tt := range tests {
@@ -125,12 +130,26 @@ func TestHowOldTheBackupIsSaid(t *testing.T) {
 				at = time.Time{}
 			}
 			got := freshness(at, tt.age)
-			if !strings.Contains(got, tt.says) {
-				t.Errorf("freshness said %q, want something about %q", got, tt.says)
+			if got.name != tt.note {
+				t.Errorf("freshness named %q, want %q", got.name, tt.note)
+			}
+
+			said, ok := guide.Check(got.name, got.values, guide.English)
+			if !ok {
+				t.Fatalf("%q is not a sentence the guide knows", got.name)
+			}
+			if !strings.Contains(said, tt.says) {
+				t.Errorf("freshness said %q, want something about %q", said, tt.says)
 			}
 			// Anything older than a day has to say why it matters, not just how old.
-			if !tt.zero && tt.age >= staleAfter && !strings.Contains(got, "not in it") {
-				t.Errorf("a stale backup does not say what that costs: %q", got)
+			if !tt.zero && tt.age >= staleAfter && !strings.Contains(said, "not in it") {
+				t.Errorf("a stale backup does not say what that costs: %q", said)
+			}
+
+			// And in Spanish, which is the whole reason these are named.
+			spanish, ok := guide.Check(got.name, got.values, guide.Spanish)
+			if !ok || spanish == said {
+				t.Errorf("%q is not said in Spanish: %q", got.name, spanish)
 			}
 		})
 	}
@@ -139,11 +158,12 @@ func TestHowOldTheBackupIsSaid(t *testing.T) {
 func TestDetailIsOnlyGivenWhenThereIsSomethingToSay(t *testing.T) {
 	t.Parallel()
 
-	if got := detailIf(true, "because"); got != "because" {
-		t.Errorf("detailIf(true) = %q", got)
+	because := found("no-date")
+	if got := detailIf(true, because); got.name != because.name {
+		t.Errorf("detailIf(true) = %q", got.name)
 	}
-	if got := detailIf(false, "because"); got != "" {
-		t.Errorf("detailIf(false) = %q, want nothing", got)
+	if got := detailIf(false, because); got.name != "" {
+		t.Errorf("detailIf(false) = %q, want nothing", got.name)
 	}
 }
 

@@ -117,6 +117,13 @@ function planned(over: Partial<MigrationPlan> = {}): State {
 }
 
 const guide: Guide = {
+  // The sentences a finding names, as the program serves them: in whichever
+  // language the page asked for, with the holes still in them.
+  checks: {
+    "not-encrypted": "La copia de seguridad no está cifrada",
+    "is-encrypted": "está cifrada, y una copia cifrada está sellada con una clave que nunca sale del teléfono",
+    "days-ago": "hecha hace {days} días",
+  },
   stages: [
     {
       stage: "before",
@@ -431,6 +438,55 @@ describe("when something is wrong", () => {
     // And the step that says what to do about it is on screen, not just the complaint.
     expect(
       screen.getByText("Finder keeps one backup per phone and overwrites it."),
+    ).toBeVisible();
+  });
+
+  /**
+   * A finding names its two sentences and the program carries both of them in
+   * whichever language the page asked for. This is the screen where somebody is told
+   * why their migration cannot go on, and it used to say it in English whatever they
+   * were reading.
+   */
+  it("says what was checked and what was found in the reader's own language", async () => {
+    now = {
+      stage: "checked",
+      checks: {
+        findings: [
+          finding({
+            check: "not-encrypted",
+            title: "The backup is not encrypted",
+            note: "is-encrypted",
+            detail: "it is encrypted, and an encrypted backup is sealed with a key",
+            passed: false,
+            blocking: true,
+          }),
+          finding({
+            check: "unheard-of",
+            title: "Something a newer program checks",
+            note: "days-ago",
+            detail: "taken 8 days ago",
+            values: { days: "8" },
+          }),
+        ],
+      },
+    };
+
+    show();
+
+    expect(
+      await screen.findByText("La copia de seguridad no está cifrada"),
+    ).toBeVisible();
+    expect(
+      screen.getByText(/está cifrada, y una copia cifrada está sellada/),
+    ).toBeVisible();
+
+    // The numbers go into the sentence the program sent, not the one this page has.
+    expect(screen.getByText("hecha hace 8 días")).toBeVisible();
+
+    // And a name this build's guide has never heard of falls back to the English
+    // beside it rather than to a blank line.
+    expect(
+      screen.getByText("Something a newer program checks"),
     ).toBeVisible();
   });
 

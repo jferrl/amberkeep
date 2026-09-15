@@ -16,18 +16,25 @@ export default {
     "findings": [
       {
         "step": "encryption-off",
+        "check": "not-encrypted",
         "title": "The backup is not encrypted",
         "passed": true,
         "blocking": true
       },
       {
         "step": "fresh-backup",
+        "check": "holds-messages",
         "title": "The backup holds WhatsApp's messages",
         "passed": true,
         "blocking": true
       },
       {
         "step": "fresh-backup",
+        "check": "is-recent",
+        "note": "hours-ago",
+        "values": {
+          "hours": "2"
+        },
         "title": "The backup is recent",
         "passed": true,
         "blocking": false,
@@ -35,6 +42,11 @@ export default {
       },
       {
         "step": "power-and-space",
+        "check": "has-room",
+        "note": "needs-space",
+        "values": {
+          "size": "4.6"
+        },
         "title": "There is room for a copy of the backup",
         "passed": true,
         "blocking": false,
@@ -42,6 +54,8 @@ export default {
       },
       {
         "step": "safety-backup",
+        "check": "safety-backup",
+        "note": "cannot-see-safety",
         "title": "A safety backup exists and has been archived",
         "passed": false,
         "blocking": false,

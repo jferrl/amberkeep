@@ -128,6 +128,7 @@ export function Migration({
       return (
         <MigrationChecks
           language={language}
+          sentences={guide.data?.checks}
           state={now}
           stages={stages}
           busy={step.busy}

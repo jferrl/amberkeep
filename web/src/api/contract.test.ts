@@ -301,6 +301,28 @@ describe("the migration", () => {
     expect(done.result?.checks).toBeGreaterThan(0);
   });
 
+  /** A finding names both of its sentences, and the guide carries them. */
+  it("names what each check looked at, and what it found", () => {
+    const checked = records<Migration>()(migrationCheckedReply);
+    const guide = records<Guide>()(migrationGuideReply);
+
+    const findings = checked.checks?.findings ?? [];
+    expect(findings.length).toBeGreaterThan(3);
+
+    for (const finding of findings) {
+      expect(finding.check).toBeTruthy();
+      expect(guide.checks?.[finding.check ?? ""]).toBeTruthy();
+      if (finding.detail !== undefined) {
+        expect(guide.checks?.[finding.note ?? ""]).toBeTruthy();
+      }
+    }
+
+    // And the holes in them are filled by the values that travel beside them.
+    const room = findings.find((f) => f.note === "needs-space");
+    expect(guide.checks?.["needs-space"]).toContain("{size}");
+    expect(room?.values?.size).toBeTruthy();
+  });
+
   /**
    * A failed state names its advice; this is what the name means. Recorded in
    * Spanish, because the point of the identifier is that the words are not English

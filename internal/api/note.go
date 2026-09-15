@@ -1,6 +1,6 @@
 package api
 
-import "strings"
+import "github.com/jferrl/amberkeep/internal/guide"
 
 // Count is a number the work has reached, for a page to phrase itself.
 //
@@ -59,12 +59,10 @@ func Noted(name, template string, pairs ...string) Note {
 	}
 
 	note.Values = make(map[string]string, len(pairs)/2)
-	replace := make([]string, 0, len(pairs))
 	for i := 0; i+1 < len(pairs); i += 2 {
 		note.Values[pairs[i]] = pairs[i+1]
-		replace = append(replace, "{"+pairs[i]+"}", pairs[i+1])
 	}
-	note.Text = strings.NewReplacer(replace...).Replace(template)
+	note.Text = guide.Fill(template, note.Values)
 	return note
 }
 

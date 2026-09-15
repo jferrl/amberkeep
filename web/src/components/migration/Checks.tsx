@@ -4,6 +4,7 @@ import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Step } from "@/components/migration/Guide";
 import { useT } from "@/i18n";
+import { filled } from "@/lib/said";
 import type { Language } from "@/i18n";
 
 /**
@@ -17,6 +18,7 @@ import type { Language } from "@/i18n";
 export function MigrationChecks({
   state,
   stages,
+  sentences,
   language,
   onPlan,
   onBack,
@@ -25,6 +27,8 @@ export function MigrationChecks({
 }: {
   state: Migration;
   stages: readonly GuideStage[];
+  /** What the checks say they looked at, in the reader's own language. */
+  sentences: Sentences;
   language: Language;
   onPlan: () => void;
   onBack: () => void;
@@ -52,7 +56,7 @@ export function MigrationChecks({
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {findings.map((finding) => (
           <li key={finding.step + finding.title}>
-            <Found finding={finding} />
+            <Found finding={finding} sentences={sentences} />
           </li>
         ))}
       </ul>
@@ -62,7 +66,10 @@ export function MigrationChecks({
           {blockers.map((blocker) => {
             const step = before.find((one) => one.id === blocker.step);
             return step === undefined ? (
-              <Say key={blocker.title}>{blocker.detail ?? blocker.title}</Say>
+              <Say key={blocker.title}>
+                {sentence(blocker.note, blocker.detail, blocker, sentences) ??
+                  sentence(blocker.check, blocker.title, blocker, sentences)}
+              </Say>
             ) : (
               <Step
                 key={blocker.step}
@@ -90,6 +97,27 @@ export function MigrationChecks({
   );
 }
 
+/** Sentences are the check's own words, as the program serves them. */
+type Sentences = Readonly<Record<string, string>> | undefined;
+
+/**
+ * One of a finding's two sentences, in the reader's own language.
+ *
+ * A finding names what it looked at and what it found; the guide carries both, in
+ * whichever language the page asked for. The English travels beside the names and is
+ * what shows when this build's guide has never heard of one — which happens when the
+ * program is newer than the page it is serving, and is better than a blank line.
+ */
+function sentence(
+  name: string | undefined,
+  english: string | undefined,
+  finding: Finding,
+  sentences: Sentences,
+): string | undefined {
+  const template = name === undefined ? undefined : sentences?.[name];
+  return template === undefined ? english : filled(template, finding.values);
+}
+
 /**
  * One finding: what was checked, and what was found.
  *
@@ -98,10 +126,16 @@ export function MigrationChecks({
  * the word beside it — visible to a screen reader and to nothing else — is what says
  * whether this one passed.
  */
-function Found({ finding }: { finding: Finding }) {
+function Found({
+  finding,
+  sentences,
+}: {
+  finding: Finding;
+  sentences: Sentences;
+}) {
   const t = useT();
 
-  const [tone, said] = finding.passed
+  const [tone, verdict] = finding.passed
     ? ["text-[var(--color-muted)]", t("migrateCheckPassed")]
     : finding.blocking
       ? ["text-[var(--color-accent)]", t("migrateCheckFailed")]
@@ -114,12 +148,12 @@ function Found({ finding }: { finding: Finding }) {
       </span>
       <span>
         <span className="block text-sm">
-          <span className="sr-only">{said} </span>
-          {finding.title}
+          <span className="sr-only">{verdict} </span>
+          {sentence(finding.check, finding.title, finding, sentences)}
         </span>
         {finding.detail !== undefined && (
           <span className="mt-0.5 block text-sm text-[var(--color-muted)]">
-            {finding.detail}
+            {sentence(finding.note, finding.detail, finding, sentences)}
           </span>
         )}
       </span>

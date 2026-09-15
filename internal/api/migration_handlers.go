@@ -31,7 +31,10 @@ func (s *server) handleMigration(w http.ResponseWriter, r *http.Request) {
 // the wrong language is worse than one in a language somebody has already accepted.
 func (s *server) handleGuide(w http.ResponseWriter, r *http.Request) {
 	lang := guide.Spoken(r.URL.Query().Get("lang"))
-	write(w, r, map[string]any{"stages": guidance(lang)})
+	// The checks' own sentences ride along with the steps rather than having an
+	// endpoint of their own: they are read on the screen that already has this,
+	// and a finding names its two sentences the way a step names itself.
+	write(w, r, map[string]any{"stages": guidance(lang), "checks": guide.AllChecks(lang)})
 }
 
 // handleAdvice returns what to say about every failure somebody can act on.

@@ -97,6 +97,25 @@
       "title": "Esa base de datos no es de las que esta versión reconoce"
     }
   },
+  "checks": {
+    "a-day-ago": "hecha hace un día; lo que se haya dicho en el teléfono desde entonces no está en ella",
+    "an-hour-ago": "hecha hace una hora",
+    "cannot-see-safety": "esto no se puede comprobar desde aquí; es la única vuelta atrás y hay que hacerlo a mano",
+    "days-ago": "hecha hace {days} días; lo que se haya dicho en el teléfono desde entonces no está en ella",
+    "has-room": "Hay sitio para una copia de la copia de seguridad",
+    "holds-messages": "La copia contiene los mensajes de WhatsApp",
+    "hours-ago": "hecha hace {hours} horas",
+    "is-a-backup": "Esa carpeta es una copia de seguridad",
+    "is-encrypted": "está cifrada, y una copia cifrada está sellada con una clave que nunca sale del teléfono",
+    "is-recent": "La copia es reciente",
+    "needs-space": "necesita unos {size} GB libres",
+    "no-backup-files": "no tiene ninguno de los cuatro archivos que tiene toda copia de Finder, iTunes o Dispositivos Apple",
+    "no-date": "no dice cuándo se hizo",
+    "no-store": "no hay ningún {file} dentro",
+    "not-encrypted": "La copia de seguridad no está cifrada",
+    "safety-backup": "Hay una copia de seguridad hecha y archivada",
+    "within-the-hour": "hecha hace menos de una hora"
+  },
   "chrome": {
     "anHour": "una hora",
     "critical": "no te lo saltes",

@@ -107,3 +107,24 @@ export function carried(from: Said): Said {
     ...(from.counts === undefined ? {} : { counts: from.counts }),
   };
 }
+
+/**
+ * filled puts values into a sentence's holes.
+ *
+ * For the sentences that arrive from the server already in the reader's language —
+ * the guide's steps, a preflight check — where the catalogue doing the substituting
+ * is the program's rather than this page's. The braces are the same on both sides.
+ *
+ * A hole nothing fills is left as it is rather than emptied: a visible {size} is a
+ * bug somebody can see and report, and a blank where a number should be is a bug that
+ * reads as a finished sentence.
+ */
+export function filled(
+  template: string,
+  values: Readonly<Record<string, string>> | undefined,
+): string {
+  if (values === undefined) return template;
+  return template.replace(/\{(\w+)\}/g, (whole, name: string) =>
+    name in values ? (values[name] ?? whole) : whole,
+  );
+}

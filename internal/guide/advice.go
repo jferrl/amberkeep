@@ -51,3 +51,40 @@ func AllAdvice(lang Language) map[string]Advice {
 	}
 	return all
 }
+
+// Check is what one preflight finding says, in the reader's own language.
+//
+// Two sentences make a finding — what was looked at ("the backup is not encrypted")
+// and what was found ("it is encrypted, and an encrypted backup is sealed with a key
+// that never leaves the phone") — and both are named here. The values fill whatever
+// holes the sentence has: a file that is missing, how many days old a backup is.
+func Check(name string, values map[string]string, lang Language) (string, bool) {
+	said, ok := checkIn(name, lang)
+	if !ok {
+		return "", false
+	}
+	return Fill(said, values), true
+}
+
+// AllChecks is every one of them, for a page that is handed findings by name and has
+// to be able to say all of them without asking again.
+func AllChecks(lang Language) map[string]string {
+	spoken, english := said[lang].Checks, said[English].Checks
+
+	all := make(map[string]string, len(english))
+	for name, text := range english {
+		all[name] = text
+	}
+	for name, text := range spoken {
+		all[name] = text
+	}
+	return all
+}
+
+func checkIn(name string, lang Language) (string, bool) {
+	if text, ok := said[lang].Checks[name]; ok && text != "" {
+		return text, true
+	}
+	text, ok := said[English].Checks[name]
+	return text, ok
+}

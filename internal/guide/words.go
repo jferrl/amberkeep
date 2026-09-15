@@ -60,6 +60,8 @@ type catalogue struct {
 	Chrome map[string]string `json:"chrome"`
 	// Advice is what to say about a failure, by the identifier the error carries.
 	Advice map[string]Advice `json:"advice"`
+	// Checks are what a preflight check says it looked at and what it found.
+	Checks map[string]string `json:"checks"`
 }
 
 // said is every language's catalogue, read once.
@@ -107,4 +109,24 @@ func phrase(name string, lang Language) string {
 		return said
 	}
 	return said[English].Chrome[name]
+}
+
+// Fill puts values into a sentence's holes.
+//
+// The holes are written in braces — {device}, {when}, {size} — which is how the page
+// writes them too, so one sentence and its translation take the same substitutions
+// and neither has to know the other's word order. A hole nothing fills is left as it
+// is rather than emptied: a sentence with a visible {size} in it is a bug somebody
+// can see and report, and one with a blank where a number should be is a bug that
+// reads as a finished sentence.
+func Fill(template string, values map[string]string) string {
+	if len(values) == 0 {
+		return template
+	}
+
+	replace := make([]string, 0, len(values)*2)
+	for name, value := range values {
+		replace = append(replace, "{"+name+"}", value)
+	}
+	return strings.NewReplacer(replace...).Replace(template)
 }

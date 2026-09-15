@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/jferrl/amberkeep/internal/backupfs"
+	"github.com/jferrl/amberkeep/internal/guide"
 )
 
 // What can be checked before anybody commits to anything.
@@ -23,6 +25,14 @@ import (
 type Finding struct {
 	// Step is the guided step this bears on, so a failure can point at what to do.
 	Step string `json:"step"`
+	// Check names the sentence saying what was looked at, and Note the one saying
+	// what was found. A page looks them up and says them in its reader's language;
+	// Title and Detail are the same two sentences in English, for the terminal and
+	// for a page meeting a name from a newer program.
+	Check string `json:"check,omitempty"`
+	Note  string `json:"note,omitempty"`
+	// Values fill the holes in either of them: a missing file, a number of days.
+	Values map[string]string `json:"values,omitempty"`
 	// Title is what was checked, in a few words.
 	Title string `json:"title"`
 	// Passed is whether it is as it needs to be.
@@ -81,13 +91,10 @@ func Preflight(ctx context.Context, backup, domain, relativePath string) (Readin
 		// went wrong.
 		switch {
 		case errors.Is(err, backupfs.ErrEncrypted):
-			r.add("encryption-off", "The backup is not encrypted", false, true,
-				"it is encrypted, and an encrypted backup is sealed with a key that never "+
-					"leaves the phone")
+			r.add("encryption-off", "not-encrypted", false, true, found("is-encrypted"))
 			return r, nil
 		case errors.Is(err, backupfs.ErrNotABackup):
-			r.add("fresh-backup", "That folder is a backup", false, true,
-				"it has none of the four files every Finder, iTunes and Apple Devices backup has")
+			r.add("fresh-backup", "is-a-backup", false, true, found("no-backup-files"))
 			return r, nil
 		default:
 			return r, err
@@ -95,17 +102,17 @@ func Preflight(ctx context.Context, backup, domain, relativePath string) (Readin
 	}
 	defer func() { _ = archive.Close() }()
 
-	r.add("encryption-off", "The backup is not encrypted", true, true, "")
+	r.add("encryption-off", "not-encrypted", true, true, nothing)
 
 	// The store has to be in it. A backup taken before WhatsApp was ever opened, or
 	// of a phone that does not have it, gets this far and no further.
-	_, found, err := archive.Find(ctx, domain, relativePath)
+	_, has, err := archive.Find(ctx, domain, relativePath)
 	if err != nil {
 		return r, err
 	}
-	r.add("fresh-backup", "The backup holds WhatsApp's messages", found, true,
-		detailIf(!found, "there is no "+relativePath+" in it"))
-	if !found {
+	r.add("fresh-backup", "holds-messages", has, true,
+		detailIf(!has, found("no-store", "file", relativePath)))
+	if !has {
 		return r, nil
 	}
 
@@ -114,8 +121,7 @@ func Preflight(ctx context.Context, backup, domain, relativePath string) (Readin
 	// said nothing since does not need to take another.
 	age := time.Since(archive.LastBackup)
 	fresh := !archive.LastBackup.IsZero() && age < staleAfter
-	r.add("fresh-backup", "The backup is recent", fresh, false,
-		freshness(archive.LastBackup, age))
+	r.add("fresh-backup", "is-recent", fresh, false, freshness(archive.LastBackup, age))
 
 	// Room for a second copy of the whole backup. Reported rather than checked:
 	// asking the operating system how much space is left is a different question on
@@ -124,46 +130,78 @@ func Preflight(ctx context.Context, backup, domain, relativePath string) (Readin
 	if size, err := folderSize(ctx, backup); err == nil {
 		r.Needs = size
 	}
-	r.add("power-and-space", "There is room for a copy of the backup", true, false,
-		fmt.Sprintf("it needs about %.1f GB free", float64(r.Needs)/(1<<30)))
+	r.add("power-and-space", "has-room", true, false,
+		found("needs-space", "size", fmt.Sprintf("%.1f", float64(r.Needs)/(1<<30))))
 
 	// The one that cannot be checked and matters most.
-	r.add("safety-backup", "A safety backup exists and has been archived", false, false,
-		"nothing here can see this; it is the only way back and it has to be done by hand")
+	r.add("safety-backup", "safety-backup", false, false, found("cannot-see-safety"))
 	return r, nil
 }
 
 // add records one finding.
 //
-// The step is named rather than described: what to do about it is the guide's to
-// say, and whoever is showing this looks it up. A check's own title is a different
-// sentence from the step's — "the backup is not encrypted" against "turn off
-// encrypted backups" — and both are wanted.
-func (r *Readiness) add(step, title string, passed, blocking bool, detail string) {
-	r.Findings = append(r.Findings,
-		Finding{Step: step, Title: title, Passed: passed, Blocking: blocking, Detail: detail})
+// Everything a person reads here is named rather than written out: the step, so what
+// to do about it can be looked up, and both of the finding's own sentences, so they
+// can be read in whatever language the reader chose. The English is filled in from
+// the same names and the same values, so a check cannot say one thing in the sentence
+// it sends and another in the name beside it.
+//
+// A check's own sentence is a different one from the step's — "the backup is not
+// encrypted" against "turn off encrypted backups" — and both are wanted.
+func (r *Readiness) add(step, check string, passed, blocking bool, found note) {
+	title, _ := guide.Check(check, nil, guide.English)
+	f := Finding{Step: step, Check: check, Passed: passed, Blocking: blocking, Title: title}
+	if found.name != "" {
+		f.Note, f.Values = found.name, found.values
+		f.Detail, _ = guide.Check(found.name, found.values, guide.English)
+	}
+	r.Findings = append(r.Findings, f)
 }
 
-func detailIf(when bool, detail string) string {
+// note is what a check found: the name of a sentence and whatever fills its holes.
+type note struct {
+	name   string
+	values map[string]string
+}
+
+// found names a sentence, with the things that fill it given as name, value pairs.
+func found(name string, pairs ...string) note {
+	n := note{name: name}
+	if len(pairs) < 2 {
+		return n
+	}
+	n.values = make(map[string]string, len(pairs)/2)
+	for i := 0; i+1 < len(pairs); i += 2 {
+		n.values[pairs[i]] = pairs[i+1]
+	}
+	return n
+}
+
+// nothing is a check that passed and has nothing to add.
+var nothing = note{}
+
+func detailIf(when bool, detail note) note {
 	if when {
 		return detail
 	}
-	return ""
+	return nothing
 }
 
 // freshness says how old a backup is in words somebody would use.
-func freshness(at time.Time, age time.Duration) string {
-	if at.IsZero() {
-		return "it does not say when it was taken"
-	}
-	switch {
+func freshness(at time.Time, age time.Duration) note {
+	switch hours, days := int(age.Hours()), int(age.Hours()/24); {
+	case at.IsZero():
+		return found("no-date")
 	case age < time.Hour:
-		return "taken within the hour"
+		return found("within-the-hour")
+	case hours == 1:
+		return found("an-hour-ago")
 	case age < staleAfter:
-		return "taken " + plural(int(age.Hours()), "hour", "hours") + " ago"
+		return found("hours-ago", "hours", strconv.Itoa(hours))
+	case days == 1:
+		return found("a-day-ago")
 	default:
-		return "taken " + plural(int(age.Hours()/24), "day", "days") +
-			" ago; anything said on the phone since is not in it"
+		return found("days-ago", "days", strconv.Itoa(days))
 	}
 }
 

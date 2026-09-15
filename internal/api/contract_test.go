@@ -282,13 +282,21 @@ func TestTheRecordedRepliesStillMatch(t *testing.T) {
 var (
 	recordedChecks = migrate.Readiness{
 		Needs: 4_912_345_678,
+		// Named as the real checks name themselves, because the names are what the
+		// page shows a reader who is not reading English and the English beside them
+		// is the fallback, not the other way round.
 		Findings: []migrate.Finding{
-			{Step: "encryption-off", Title: "The backup is not encrypted", Passed: true, Blocking: true},
-			{Step: "fresh-backup", Title: "The backup holds WhatsApp's messages", Passed: true, Blocking: true},
-			{Step: "fresh-backup", Title: "The backup is recent", Passed: true, Detail: "taken 2 hours ago"},
-			{Step: "power-and-space", Title: "There is room for a copy of the backup",
-				Passed: true, Detail: "it needs about 4.6 GB free"},
-			{Step: "safety-backup", Title: "A safety backup exists and has been archived",
+			{Step: "encryption-off", Check: "not-encrypted",
+				Title: "The backup is not encrypted", Passed: true, Blocking: true},
+			{Step: "fresh-backup", Check: "holds-messages",
+				Title: "The backup holds WhatsApp's messages", Passed: true, Blocking: true},
+			{Step: "fresh-backup", Check: "is-recent", Title: "The backup is recent", Passed: true,
+				Note: "hours-ago", Values: map[string]string{"hours": "2"}, Detail: "taken 2 hours ago"},
+			{Step: "power-and-space", Check: "has-room", Title: "There is room for a copy of the backup",
+				Passed: true, Note: "needs-space", Values: map[string]string{"size": "4.6"},
+				Detail: "it needs about 4.6 GB free"},
+			{Step: "safety-backup", Check: "safety-backup",
+				Title: "A safety backup exists and has been archived", Note: "cannot-see-safety",
 				Detail: "nothing here can see this; it is the only way back and it has to be done by hand"},
 		},
 	}
