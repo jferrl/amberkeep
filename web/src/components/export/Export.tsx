@@ -2,7 +2,7 @@ import type { SyntheticEvent } from "react";
 import { useId, useState } from "react";
 
 import { forgetExport, writeArchive } from "@/api/client";
-import { useExport, useExportStep } from "@/api/queries";
+import { useArchive, useExport, useExportStep } from "@/api/queries";
 import type { Export as State, Format } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -37,10 +37,16 @@ export function Export({
 }) {
   const now = useExport();
   const step = useExportStep();
+  const archive = useArchive();
 
   const [into, setInto] = useState("");
   const [formats, setFormats] = useState<Format[]>(["html"]);
   const [notices, setNotices] = useState(false);
+  // On, because an archive with the photographs taken out is not a copy of somebody's
+  // history — and offered at all only when there are some, which is the minority of
+  // archives.
+  const [media, setMedia] = useState(true);
+  const hasFiles = archive.data?.files === true;
 
   const state: State = now.data ?? { stage: "idle" };
 
@@ -88,13 +94,21 @@ export function Export({
           onFormats={setFormats}
           notices={notices}
           onNotices={setNotices}
+          media={media}
+          onMedia={setMedia}
+          hasFiles={hasFiles}
           busy={step.busy}
           failure={state.stage === "failed" ? state : undefined}
           refused={step.refused}
           onBack={onLeave}
           onWrite={() => {
             step.start(() =>
-              writeArchive({ into: into.trim(), formats, notices }),
+              writeArchive({
+                into: into.trim(),
+                formats,
+                notices,
+                media: hasFiles && media,
+              }),
             );
           }}
         />
@@ -118,6 +132,9 @@ function Choices({
   onFormats,
   notices,
   onNotices,
+  media,
+  onMedia,
+  hasFiles,
   busy,
   failure,
   refused,
@@ -131,6 +148,9 @@ function Choices({
   onFormats: (formats: Format[]) => void;
   notices: boolean;
   onNotices: (on: boolean) => void;
+  media: boolean;
+  onMedia: (on: boolean) => void;
+  hasFiles: boolean;
   busy: boolean;
   failure: State | undefined;
   refused: string | undefined;
@@ -205,6 +225,15 @@ function Choices({
           value={into}
           onChange={onInto}
         />
+
+        {hasFiles && (
+          <Pick
+            label={t("exportMedia")}
+            hint={t("exportMediaHelp")}
+            on={media}
+            onChange={onMedia}
+          />
+        )}
 
         <Pick
           label={t("exportNotices")}
@@ -291,6 +320,11 @@ function Written({
               [
                 [result.conversations, t("exportDoneConversations")],
                 [result.messages, t("exportDoneMessages")],
+                // Only when some travelled, so an archive that had none is not told
+                // it wrote nought photographs.
+                ...(result.carried === undefined || result.carried === 0
+                  ? []
+                  : [[result.carried, t("exportDoneCarried")]]),
               ] as [number, string][]
             ).map(([n, said]) => (
               <div key={said} className="contents">

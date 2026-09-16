@@ -16,6 +16,12 @@ import (
 // TestHTMLPageIsSelfContained is the promise the format exists for: the file works
 // with the network switched off, from a USB stick, in ten years. A single external
 // reference breaks that and nothing on screen would say so.
+//
+// This is the archive with no folder beside it, which is most of them: nothing at
+// all is outside the file. When the archive does have the phone's photographs they
+// are copied into the folder and linked by relative path, which keeps the promise
+// that matters — nothing is ever fetched from anywhere — and is covered in
+// files_test.go.
 func TestHTMLPageIsSelfContained(t *testing.T) {
 	t.Parallel()
 

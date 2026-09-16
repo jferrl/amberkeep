@@ -304,6 +304,14 @@ export interface Archive {
   named: number;
   /** False when the archive was served without an index, and searching will refuse. */
   searchable: boolean;
+  /**
+   * Whether the phone's own folder of photographs came with the archive.
+   *
+   * False for most archives, which are a database somebody copied on its own: those
+   * show the thumbnails WhatsApp keeps inside the database and nothing else. It is
+   * what decides whether the export screen offers to carry the files out.
+   */
+  files: boolean;
   time_zone: string;
   /** Absent when no conversation recorded when it began. */
   earliest?: Timestamp;
@@ -711,6 +719,17 @@ export interface Exported {
   messages: number;
   bytes: number;
   formats: readonly string[];
+  /**
+   * How many of the archive's own photographs, videos and recordings were copied out
+   * beside the pages, and how much they came to.
+   *
+   * Absent for the great majority of archives, which have none — and counted apart
+   * from the bytes above because they are the part somebody notices: the pages of a
+   * million messages are a few hundred megabytes and the photographs beside them can
+   * be several gigabytes.
+   */
+  carried?: number;
+  carried_bytes?: number;
 }
 
 /**

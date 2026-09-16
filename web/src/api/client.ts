@@ -518,6 +518,13 @@ export interface Writing {
   only?: readonly string[];
   groups?: boolean;
   notices?: boolean;
+  /**
+   * Copy the archive's own photographs, videos and recordings out beside the pages.
+   *
+   * Does nothing for an archive that has none, which is most of them; where it does
+   * something it is usually the largest part of the export by far.
+   */
+  media?: boolean;
 }
 
 /** writeArchive starts writing the archive out and stops. */
@@ -529,6 +536,7 @@ export async function writeArchive(
     formats: ask.formats,
     groups: ask.groups ?? true,
     notices: ask.notices ?? false,
+    media: ask.media ?? false,
   };
   if (ask.into !== undefined && ask.into !== "") body.into = ask.into;
   if (ask.words !== undefined) body.words = ask.words;

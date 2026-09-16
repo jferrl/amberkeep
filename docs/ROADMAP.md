@@ -11,7 +11,7 @@ Everything here is ordered by what blocks what, not by what is interesting.
 | | What | State |
 |---|---|---|
 | 1 | Give the unrecognised message types their meanings, from evidence rather than guesswork | next |
-| 2 | Media: an Android archive reads the phone's own folder when it is beside the database, and shows the photographs, videos and voice notes themselves rather than the stamp-sized copies. What is left is the export writing the files out beside the pages, and the wizard asking for the folder instead of finding it by luck | done for reading; export and wizard next |
+| 2 | Media: an Android archive reads the phone's own folder when it is beside the database, shows the photographs, videos and voice notes themselves rather than the stamp-sized copies, and carries them out when the archive is exported. What is left is the wizard asking for the folder, and pulling it off the phone, instead of finding it where somebody happened to put it | done for reading and keeping; the wizard next |
 | 3 | The compatibility matrix fills up as shapes arrive | continuous |
 
 The second is worth saying plainly, because it is the largest visible difference a
@@ -20,7 +20,9 @@ thumbnail of it: on a real device 92,941 of 99,041 attachments record a path and
 12,510 have a thumbnail, so an archive read on its own shows about one picture in
 eight, and every voice note is a line of text saying a recording was sent. With the
 phone's folder beside it the archive shows the photographs and plays the recordings.
-Nothing is copied and nothing is written: the files are read where they lie.
+Nothing is copied and nothing is written while the archive is open: the files are read
+where they lie. An export is the one thing that copies them, because a copy of
+somebody's history with the pictures taken out is not a copy of it.
 
 The first one is bounded and evidence-led. About 1,265 of 161,032 messages on a real
 iPhone store carry a type code that means nothing on its own; the media type recorded

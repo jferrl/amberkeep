@@ -434,6 +434,7 @@ func (s *server) summarise(open *opened) map[string]any {
 		"people":        names.Len(),
 		"named":         names.Identified(),
 		"searchable":    open.index != nil,
+		"files":         hasFiles(open.archive),
 		"time_zone":     s.opts.Location.String(),
 	}
 	// Left out when there is none, so a page can tell "this server has no name for

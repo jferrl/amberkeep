@@ -18,6 +18,9 @@ type filed struct {
 	root string
 }
 
+// HasFiles is what an archive that found the phone's folder says.
+func (f filed) HasFiles() bool { return true }
+
 func (f filed) OpenMedia(ref string) (io.ReadSeekCloser, string, error) {
 	// The real readers refuse anything that climbs out; this one only has to be
 	// able to hand back what it was given.

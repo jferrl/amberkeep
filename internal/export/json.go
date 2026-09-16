@@ -100,6 +100,7 @@ func WriteJSON(conv Conversation, opts Options) (Result, error) {
 	result.Conversations = 1
 	result.Files = []string{path}
 	result.Bytes = written
+	result.Carried, result.CarriedBytes = r.files.carried()
 	return result, nil
 }
 
@@ -329,13 +330,13 @@ func jsonMessage(m model.Message, r renderer, opts Options) messageJSON {
 		out.Mentions = append(out.Mentions, j.String())
 	}
 
-	out.Attachment = jsonAttachment(m.Attachment)
+	out.Attachment = r.jsonAttachment(m.Attachment)
 	if m.Quote != nil {
 		out.Quote = &quoteJSON{
 			FromMe:     m.Quote.FromMe,
 			Kind:       m.Quote.Kind.String(),
 			Text:       m.Quote.Text,
-			Attachment: jsonAttachment(m.Quote.Attachment),
+			Attachment: r.jsonAttachment(m.Quote.Attachment),
 		}
 		if !m.Quote.FromMe && !m.Quote.Sender.IsZero() {
 			out.Quote.Sender = m.Quote.Sender.String()
@@ -411,8 +412,11 @@ func jsonMessage(m model.Message, r renderer, opts Options) messageJSON {
 	return out
 }
 
-// jsonAttachment converts a file description, carrying the surviving preview.
-func jsonAttachment(a *model.Attachment) *attachmentJSON {
+// jsonAttachment converts a file description, carrying the surviving preview — and
+// the file itself, when the archive has it, copied out under the very path recorded
+// here. So `file` says both what the phone called it and, read from beside this
+// archive, where it now is.
+func (r renderer) jsonAttachment(a *model.Attachment) *attachmentJSON {
 	if a == nil {
 		return nil
 	}
@@ -426,7 +430,13 @@ func jsonAttachment(a *model.Attachment) *attachmentJSON {
 	if a.HasPreview() {
 		out.Preview = base64.StdEncoding.EncodeToString(a.Preview.Data)
 	}
+	// Recorded whether or not the file travels: it is what the phone called it and
+	// where it was, which is worth keeping in a structured archive on its own. When
+	// the files did travel, this same path is where the file now sits beside this
+	// file, which is why it is not rewritten into something else.
 	out.File = a.File
+	// The copy itself, for an export of structured data with no page to look at.
+	_, _ = r.files.carry(a.File)
 	return out
 }
 

@@ -586,6 +586,11 @@ var loaded = model.Message{
 		MediaType: "image/jpeg", FileName: "beach.jpg", Size: 184320,
 		Duration: 0, Width: 1600, Height: 1200, Caption: "look at this",
 		Preview: model.Thumbnail{Data: []byte{0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0xff, 0xd9}},
+		// Both halves at once: the thumbnail that survived inside the database, and
+		// the file itself, which is here because somebody brought the phone's folder.
+		// The page needs this reference to ask for the photograph, and it has already
+		// been dropped once on the way out by a change nothing else noticed.
+		File: "Media/WhatsApp Images/IMG-20190614-WA0001.jpg",
 	},
 	Quote: &model.Quote{
 		Sender: luis, Kind: model.KindText, Text: "where are you?",

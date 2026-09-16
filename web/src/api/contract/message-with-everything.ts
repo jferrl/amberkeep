@@ -47,7 +47,8 @@ export default {
         "width": 1600,
         "height": 1200,
         "caption": "look at this",
-        "preview_base64": "/9j/4AAQSkZJRv/Z"
+        "preview_base64": "/9j/4AAQSkZJRv/Z",
+        "file": "Media/WhatsApp Images/IMG-20190614-WA0001.jpg"
       },
       "reply_to": {
         "sender": "34600333444@s.whatsapp.net",

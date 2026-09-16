@@ -18,14 +18,20 @@ import (
 	"github.com/jferrl/amberkeep/internal/model"
 )
 
-// A conversation as a web page, in one file, that works with the network off.
+// A conversation as a web page that works with the network off.
 //
 // This is the format that shows what the reader actually recovered. A photograph
 // whose file was deleted years ago still has a small copy inside the message
 // database, and here it appears as a picture rather than as the words "preview
-// recovered". Nothing is fetched: the stylesheet, the script and every image are
-// part of the file, so it opens the same on a laptop with no internet, from a USB
-// stick, or in ten years.
+// recovered". The stylesheet, the script and every one of those small copies are
+// part of the file.
+//
+// When the archive has the phone's own folder, the photographs, videos and
+// recordings are copied out beside the pages and linked to, because a copy of
+// somebody's history with the pictures taken out is not a copy of it. What is
+// self-contained is then the folder rather than each page alone: nothing is ever
+// fetched from anywhere, so it opens the same on a laptop with no internet, from a
+// USB stick, or in ten years.
 //
 // The page is written a message at a time, like the other formats. The one thing
 // that cannot stream is the browser's own memory, and a conversation here reaches
@@ -96,6 +102,7 @@ func WriteHTML(conv Conversation, opts Options) (Result, error) {
 	result.Conversations = 1
 	result.Files = []string{path}
 	result.Bytes = written
+	result.Carried, result.CarriedBytes = r.files.carried()
 	return result, nil
 }
 
@@ -183,6 +190,14 @@ type htmlMessage struct {
 	Preview    template.URL
 	PreviewAlt string
 
+	// Source is the archive's own file, when it travelled with the export: the
+	// photograph rather than the thumbnail of it. Shown instead of the preview,
+	// because they are the same picture and one of them is legible.
+	Source template.URL
+	// Playing says which element to write: "image", "video", "audio", or empty for
+	// a file a page can only name.
+	Playing string
+
 	// Note describes what the message was when it was not words: a file that is
 	// not in the archive, a call, a place, a message that was deleted.
 	Note string
@@ -225,9 +240,21 @@ func (r renderer) htmlMessage(m model.Message) htmlMessage {
 		out.Body = linkify(m.Text)
 	}
 
-	if m.Attachment != nil && m.Attachment.HasPreview() {
-		out.Preview = dataURI(m.Attachment.Preview)
-		out.PreviewAlt = "recovered preview of " + attachmentNoun(m.Kind)
+	if m.Attachment != nil {
+		// The file itself when it is here, the thumbnail when it is not. Both when
+		// the file is here and is not something a page can show — a document keeps
+		// whatever preview survived beside the link to it.
+		if file, ok := r.files.carry(m.Attachment.File); ok {
+			out.Source = template.URL(file.Link) // #nosec G203 -- a path escaped by linkTo
+			out.Playing = shows(file.Kind)
+			out.PreviewAlt = attachmentNoun(m.Kind) + " sent in this message"
+		}
+		if m.Attachment.HasPreview() && out.Playing == "" {
+			out.Preview = dataURI(m.Attachment.Preview)
+			if out.Source == "" {
+				out.PreviewAlt = "recovered preview of " + attachmentNoun(m.Kind)
+			}
+		}
 	}
 
 	if m.Quote != nil {
@@ -459,7 +486,8 @@ const pageTemplates = `
 <div class="bubble">
 {{- if not .Notice}}<div><span class="who">{{.Who}}</span><span class="when" title="{{.Full}}">{{.When}}</span></div>{{end}}
 {{- with .Quote}}<blockquote>{{if .Preview}}<img class="preview" loading="lazy" src="{{.Preview}}" alt="">{{end}}<span class="who">{{.Who}}</span><div class="body">{{.Text}}</div></blockquote>{{end}}
-{{- if .Preview}}<img class="preview" loading="lazy" src="{{.Preview}}" alt="{{.PreviewAlt}}"><div class="recovered">recovered preview &mdash; the file itself is not in this archive</div>{{end}}
+{{- if .Source}}{{if eq .Playing "image"}}<img class="shot" loading="lazy" src="{{.Source}}" alt="{{.PreviewAlt}}">{{else if eq .Playing "video"}}<video class="shot" controls preload="metadata" src="{{.Source}}"></video>{{else if eq .Playing "audio"}}<audio controls preload="metadata" src="{{.Source}}"></audio>{{else}}<div class="note"><a href="{{.Source}}">{{.PreviewAlt}}</a></div>{{end}}{{end}}
+{{- if .Preview}}<img class="preview" loading="lazy" src="{{.Preview}}" alt="{{.PreviewAlt}}">{{if not .Source}}<div class="recovered">recovered preview &mdash; the file itself is not in this archive</div>{{end}}{{end}}
 {{- with .Note}}<div class="note">{{.}}</div>{{end}}
 {{- with .Question}}<div class="body">{{.}}</div>{{end}}
 {{- if .Options}}<div class="poll">{{range .Options}}<div class="opt"><span>{{.Name}}</span><span class="votes">{{.Votes}}</span></div>{{end}}</div>{{end}}

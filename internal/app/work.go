@@ -14,6 +14,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/backupfs"
 	"github.com/jferrl/amberkeep/internal/contacts"
 	"github.com/jferrl/amberkeep/internal/crypt15"
+	"github.com/jferrl/amberkeep/internal/export"
 	"github.com/jferrl/amberkeep/internal/migrate"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/search"
@@ -463,4 +464,18 @@ func NoticeIdentifier(reader source.Archive) func(int) bool {
 		return android.IsIdentifiedNotice
 	}
 	return func(int) bool { return false }
+}
+
+// FilesOf is an archive's own photographs, videos and recordings, for an export
+// that should carry them out with it.
+//
+// Nil when the archive cannot produce them, which is what export expects and is the
+// ordinary case: a message database copied off a phone on its own records where every
+// photograph was and holds none of them.
+func FilesOf(reader source.Archive) export.Files {
+	files, can := reader.(export.Files)
+	if !can {
+		return nil
+	}
+	return files
 }

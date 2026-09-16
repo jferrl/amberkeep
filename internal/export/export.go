@@ -61,6 +61,12 @@ type Options struct {
 	// Overwrite permits replacing files that already exist. Without it an export
 	// into a directory that already holds one stops rather than destroying it.
 	Overwrite bool
+
+	// Files hands over the photographs, videos and recordings the archive refers to,
+	// so that they travel with it. Nil when the archive has none, which is the
+	// ordinary case: a database copied off a phone on its own knows where every
+	// photograph was and holds none of them. See files.go.
+	Files Files
 }
 
 // withDefaults fills in what the caller left out.
@@ -132,6 +138,13 @@ type Result struct {
 	Skipped       int // notices and hidden rows left out
 	Files         []string
 	Bytes         int64
+
+	// Carried is how many of the archive's own files travelled with it, and how much
+	// they came to. Counted apart from Bytes because they are the part somebody
+	// notices: a text export of a million messages is a few hundred megabytes and the
+	// photographs beside it can be several gigabytes.
+	Carried      int
+	CarriedBytes int64
 }
 
 // atomicWrite creates a file, hands it to write, and moves it into place only if

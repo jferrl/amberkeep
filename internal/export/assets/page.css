@@ -109,7 +109,7 @@ header.top .about a { color: var(--accent); }
   font-size: 0.75rem; color: var(--muted);
 }
 
-/* Recovered pictures */
+/* Recovered pictures, and the photographs themselves when they came too */
 .msg img.preview {
   display: block; margin: 0.3rem 0;
   max-width: 100%; height: auto;
@@ -117,6 +117,18 @@ header.top .about a { color: var(--accent); }
   background: var(--line);
 }
 .msg .recovered { font-size: 0.72rem; color: var(--muted); }
+
+/* A file that travelled with the archive. Wider than the thumbnail, because this
+   one is worth looking at, and capped so that a portrait photograph does not push a
+   whole conversation off the screen. */
+.msg img.shot, .msg video.shot {
+  display: block; margin: 0.3rem 0;
+  max-width: 100%; max-height: 22rem; height: auto;
+  border-radius: 0.5rem;
+  background: var(--line);
+}
+.msg img.shot { cursor: zoom-in; }
+.msg audio { display: block; margin: 0.3rem 0; max-width: 100%; }
 
 /* Quotes, polls, links, reactions */
 .msg blockquote {

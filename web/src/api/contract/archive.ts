@@ -15,6 +15,7 @@ export default {
   },
   "conversations": 3,
   "earliest": "2019-06-13T09:00:00Z",
+  "files": false,
   "latest": "2019-06-14T11:00:00Z",
   "layout": "modern",
   "messages": 7,

@@ -56,6 +56,10 @@ type ExportRequest struct {
 	Groups bool `json:"groups"`
 	// Notices writes what WhatsApp did as well as what people said.
 	Notices bool `json:"notices"`
+	// Media copies the archive's own photographs, videos and recordings out beside
+	// the pages. It does nothing at all for an archive that has none, which is most
+	// of them; where it does something it is usually the largest part of the export.
+	Media bool `json:"media"`
 
 	// Me and Location come from how the server was started, not from the page: they
 	// are how every other part of this archive is already being read, and an export
@@ -73,6 +77,11 @@ type Exported struct {
 	Messages      int      `json:"messages"`
 	Bytes         int64    `json:"bytes"`
 	Formats       []string `json:"formats"`
+	// Carried is how many of the archive's own photographs, videos and recordings
+	// were copied out beside the pages, and how much they came to. Zero for the
+	// great majority of archives, which have none.
+	Carried      int   `json:"carried,omitempty"`
+	CarriedBytes int64 `json:"carried_bytes,omitempty"`
 }
 
 // Exportable is an archive that can write itself out.

@@ -53,6 +53,45 @@ test("writes the archive out, and the files are really there", async ({ page, vi
 });
 
 /**
+ * The photographs go with it.
+ *
+ * The fixture archive has the phone's own folder beside it, so the page offers to
+ * carry the files out and this checks that the bytes really landed — which is the
+ * whole of the feature, and not something the screen can show.
+ */
+test("carries the photographs out beside the pages", async ({ page, viewer }) => {
+  const into = join(mkdtempSync(join(tmpdir(), "amberkeep-media-")), "archive");
+
+  try {
+    await page.goto(viewer.opening);
+    await expect(page.getByRole("button", { name: /Ana Lopez/ })).toBeVisible({ timeout: 30_000 });
+
+    await page.getByRole("button", { name: "Keep a copy" }).click();
+    const carry = page.getByLabel(/Copy the photographs/);
+    await expect(carry).toBeChecked();
+
+    await page.getByLabel(/Where to put it/).fill(into);
+    await page.getByRole("button", { name: "Write it out" }).click();
+    await expect(page.getByRole("heading", { name: /Your history is on this computer/ })).toBeVisible({
+      timeout: 60_000,
+    });
+
+    // The file itself, under the path the phone recorded, and the page pointing at
+    // it rather than at a thumbnail.
+    const photograph = join(into, "Media", "WhatsApp Images", "IMG-20190615-WA0001.jpg");
+    expect(existsSync(photograph)).toBe(true);
+    expect(readFileSync(photograph).length).toBeGreaterThan(0);
+
+    const group = readdirSync(into).find((f) => f.includes("Vermut"));
+    expect(group).toBeDefined();
+    const contents = readFileSync(join(into, group ?? ""), "utf8");
+    expect(contents).toContain('src="Media/WhatsApp%20Images/IMG-20190615-WA0001.jpg"');
+  } finally {
+    rmSync(into, { recursive: true, force: true });
+  }
+});
+
+/**
  * The archive is what this program is for; a copy of it is a thing somebody takes
  * away. Asking for one must not put the archive itself out of reach.
  */

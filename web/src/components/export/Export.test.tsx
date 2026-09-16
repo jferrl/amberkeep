@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import recorded from "@/api/contract/archive";
 import type { Export as State } from "@/api/types";
 import { Export } from "@/components/export/Export";
 import { ThanksProvider } from "@/lib/thanks";
@@ -27,6 +28,8 @@ let posted: Posted[];
 let now: State;
 let replies: Partial<Record<string, () => Response>>;
 let left: number;
+/** Whether the archive under test came with the phone's own folder. */
+let hasFiles: boolean;
 
 function answer(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -48,6 +51,7 @@ beforeEach(() => {
   now = { stage: "idle" };
   replies = {};
   left = 0;
+  hasFiles = false;
 
   fetching = vi.fn<typeof fetch>((input, init) => {
     const at = fetchTarget(input);
@@ -59,6 +63,8 @@ beforeEach(() => {
       return Promise.resolve(said === undefined ? answer(now) : said());
     }
     if (at.startsWith("/api/export")) return Promise.resolve(answer(now));
+    if (at.startsWith("/api/archive"))
+      return Promise.resolve(answer({ ...recorded, files: hasFiles }));
     return Promise.resolve(new Response("not found", { status: 404 }));
   });
   vi.stubGlobal("fetch", fetching);
@@ -108,6 +114,9 @@ describe("choosing what to keep", () => {
       formats: ["html", "json"],
       groups: true,
       notices: false,
+      // This archive has no folder of its own, so there is nothing to carry and
+      // nothing was offered.
+      media: false,
     });
   });
 
@@ -246,5 +255,64 @@ describe("when the server refuses", () => {
       await screen.findByText(/an export is already running/),
     ).toBeInTheDocument();
     expect(screen.getByLabelText("Web pages")).toBeInTheDocument();
+  });
+});
+
+/**
+ * Carrying the photographs out.
+ *
+ * A database records where a picture was and keeps at most a thumbnail of it, so
+ * most archives have nothing to carry and are not asked about it. The ones that do
+ * have the phone's own folder are asked, because the files are usually far the
+ * largest part of the export and somebody should know that before waiting for it.
+ */
+describe("the photographs", () => {
+  it("is not asked about at all when the archive has none", async () => {
+    show();
+    // Waiting on something that is definitely there, so the absence below is a
+    // settled page rather than one that has not answered yet.
+    await screen.findByLabelText("Web pages");
+
+    expect(screen.queryByLabelText(/Copy the photographs/)).toBeNull();
+  });
+
+  it("is offered, and on, when the phone's folder came with the archive", async () => {
+    hasFiles = true;
+
+    show();
+    expect(await screen.findByLabelText(/Copy the photographs/)).toBeChecked();
+  });
+
+  it("is what gets sent, and can be turned off", async () => {
+    hasFiles = true;
+    const user = userEvent.setup();
+    replies["/api/export"] = () => answer({ stage: "writing" }, 202);
+
+    show();
+    await user.click(await screen.findByLabelText(/Copy the photographs/));
+    await user.click(screen.getByRole("button", { name: "Write it out" }));
+
+    expect(sentTo("/api/export")).toMatchObject({ media: false });
+  });
+
+  it("says how many travelled, once they have", async () => {
+    now = {
+      stage: "done",
+      result: {
+        into: "/Users/someone/Archive",
+        conversations: 2,
+        messages: 90,
+        bytes: 1024,
+        formats: ["html"],
+        carried: 37,
+        carried_bytes: 4_000_000,
+      },
+    };
+
+    show();
+    expect(
+      await screen.findByText("photographs, videos and recordings"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("37")).toBeInTheDocument();
   });
 });

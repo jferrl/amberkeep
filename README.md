@@ -25,7 +25,7 @@ search and export. The iPhone side and the desktop application are being built.
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
-| The phone's own photographs | working on Android: put WhatsApp's folder beside the database and the archive shows the files themselves, not the thumbnails |
+| The phone's own photographs | working on Android: put WhatsApp's folder beside the database and the archive shows the files themselves, not the thumbnails, and exports carry them out with it |
 | iPhone message reader | working, including replies and pictures no other tool recovers |
 | Export: web pages, text, JSON | working, in the browser and on the command line |
 | Full-text search | working, accent-insensitive |
@@ -154,8 +154,9 @@ and loads earlier messages as you scroll, which is what makes a conversation of
 ninety thousand messages open at all.
 
 `export` writes one web page per conversation and an index to open them from. Each page
-is a single file with the stylesheet, the script and every recovered picture inside it,
-so it works with the network switched off and will keep working.
+carries its own stylesheet, script and every recovered thumbnail inside it, and the
+photographs the archive has travel in a folder beside the pages, so the whole thing
+works with the network switched off and will keep working.
 
 `--contacts` takes a vCard export from the phone's address book. Without it,
 conversations are labelled by phone number, which is the single most noticeable way an
@@ -176,8 +177,12 @@ is where the phone itself keeps the two.
 
 The files are read where they lie and never written to, and a file the folder turns
 out not to have is a picture the archive simply says nothing about, exactly as before.
-This is reading only for now: `export` still writes the thumbnails into its pages and
-not the files, which is the next piece of this work.
+
+`export` carries them out too, under the paths the phone recorded, and the pages
+point at them. The folder is then the thing that works on its own — from a USB stick,
+with the network off, in ten years — rather than each page alone. That is usually much
+the largest part of an export, so it is a tick box on the page and `--media=false` on
+the command line for anybody who wants the words and not the gigabytes.
 
 Every failure this tool understands comes with what to do about it, in the output,
 rather than an error to search the internet for.

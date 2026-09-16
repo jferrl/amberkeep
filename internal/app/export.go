@@ -64,6 +64,10 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 		Overwrite:        true,
 		NoticeIdentified: NoticeIdentifier(r.Archive),
 	}
+	// The photographs travel when they were asked for and the archive has them.
+	if ask.Media {
+		opts.Files = FilesOf(r.Archive)
+	}
 
 	// The index only means anything when there are pages for it to link to.
 	var indexed bool
@@ -117,6 +121,8 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 				written = result.Messages
 			}
 			total.Bytes += result.Bytes
+			total.Carried += result.Carried
+			total.CarriedBytes += result.CarriedBytes
 		}
 		total.Conversations++
 		done++
@@ -154,6 +160,8 @@ func (r readable) Export(ctx context.Context, ask api.ExportRequest, say api.Pro
 		Messages:      total.Messages,
 		Bytes:         total.Bytes,
 		Formats:       ask.Formats,
+		Carried:       total.Carried,
+		CarriedBytes:  total.CarriedBytes,
 	}, nil
 }
 

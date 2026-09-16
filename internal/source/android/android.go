@@ -496,6 +496,9 @@ func (r *Reader) OpenMedia(ref string) (io.ReadSeekCloser, string, error) {
 	return r.media.Open(ref)
 }
 
+// HasFiles says whether this archive was given the folder the files are in.
+func (r *Reader) HasFiles() bool { return !r.media.Empty() }
+
 // Media is the folder this reader was given, for a caller that has to say where the
 // files came from or how many of them arrived.
 func (r *Reader) Media() media.Folder { return r.media }

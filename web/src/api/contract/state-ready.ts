@@ -16,6 +16,7 @@ export default {
       "group": 1
     },
     "conversations": 2,
+    "files": false,
     "latest": "2019-06-14T10:00:00Z",
     "layout": "modern",
     "messages": 6,

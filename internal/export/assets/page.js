@@ -169,13 +169,19 @@
     });
 
     // Recovered pictures are small by nature, so clicking one shows it as large
-    // as it goes.
+    // as it goes. A photograph that travelled with the archive opens the same way:
+    // it is shown at a readable size in the thread, not at the size it was taken.
     var zoom = document.querySelector("dialog.zoom");
     if (zoom) {
       var big = zoom.querySelector("img");
       document.addEventListener("click", function (e) {
         var target = e.target;
-        if (target && target.classList && target.classList.contains("preview")) {
+        if (
+          target &&
+          target.classList &&
+          (target.classList.contains("preview") || target.classList.contains("shot")) &&
+          target.tagName === "IMG"
+        ) {
           big.src = target.src;
           big.alt = target.alt;
           zoom.showModal();

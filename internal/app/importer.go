@@ -276,6 +276,13 @@ func (r readable) OpenMedia(ref string) (io.ReadSeekCloser, string, error) {
 	return files.OpenMedia(ref)
 }
 
+// HasFiles says whether the archive behind this one found its files. Forwarded for
+// the same reason OpenMedia is.
+func (r readable) HasFiles() bool {
+	files, can := r.Archive.(api.Filed)
+	return can && files.HasFiles()
+}
+
 // Close lets go of both, and reports whichever failure came first.
 func (r readable) Close() error {
 	var problems []error

@@ -28,6 +28,7 @@ func runExport(ctx context.Context, args []string) error {
 		me       = fs.String("me", "You", "what to call yourself in the archive")
 		notices  = fs.Bool("notices", false, "include what WhatsApp did as well as what people said")
 		groups   = fs.Bool("groups", true, "include group conversations")
+		media    = fs.Bool("media", true, "copy the photographs and recordings out too, when the archive has them")
 		force    = fs.Bool("force", false, "replace files that are already there")
 	)
 	if err := fs.Parse(args); err != nil {
@@ -81,6 +82,12 @@ func runExport(ctx context.Context, args []string) error {
 		Overwrite:        *force,
 		NoticeIdentified: app.NoticeIdentifier(reader),
 	}
+	// The photographs travel by default, because an archive with the pictures taken
+	// out is not a copy of somebody's history. --media=false is there for the person
+	// who wants the words and not the several gigabytes.
+	if *media {
+		opts.Files = app.FilesOf(reader)
+	}
 
 	var (
 		total   export.Result
@@ -123,6 +130,8 @@ func runExport(ctx context.Context, args []string) error {
 			}
 			total.Bytes += result.Bytes
 			total.Files = append(total.Files, result.Files...)
+			total.Carried += result.Carried
+			total.CarriedBytes += result.CarriedBytes
 		}
 		total.Conversations++
 
@@ -156,6 +165,10 @@ func runExport(ctx context.Context, args []string) error {
 	fmt.Printf("wrote %d conversations and %d messages to %s\n",
 		total.Conversations, total.Messages, app.Abbreviate(*out))
 	fmt.Printf("  %d files, %s\n", len(total.Files), app.HumanSize(total.Bytes))
+	if total.Carried > 0 {
+		fmt.Printf("  %d photographs, videos and recordings copied out beside them, %s\n",
+			total.Carried, app.HumanSize(total.CarriedBytes))
+	}
 	if total.Skipped > 0 {
 		fmt.Printf("  %d housekeeping notices left out (pass --notices to keep them)\n", total.Skipped)
 	}

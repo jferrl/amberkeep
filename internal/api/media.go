@@ -18,6 +18,12 @@ type Filed interface {
 	// whatever the reader put on the attachment, and the reader is the only thing
 	// that decides where such a reference may lead.
 	OpenMedia(ref string) (io.ReadSeekCloser, string, error)
+
+	// HasFiles says whether the archive found a folder at all, so that a page can
+	// offer to carry the photographs out only when there are some. Asking for a file
+	// would answer the same question one file at a time and only after the archive is
+	// already on screen.
+	HasFiles() bool
 }
 
 // handleMedia serves one file an attachment referred to.
@@ -98,4 +104,14 @@ func shown(kind string) bool {
 		// carry script rather than a picture.
 		return false
 	}
+}
+
+// hasFiles says whether an archive came with the phone's folder.
+//
+// Most do not, and the difference is worth naming on the archive itself rather than
+// being discovered one missing photograph at a time: it is what decides whether the
+// export screen offers to carry them.
+func hasFiles(archive Archive) bool {
+	files, can := archive.(Filed)
+	return can && files.HasFiles()
 }

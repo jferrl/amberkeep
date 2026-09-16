@@ -40,10 +40,18 @@ type renderer struct {
 	dir *model.Directory
 	loc *time.Location
 	me  string
+	// files copies the archive's own photographs out beside the pages, for the
+	// formats that can point at one. The plain-text format never asks.
+	files *carrier
 }
 
 func newRenderer(dir *model.Directory, opts Options) renderer {
-	return renderer{dir: dir, loc: opts.Location, me: opts.Me}
+	return renderer{
+		dir:   dir,
+		loc:   opts.Location,
+		me:    opts.Me,
+		files: newCarrier(opts.Files, opts.Directory),
+	}
 }
 
 // timestamp formats when a message was sent, in the reader's own time zone.
