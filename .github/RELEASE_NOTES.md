@@ -8,29 +8,42 @@ phone — all of it, with no account and nothing switched off. One line in the p
 offers to buy the author a coffee, at the two moments when something that mattered has
 just worked, and that is the whole of it.
 
-## What is new since v0.2.0
+## What is new since v0.3.0
 
-- **`amberkeep canary`** says what a database holds that this build has never seen:
-  tables and columns no known shape has, and message type codes nothing here has a
-  meaning for, with how many rows carry each. It reads the catalogue and counts rows,
-  so it takes seconds on a million messages, and what it prints is names, integers and
-  counts — safe to paste into an issue without reading it first. It is the early
-  warning for the next time WhatsApp changes its schema, and
-  [what has been run against what](https://github.com/jferrl/amberkeep/blob/main/docs/COMPATIBILITY_MATRIX.md)
-  now has a page.
-- **It is free, on purpose and in writing.** The plan was to sell this; the reasoning
-  for not doing so is in ADR 10. Nothing in the program asks for money, and the only
-  thing that mentions it is a coffee button at the foot of the screen.
-- **A way back to the start.** The Android walkthrough is six screens, and somebody who
-  realises on the fifth that they picked the wrong thing no longer has to press Back
-  five times to say so.
-- **The screen that writes an archive out** has the window it is in: the promise at the
-  top, the notices at the bottom, and its first line no longer under the close,
-  minimise and zoom buttons.
-- **Prose set as prose.** Every sentence about a failure or a restore step is written
-  in a Go file and printed in a terminal, so it arrived hard-wrapped at seventy
-  characters and was shown that way. Paragraphs are paragraphs now; what is indented —
-  a command, a menu, a list — is left alone.
+**Your photographs.** A WhatsApp database records where every picture was and keeps
+at most a thumbnail of it: on the archive this was built from, 92,941 of 99,041
+attachments record a path and 12,510 have a thumbnail. So an archive read on its own
+has always shown about one picture in eight, at the size of a stamp, and every voice
+note was a line of text saying a recording was sent. It now shows the photographs
+themselves, plays the videos and plays the recordings.
+
+- **From the phone, over the cable.** The screen that takes a backup off an Android
+  phone offers to bring the files with it, and says how many gigabytes that is before
+  you agree to wait — 5.7 GB on a real device. It copies one kind at a time, says
+  which, and a copy that is interrupted picks up from the kind it reached rather than
+  starting the gigabytes again. It is off unless you ask: it is the longest part and
+  it happens before any messages appear.
+- **Or from a folder you already have.** Put the phone's `WhatsApp` folder beside the
+  database and there is nothing to configure — it is looked for beside the file, in a
+  `WhatsApp` folder next to it, and in the folder above, which is where the phone
+  itself keeps the two. If it is somewhere else, there is a field for it, and
+  `--whatsapp-folder` on the command line.
+- **They travel with an export.** Web pages now point at the files themselves, copied
+  out under the paths the phone recorded. The folder as a whole still works with the
+  network switched off, from a USB stick, in ten years — which is the promise that
+  matters. It is a tick box, because it is usually much the largest part of an export,
+  and `--media=false` turns it off.
+- **Nothing is opened that should not be.** Files come off somebody's phone and are
+  served from the same address as the program's own page, so only pictures, video and
+  audio are shown as themselves; everything else, an HTML file or an SVG included,
+  arrives as bytes to be saved. Recorded paths are refused if they try to climb out of
+  the folder they name — refused on the way in and again on the way out, because
+  reading somebody's disk and writing to it are different operations.
+- **A folder with nothing in it says so.** Naming the wrong one stops and explains
+  which to name instead, rather than opening an archive with no pictures in it and
+  leaving you to conclude they are gone.
+
+This is the Android side. An iPhone backup still gives up its thumbnails only.
 
 ## Which download
 
@@ -80,7 +93,8 @@ messages:
 - **crypt15 decryption** — byte for byte against `wa-crypt-tools`.
 - **Android and iPhone readers** — including replies and pictures recovered from an
   iPhone store that holds only the paths to them.
-- **Export** — web pages, text and structured data; 55 seconds for the whole archive.
+- **Export** — web pages, text and structured data; 55 seconds for the whole archive,
+  longer when it is carrying the photographs out with it.
 - **Search** — the whole archive in under 10 milliseconds.
 - **The viewer** — a 92,180-message conversation opens in 0.12 seconds.
 
