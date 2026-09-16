@@ -97,3 +97,59 @@ test("says what went wrong, and lets somebody correct it and go on", async ({ pa
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+/**
+ * Naming the phone's folder, and being told when it is the wrong one.
+ *
+ * An archive finds the folder beside the database on its own, which covers somebody
+ * who copied the two across together. This is for everybody else: the database in
+ * one place and the photographs in another. Typing a folder with nothing in it is
+ * the mistake that actually happens — one level too deep, or too shallow — and being
+ * told nothing would read as "there are no photographs", which is a different and
+ * much worse thing to believe about your own history.
+ */
+test("refuses a folder with no WhatsApp files in it, and says which folder to name", async ({
+  page,
+  wizard,
+}) => {
+  const empty = mkdtempSync(join(tmpdir(), "amberkeep-nothing-"));
+
+  try {
+    await page.getByRole("button", { name: /I already have a file/ }).click();
+    await page.getByLabel(/The full path to the file/).fill(wizard.archive ?? "");
+    await page.getByLabel(/The phone's WhatsApp folder/).fill(empty);
+    await page.getByRole("button", { name: "Open it" }).click();
+
+    await expect(page.getByText(/no WhatsApp files in that folder/i)).toBeVisible({
+      timeout: 30_000,
+    });
+    // And the advice says what to do about it rather than only that it failed. Named
+    // by its own sentence: the field's hint says where the folder is on the phone
+    // too, and a loose match would find both and prove neither.
+    await expect(page.getByText(/name the one above instead/i)).toBeVisible();
+
+    // The form is still there, with what was typed still in it, so it can be
+    // corrected rather than started again.
+    await expect(page.getByLabel(/The full path to the file/)).toHaveValue(wizard.archive ?? "");
+  } finally {
+    rmSync(empty, { recursive: true, force: true });
+  }
+});
+
+test("opens with a folder somebody named, and shows the photographs", async ({ page, wizard }) => {
+  // The archive's own directory: it holds the Media folder, which is what makes it
+  // the phone's folder as far as this program is concerned.
+  const folder = (wizard.archive ?? "").replace(/\/[^/]+$/, "");
+
+  await page.getByRole("button", { name: /I already have a file/ }).click();
+  await page.getByLabel(/The full path to the file/).fill(wizard.archive ?? "");
+  await page.getByLabel(/An address book/).fill(wizard.contacts ?? "");
+  await page.getByLabel(/The phone's WhatsApp folder/).fill(folder);
+  await page.getByRole("button", { name: "Open it" }).click();
+
+  await expect(page.getByRole("button", { name: /Vermut del sabado/ })).toBeVisible({
+    timeout: 30_000,
+  });
+  await page.getByRole("button", { name: /Vermut del sabado/ }).click();
+  await expect(page.getByRole("img", { name: /Photograph sent/ })).toBeVisible();
+});

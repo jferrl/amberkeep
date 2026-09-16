@@ -301,6 +301,15 @@ export interface Extras {
    * name back onto a conversation, so this is one field and never a choice.
    */
   contacts?: string | undefined;
+  /**
+   * The phone's WhatsApp folder, when the photographs are not beside the database.
+   *
+   * Absent is the ordinary case and means look around the database, which finds it
+   * for anybody who copied the folder across with it. A folder named here that holds
+   * no WhatsApp files is refused with a sentence saying so, rather than quietly
+   * opening an archive with no pictures in it.
+   */
+  files?: string | undefined;
 }
 
 /**
@@ -310,10 +319,11 @@ export interface Extras {
  * interface loses the types of its values and the whole point of this file is that
  * nothing untyped is put into a request body.
  */
-function filled({ into, contacts }: Extras): Record<string, string> {
+function filled({ into, contacts, files }: Extras): Record<string, string> {
   const body: Record<string, string> = {};
   if (into !== undefined && into !== "") body.into = into;
   if (contacts !== undefined && contacts !== "") body.contacts = contacts;
+  if (files !== undefined && files !== "") body.files = files;
   return body;
 }
 

@@ -111,8 +111,8 @@ func (h *helper) Decrypt(_ context.Context, file, key, into string, say Progress
 	return h.work(say, StepDecrypting)
 }
 
-func (h *helper) Open(_ context.Context, path, contacts string, _ Progress) (Archive, error) {
-	h.record("open", path, contacts)
+func (h *helper) Open(_ context.Context, ask Opening, _ Progress) (Archive, error) {
+	h.record("open", ask.Path, ask.Contacts, ask.Files)
 	if h.failOpen != nil {
 		return nil, h.failOpen
 	}

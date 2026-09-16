@@ -72,6 +72,14 @@ type opening struct {
 	Key      string `json:"key"`
 	Into     string `json:"into"`
 	Contacts string `json:"contacts"`
+	// Files is the phone's WhatsApp folder, for somebody whose photographs are not
+	// beside the database. Empty is the ordinary case and means look around it.
+	Files string `json:"files"`
+}
+
+// with is what this request says an archive should be opened with.
+func (o opening) with() Opening {
+	return Opening{Contacts: o.Contacts, Files: o.Files}
 }
 
 // handleOpen reads an archive that is already readable.
@@ -88,7 +96,7 @@ func (s *server) handleOpen(w http.ResponseWriter, r *http.Request) {
 
 	//nolint:contextcheck // the work outlives this request on purpose; see start.
 	s.begun(w, r, s.start(StepOpening, Saying("openingArchive", "Opening the archive."),
-		func(context.Context, Progress) (string, error) { return ask.Path, nil }, ask.Contacts))
+		func(context.Context, Progress) (string, error) { return ask.Path, nil }, ask.with()))
 }
 
 // handleExtract takes the message store out of an iPhone backup.
@@ -109,7 +117,7 @@ func (s *server) handleExtract(w http.ResponseWriter, r *http.Request) {
 		Saying("takingMessagesOut", "Taking the messages out of the backup, with their pictures."),
 		func(ctx context.Context, say Progress) (string, error) {
 			return s.importer.Extract(ctx, ask.Backup, into, say)
-		}, ask.Contacts))
+		}, ask.with()))
 }
 
 // handleDecrypt turns an encrypted Android backup into something readable.
@@ -138,7 +146,7 @@ func (s *server) handleDecrypt(w http.ResponseWriter, r *http.Request) {
 		Saying("decryptingBackup", "Decrypting the backup. Nothing is being uploaded."),
 		func(ctx context.Context, say Progress) (string, error) {
 			return s.importer.Decrypt(ctx, ask.File, key, into, say)
-		}, ask.Contacts))
+		}, ask.with()))
 }
 
 // handleClose forgets the archive and goes back to the beginning.
@@ -202,7 +210,7 @@ func (s *server) begun(w http.ResponseWriter, r *http.Request, started bool) {
 // closes the tab halfway through a decryption should come back to a finished
 // archive, not to a half-written file, and the request is over as soon as it has
 // been accepted.
-func (s *server) start(step Step, said Note, work func(context.Context, Progress) (string, error), contacts string) bool {
+func (s *server) start(step Step, said Note, work func(context.Context, Progress) (string, error), with Opening) bool {
 	if !s.session.begin(step, said) {
 		return false
 	}
@@ -218,7 +226,8 @@ func (s *server) start(step Step, said Note, work func(context.Context, Progress
 		}
 
 		say(StepOpening, Saying("readingArchive", "Reading the archive."))
-		archive, err := s.importer.Open(ctx, path, contacts, say)
+		with.Path = path
+		archive, err := s.importer.Open(ctx, with, say)
 		if err != nil {
 			s.session.failed(sentence(err), s.advise(err))
 			return

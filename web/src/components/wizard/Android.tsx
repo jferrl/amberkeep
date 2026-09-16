@@ -86,7 +86,9 @@ export function Android({
   into,
   onInto,
   contacts,
+  files,
   onContacts,
+  onFiles,
   typed,
   onTyped,
   onDecrypt,
@@ -99,7 +101,10 @@ export function Android({
   into: string;
   onInto: (into: string) => void;
   contacts: string;
+  /** The phone's own folder of photographs, when it is not beside the database. */
+  files: string;
   onContacts: (contacts: string) => void;
+  onFiles: (files: string) => void;
   typed: Typed;
   onTyped: (change: Partial<Typed>) => void;
   onDecrypt: (file: string, key: string) => void;
@@ -309,6 +314,8 @@ export function Android({
           writes="workspaceDecrypt"
           contacts={contacts}
           onContacts={onContacts}
+          files={files}
+          onFiles={onFiles}
         />
 
         <div>

@@ -92,6 +92,10 @@
       "body": "There are no words in that search.\n\nType what you remember of the message. A part of a word works too, with a\nstar at the end: vermu* finds vermut and vermuts.",
       "title": "There are no words in that search"
     },
+    "source.no-files-there": {
+      "body": "That folder does not hold the phone's files.\n\nWhat is wanted is the WhatsApp folder itself — on the phone it is\nAndroid/media/com.whatsapp/WhatsApp — or the Media folder inside it. If you\ncan see a folder called Media when you open the one you named, name the one\nabove instead.\n\nThe archive opens without it, and shows the small copies WhatsApp keeps inside\nthe database.",
+      "title": "There are no WhatsApp files in that folder"
+    },
     "source.unrecognised-archive": {
       "body": "This is a database, but not one this version recognises.\n\nTwo files can be opened here: an Android msgstore.db, after decrypting, and\nan iPhone ChatStorage.sqlite taken from a backup. The other databases that\nsit beside them hold contacts and settings rather than messages.",
       "title": "That database is not one this version recognises"

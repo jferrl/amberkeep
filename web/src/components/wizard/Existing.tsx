@@ -26,9 +26,11 @@ import type { Language } from "@/i18n";
  */
 export function Existing({
   contacts,
+  files,
   language,
   typed,
   onContacts,
+  onFiles,
   onTyped,
   onOpen,
   onBack,
@@ -36,9 +38,12 @@ export function Existing({
   failure,
 }: {
   contacts: string;
+  /** The phone's own folder of photographs, when it is not beside the database. */
+  files: string;
   language: Language;
   typed: Typed;
   onContacts: (contacts: string) => void;
+  onFiles: (files: string) => void;
   onTyped: (change: Partial<Typed>) => void;
   onOpen: (path: string) => void;
   onBack: () => void;
@@ -90,6 +95,13 @@ export function Existing({
           hint={t("contactsHint")}
           value={contacts}
           onChange={onContacts}
+        />
+        <Field
+          label={t("filesLabel")}
+          choosing={{ what: "folder", named: t("chooseFiles") }}
+          hint={t("filesHint")}
+          value={files}
+          onChange={onFiles}
         />
         <div>
           <Button variant="primary" type="submit" disabled={busy}>

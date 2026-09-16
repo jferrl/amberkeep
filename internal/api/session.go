@@ -249,7 +249,7 @@ type Importer interface {
 	// Open reads an archive that is already readable, working out for itself which
 	// kind it is. Building the search index happens here, which is why it reports
 	// progress: it is the longest wait in the whole wizard.
-	Open(ctx context.Context, path, contacts string, say Progress) (Archive, error)
+	Open(ctx context.Context, ask Opening, say Progress) (Archive, error)
 
 	// Extract takes the message store and its pictures out of an iPhone backup and
 	// returns where the store landed.
@@ -258,6 +258,23 @@ type Importer interface {
 	// Decrypt turns an encrypted Android backup into a readable database and
 	// returns where it landed. The key is never logged, stored or echoed.
 	Decrypt(ctx context.Context, file, key, into string, say Progress) (string, error)
+}
+
+// Opening is everything an archive needs beside itself to be read properly.
+//
+// A struct rather than a longer and longer parameter list. Both of these are
+// optional and both change what a person sees rather than whether the archive opens:
+// without the address book every conversation is labelled by telephone number, and
+// without the folder every photograph is a thumbnail or a line of text.
+type Opening struct {
+	// Path is the archive itself: a decrypted Android database or an iPhone store.
+	Path string
+	// Contacts is an address book, so conversations show names.
+	Contacts string
+	// Files is the phone's WhatsApp folder, when it is not where an archive would
+	// find it on its own. Empty means look around the database, which is what finds
+	// it for anybody who copied the folder across with it.
+	Files string
 }
 
 // Backup is one iPhone backup, as the wizard lists it.

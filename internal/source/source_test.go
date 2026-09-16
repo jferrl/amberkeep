@@ -267,3 +267,77 @@ CREATE TABLE message (_id INTEGER PRIMARY KEY, chat_row_id INTEGER, from_me INTE
 		})
 	}
 }
+
+// TestAFolderSomebodyNames covers the case the search around the database cannot:
+// the database in one place and the phone's folder in another, which is what
+// somebody who copied the two across separately has.
+func TestAFolderSomebodyNames(t *testing.T) {
+	t.Parallel()
+
+	const androidSchema = `
+CREATE TABLE jid (_id INTEGER PRIMARY KEY, user TEXT, server TEXT, raw_string TEXT);
+CREATE TABLE chat (_id INTEGER PRIMARY KEY, jid_row_id INTEGER, subject TEXT);
+CREATE TABLE message (_id INTEGER PRIMARY KEY, chat_row_id INTEGER, from_me INTEGER,
+	key_id TEXT, sender_jid_row_id INTEGER, timestamp INTEGER, message_type INTEGER, text_data TEXT);`
+
+	// The phone's folder, nowhere near the database on purpose.
+	elsewhere := t.TempDir()
+	under := filepath.Join(elsewhere, "WhatsApp", "Media", "WhatsApp Images")
+	if err := os.MkdirAll(under, 0o750); err != nil {
+		t.Fatalf("laying out the folder: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(under, "IMG-1.jpg"), []byte("a photograph"), 0o600); err != nil {
+		t.Fatalf("writing the file: %v", err)
+	}
+
+	tests := []struct {
+		name  string
+		named string
+		finds bool
+		fails error
+	}{
+		{name: "the WhatsApp folder itself", named: filepath.Join(elsewhere, "WhatsApp"), finds: true},
+		{
+			name:  "the Media folder inside it, which people hand over just as often",
+			named: filepath.Join(elsewhere, "WhatsApp", "Media"), finds: true,
+		},
+		{
+			name:  "a folder with no files in it, which is a mistake worth saying",
+			named: elsewhere, fails: ErrNoFilesThere,
+		},
+		{
+			name:  "a folder that is not there at all",
+			named: filepath.Join(elsewhere, "nothing here"), fails: ErrNoFilesThere,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			archive, err := Open(context.Background(), build(t, androidSchema), WithMedia(tt.named))
+			if tt.fails != nil {
+				if !errors.Is(err, tt.fails) {
+					t.Fatalf("Open() error = %v, want it to say the folder holds nothing", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Open() failed: %v", err)
+			}
+			defer func() { _ = archive.Close() }()
+
+			files, can := archive.(interface {
+				OpenMedia(string) (io.ReadSeekCloser, string, error)
+			})
+			if !can {
+				t.Fatal("an Android archive cannot be asked for its files at all")
+			}
+			file, _, err := files.OpenMedia("Media/WhatsApp Images/IMG-1.jpg")
+			if err != nil {
+				t.Fatalf("OpenMedia() failed on the folder it was handed: %v", err)
+			}
+			_ = file.Close()
+		})
+	}
+}

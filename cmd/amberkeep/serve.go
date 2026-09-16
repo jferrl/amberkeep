@@ -38,6 +38,7 @@ func runServe(ctx context.Context, args []string) error {
 		indexAt  = fs.String("index", "", "where to keep the search index (default: beside the database)")
 		bookPath = fs.String("contacts", "", "an address book, so conversations show names instead of numbers")
 		waPath   = fs.String("whatsapp-contacts", "", "WhatsApp's own contacts database, usually wa.db")
+		folder   = fs.String("whatsapp-folder", "", "the phone's WhatsApp folder, if the photographs are not beside the database")
 		country  = fs.String("country", "", "dialling code for numbers saved without one, such as 34")
 		zone     = fs.String("timezone", "", "time zone for timestamps (default: this machine's)")
 		me       = fs.String("me", "You", "what to call yourself")
@@ -64,8 +65,15 @@ func runServe(ctx context.Context, args []string) error {
 		names  *model.Directory
 		index  *search.Index
 	)
+	// Named or found: the folder holding the photographs the database refers to and
+	// does not contain. Naming one that holds none is a mistake worth a sentence,
+	// which source.Open supplies.
+	var chosen []source.Option
+	if *folder != "" {
+		chosen = append(chosen, source.WithMedia(*folder))
+	}
 	if *db != "" {
-		if reader, err = source.Open(ctx, *db); err != nil {
+		if reader, err = source.Open(ctx, *db, chosen...); err != nil {
 			return err
 		}
 		if names, err = app.LoadNames(ctx, reader.Directory(), *bookPath, *waPath, *country); err != nil {

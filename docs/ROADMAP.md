@@ -11,7 +11,7 @@ Everything here is ordered by what blocks what, not by what is interesting.
 | | What | State |
 |---|---|---|
 | 1 | Give the unrecognised message types their meanings, from evidence rather than guesswork | next |
-| 2 | Media: an Android archive reads the phone's own folder when it is beside the database, shows the photographs, videos and voice notes themselves rather than the stamp-sized copies, and carries them out when the archive is exported. What is left is the wizard asking for the folder, and pulling it off the phone, instead of finding it where somebody happened to put it | done for reading and keeping; the wizard next |
+| 2 | Media: an Android archive reads the phone's own folder — found beside the database or named on the page or the command line — shows the photographs, videos and voice notes themselves rather than the stamp-sized copies, and carries them out when the archive is exported. What is left is pulling the folder off the phone over adb, so that nobody has to copy several gigabytes by hand first | done, except getting the folder off the phone |
 | 3 | The compatibility matrix fills up as shapes arrive | continuous |
 
 The second is worth saying plainly, because it is the largest visible difference a

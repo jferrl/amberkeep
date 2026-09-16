@@ -28,6 +28,9 @@ import (
 // GuidanceUnrecognised is the identifier a failure to recognise a file carries.
 const GuidanceUnrecognised = "source.unrecognised-archive"
 
+// GuidanceNoFilesThere is the identifier a folder that holds no files carries.
+const GuidanceNoFilesThere = "source.no-files-there"
+
 // Error is what this package returns for problems a user can act on.
 type Error struct {
 	Guidance string
@@ -61,6 +64,14 @@ func (e *Error) withCause(cause error) *Error {
 var ErrUnrecognised = &Error{Guidance: GuidanceUnrecognised,
 	msg: "this file is a database, but not one this version can read"}
 
+// ErrNoFilesThere reports a folder somebody named that is not the phone's.
+//
+// Said rather than ignored: a person who typed a path and was told nothing would
+// conclude the program had looked and found nothing, when in fact they had pointed
+// at the wrong folder and everything they wanted is one level up.
+var ErrNoFilesThere = &Error{Guidance: GuidanceNoFilesThere,
+	msg: "that folder holds no WhatsApp files"}
+
 // Archive is everything the rest of the program needs from a reader.
 //
 // It is the same set for every platform, which is what lets the viewer, the
@@ -89,12 +100,37 @@ type Archive interface {
 	Close() error
 }
 
+// Option changes how an archive is opened.
+type Option func(*opening)
+
+// opening is what the options collect.
+type opening struct{ files string }
+
+// WithMedia names the folder holding the files the messages refer to.
+//
+// For somebody whose photographs are not where an archive would find them on its
+// own: the database in one place and the phone's folder in another, which is what a
+// person who copied the two across separately has. Either the WhatsApp folder or the
+// Media folder inside it, the two things people are equally likely to hand over.
+//
+// A folder that turns out to hold no files is refused rather than ignored. Silence
+// would read as "there is nothing there", when what happened is that the wrong
+// folder was named and everything is one level up.
+func WithMedia(where string) Option {
+	return func(o *opening) { o.files = where }
+}
+
 // Open recognises an archive and returns a reader for it.
 //
 // Recognition is by what the file contains rather than by what it is called: a
 // decrypted Android database and an iPhone store are both handed over as whatever
 // the user chose to name them, and the name says nothing.
-func Open(ctx context.Context, path string) (Archive, error) {
+func Open(ctx context.Context, path string, options ...Option) (Archive, error) {
+	var chosen opening
+	for _, option := range options {
+		option(&chosen)
+	}
+
 	tables, err := tablesIn(ctx, path)
 	if err != nil {
 		return nil, err
@@ -108,12 +144,20 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		// arranges: the pictures land beside the store in the shape the paths expect.
 		// A store copied out on its own simply has none, and the archive says so by
 		// showing no photographs rather than by failing.
-		var options []ios.Option
-		if pictures, found := ios.MediaIn(filepath.Dir(path)); found {
-			options = append(options, ios.WithMedia(pictures))
+		var settings []ios.Option
+		where := chosen.files
+		if where == "" {
+			where = filepath.Dir(path)
+		}
+		pictures, found := ios.MediaIn(where)
+		switch {
+		case found:
+			settings = append(settings, ios.WithMedia(pictures))
+		case chosen.files != "":
+			return nil, ErrNoFilesThere.withCause(fmt.Errorf("%s holds no pictures", chosen.files))
 		}
 
-		reader, err := ios.Open(ctx, path, options...)
+		reader, err := ios.Open(ctx, path, settings...)
 		if err != nil {
 			return nil, err
 		}
@@ -126,12 +170,17 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		// database inside it, which is what happens when the whole WhatsApp folder
 		// comes across — this finds it and the archive shows the files themselves
 		// rather than the stamp-sized copies inside the database.
-		var options []android.Option
-		if folder, found := mediaBeside(path); found {
-			options = append(options, android.WithMedia(folder))
+		var settings []android.Option
+		folder, found := mediaFor(chosen, path)
+		switch {
+		case found:
+			settings = append(settings, android.WithMedia(folder))
+		case chosen.files != "":
+			return nil, ErrNoFilesThere.withCause(
+				fmt.Errorf("%s has no Media directory in it", chosen.files))
 		}
 
-		reader, err := android.Open(ctx, path, options...)
+		reader, err := android.Open(ctx, path, settings...)
 		if err != nil {
 			return nil, err
 		}
@@ -141,6 +190,14 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		return nil, ErrUnrecognised.withCause(
 			fmt.Errorf("it has neither WhatsApp's Android tables nor its iPhone ones"))
 	}
+}
+
+// mediaFor is the folder somebody named, or the one lying around the database.
+func mediaFor(chosen opening, database string) (media.Folder, bool) {
+	if chosen.files != "" {
+		return media.In(chosen.files)
+	}
+	return mediaBeside(database)
 }
 
 // mediaBeside looks for the phone's WhatsApp folder around a database.

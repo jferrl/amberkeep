@@ -17,6 +17,8 @@ export function Where({
   writes,
   contacts,
   onContacts,
+  files,
+  onFiles,
 }: {
   into: string;
   onInto: (into: string) => void;
@@ -25,6 +27,16 @@ export function Where({
   writes: Phrase;
   contacts: string;
   onContacts: (contacts: string) => void;
+  /**
+   * The phone's own folder of photographs, on the routes where naming one means
+   * something.
+   *
+   * Left out of the iPhone route, where the pictures come out of the backup itself
+   * and a field asking for a folder would be asking for something that does not
+   * exist on that machine.
+   */
+  files?: string | undefined;
+  onFiles?: ((files: string) => void) | undefined;
 }) {
   const t = useT();
 
@@ -45,6 +57,15 @@ export function Where({
         value={contacts}
         onChange={onContacts}
       />
+      {onFiles !== undefined && (
+        <Field
+          label={t("filesLabel")}
+          choosing={{ what: "folder", named: t("chooseFiles") }}
+          hint={t("filesHint")}
+          value={files ?? ""}
+          onChange={onFiles}
+        />
+      )}
     </>
   );
 }

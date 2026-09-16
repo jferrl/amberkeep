@@ -62,6 +62,9 @@ export function Wizard({
   const [route, setRoute] = useState<Route>("choose");
   const [edited, setEdited] = useState<string | undefined>(undefined);
   const [contacts, setContacts] = useState("");
+  // The phone's own folder, for somebody whose photographs are not beside the
+  // database. Empty is the ordinary case and means look around it.
+  const [files, setFiles] = useState("");
   const [read, setRead] = useState(false);
 
   // Kept here rather than in the screens that ask for it; see Typed for why.
@@ -98,6 +101,7 @@ export function Wizard({
   const extras = (folder: boolean): Extras => ({
     ...(folder && edited !== undefined ? { into: edited.trim() } : {}),
     ...(contacts.trim() === "" ? {} : { contacts: contacts.trim() }),
+    ...(files.trim() === "" ? {} : { files: files.trim() }),
   });
 
   const start = (work: () => Promise<Setup>) => {
@@ -155,6 +159,7 @@ export function Wizard({
           importing={importing}
           into={into}
           contacts={contacts}
+          files={files}
           typed={typed}
           busy={action.busy}
           language={language}
@@ -162,6 +167,7 @@ export function Wizard({
           onRoute={setRoute}
           onInto={setEdited}
           onContacts={setContacts}
+          onFiles={setFiles}
           onTyped={type}
           onBack={back}
           onAgain={again}
@@ -182,6 +188,7 @@ function Screen({
   importing,
   into,
   contacts,
+  files,
   typed,
   busy,
   language,
@@ -189,6 +196,7 @@ function Screen({
   onRoute,
   onInto,
   onContacts,
+  onFiles,
   onTyped,
   onBack,
   onAgain,
@@ -202,6 +210,7 @@ function Screen({
   importing: boolean;
   into: string;
   contacts: string;
+  files: string;
   typed: Typed;
   busy: boolean;
   language: Language;
@@ -209,6 +218,7 @@ function Screen({
   onRoute: (route: Route) => void;
   onInto: (into: string) => void;
   onContacts: (contacts: string) => void;
+  onFiles: (files: string) => void;
   onTyped: (change: Partial<Typed>) => void;
   onBack: () => void;
   onAgain: () => void;
@@ -245,11 +255,13 @@ function Screen({
         <Android
           into={into}
           contacts={contacts}
+          files={files}
           typed={typed}
           busy={busy}
           failure={failure}
           onInto={onInto}
           onContacts={onContacts}
+          onFiles={onFiles}
           onTyped={onTyped}
           onBack={onBack}
           language={language}
@@ -270,10 +282,12 @@ function Screen({
         <Existing
           language={language}
           contacts={contacts}
+          files={files}
           typed={typed}
           busy={busy}
           failure={failure}
           onContacts={onContacts}
+          onFiles={onFiles}
           onTyped={onTyped}
           onBack={onBack}
           onOpen={(path) => {

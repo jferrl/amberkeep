@@ -24,6 +24,7 @@ func runInspect(ctx context.Context, args []string) error {
 		db       = fs.String("db", "", "the decrypted message database, usually msgstore.db")
 		contacts = fs.String("contacts", "", "an address book, to see how many conversations it would name")
 		country  = fs.String("country", "", "dialling code for numbers saved without one, such as 34")
+		folder   = fs.String("whatsapp-folder", "", "the phone's WhatsApp folder, if the photographs are not beside the database")
 		full     = fs.Bool("full", false, "read every message; slower, but reports what was recovered")
 	)
 	if err := fs.Parse(args); err != nil {
@@ -34,7 +35,14 @@ func runInspect(ctx context.Context, args []string) error {
 		return fmt.Errorf("--db is needed")
 	}
 
-	reader, err := source.Open(ctx, *db)
+	// Named or found: the folder holding the photographs the database refers to and
+	// does not contain. Naming one that holds none is a mistake worth a sentence,
+	// which source.Open supplies.
+	var chosen []source.Option
+	if *folder != "" {
+		chosen = append(chosen, source.WithMedia(*folder))
+	}
+	reader, err := source.Open(ctx, *db, chosen...)
 	if err != nil {
 		return err
 	}

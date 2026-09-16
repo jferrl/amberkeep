@@ -379,7 +379,7 @@ func TestAnArchiveLetsGoOfItsIndex(t *testing.T) {
 	db := filepath.Join(dir, "msgstore.db")
 	fixture.TinyArchive(t, db)
 
-	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, api.Note) {})
+	opened, err := Importer{Me: "You"}.Open(context.Background(), api.Opening{Path: db}, func(api.Step, api.Note) {})
 	if err != nil {
 		t.Fatalf("opening the archive: %v", err)
 	}
@@ -450,7 +450,7 @@ func TestAnArchiveKeepsItsFilesOnTheWayThrough(t *testing.T) {
 		t.Fatalf("writing the file: %v", err)
 	}
 
-	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, api.Note) {})
+	opened, err := Importer{Me: "You"}.Open(context.Background(), api.Opening{Path: db}, func(api.Step, api.Note) {})
 	if err != nil {
 		t.Fatalf("opening the archive: %v", err)
 	}
@@ -484,7 +484,7 @@ func TestAnArchiveWithNoFilesSaysSoRatherThanFailing(t *testing.T) {
 	db := filepath.Join(t.TempDir(), "msgstore.db")
 	fixture.TinyArchive(t, db)
 
-	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, api.Note) {})
+	opened, err := Importer{Me: "You"}.Open(context.Background(), api.Opening{Path: db}, func(api.Step, api.Note) {})
 	if err != nil {
 		t.Fatalf("opening the archive: %v", err)
 	}

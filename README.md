@@ -132,7 +132,8 @@ rather see each one.
 amberkeep decrypt --key key.txt --in msgstore.db.crypt15 --out msgstore.db
 amberkeep prepare --db msgstore.db          # only if you decrypted it elsewhere
 amberkeep inspect --db msgstore.db --full
-amberkeep serve   --db msgstore.db --contacts contacts.vcf --country 34
+amberkeep serve   --db msgstore.db --contacts contacts.vcf --country 34 \
+                  --whatsapp-folder /path/to/WhatsApp        # if the photographs are elsewhere
 amberkeep export  --db msgstore.db --contacts contacts.vcf --country 34 --out archive/
 amberkeep search  --db msgstore.db "whatever you remember"
 ```
@@ -174,6 +175,12 @@ the database and there is nothing to configure: the archive finds it, shows the
 photographs and the videos, and plays the voice notes. It is looked for in the folder
 holding the database, in a `WhatsApp` folder beside it, and in the folder above, which
 is where the phone itself keeps the two.
+
+If it is somewhere else, say so: the field on the page that opens a file, or
+`--whatsapp-folder` on `serve`, `export` and `inspect`. Naming a folder that holds no
+WhatsApp files stops and says which folder to name instead, because being told
+nothing would read as "there are no photographs" — a different and much worse thing
+to believe about your own history.
 
 The files are read where they lie and never written to, and a file the folder turns
 out not to have is a picture the archive simply says nothing about, exactly as before.

@@ -92,6 +92,10 @@
       "body": "En esa búsqueda no hay ninguna palabra.\n\nEscribe lo que recuerdes del mensaje. También vale un trozo de palabra, con\nun asterisco al final: vermu* encuentra vermut y vermuts.",
       "title": "En esa búsqueda no hay ninguna palabra"
     },
+    "source.no-files-there": {
+      "body": "Esa carpeta no contiene los archivos del teléfono.\n\nLo que hace falta es la carpeta WhatsApp — en el teléfono está en\nAndroid/media/com.whatsapp/WhatsApp — o la carpeta Media que hay dentro. Si al\nabrir la carpeta que has indicado ves una llamada Media, indica la de encima.\n\nEl archivo se abre igualmente y muestra las copias pequeñas que WhatsApp guarda\ndentro de la base de datos.",
+      "title": "No hay archivos de WhatsApp en esa carpeta"
+    },
     "source.unrecognised-archive": {
       "body": "Esto es una base de datos, pero no de las que esta versión reconoce.\n\nAquí se pueden abrir dos archivos: un msgstore.db de Android, ya descifrado,\ny un ChatStorage.sqlite de iPhone sacado de una copia de seguridad. Las\ndemás bases de datos que hay al lado guardan contactos y ajustes, no\nmensajes.",
       "title": "Esa base de datos no es de las que esta versión reconoce"

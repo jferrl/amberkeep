@@ -170,7 +170,7 @@ func (s *server) handleFetch(w http.ResponseWriter, r *http.Request) {
 			// The key never reaches this package's memory for longer than the
 			// request that carried it, and never reaches a log or a file.
 			return s.importer.Decrypt(ctx, file, ask.Key, ask.Into, say)
-		}, "")
+		}, Opening{})
 
 	s.begun(w, r, started)
 }

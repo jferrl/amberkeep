@@ -173,20 +173,28 @@ func (i Importer) Decrypt(ctx context.Context, file, keySource, into string, say
 //
 // Which platform it came from is worked out from what the file contains rather than
 // from what it is called, because by this point it is whatever the user named it.
-func (i Importer) Open(ctx context.Context, path, contacts string, say api.Progress) (api.Archive, error) {
-	reader, err := source.Open(ctx, path)
+func (i Importer) Open(ctx context.Context, ask api.Opening, say api.Progress) (api.Archive, error) {
+	// A folder somebody named rather than one lying beside the database. Naming one
+	// that holds no files is refused by source.Open with a sentence saying so, which
+	// is the whole point of asking: silence would read as "there is nothing there".
+	var chosen []source.Option
+	if ask.Files != "" {
+		chosen = append(chosen, source.WithMedia(ask.Files))
+	}
+
+	reader, err := source.Open(ctx, ask.Path, chosen...)
 	if err != nil {
 		return nil, err
 	}
 
-	book, whatsApp := addressBook(contacts)
+	book, whatsApp := addressBook(ask.Contacts)
 	if _, err := LoadNames(ctx, reader.Directory(), book, whatsApp, i.Country); err != nil {
 		_ = reader.Close()
 		return nil, err
 	}
-	MentionPreparation(reader, path)
+	MentionPreparation(reader, ask.Path)
 
-	index, err := i.index(ctx, path, book, whatsApp, say)
+	index, err := i.index(ctx, ask.Path, book, whatsApp, say)
 	if err != nil {
 		_ = reader.Close()
 		return nil, err
