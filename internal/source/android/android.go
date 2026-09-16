@@ -15,12 +15,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 	"time"
 
 	_ "modernc.org/sqlite" // registers the pure-Go SQLite driver
 
+	"github.com/jferrl/amberkeep/internal/media"
 	"github.com/jferrl/amberkeep/internal/model"
 )
 
@@ -94,6 +96,11 @@ type Reader struct {
 	db     *sql.DB
 	schema schema
 
+	// media is where the files the database refers to are, when somebody has
+	// brought them. The zero value is a folder with nothing in it, which is the
+	// ordinary state of a database copied off a phone on its own.
+	media media.Folder
+
 	directory *model.Directory
 	// jids maps a row identifier to the address it stands for. Every reference to a
 	// person in this database is a row identifier, so this is consulted constantly.
@@ -103,11 +110,26 @@ type Reader struct {
 	jidRows map[string]int64
 }
 
+// Option changes how a reader behaves.
+type Option func(*Reader)
+
+// WithMedia supplies the folder holding the files the database refers to.
+//
+// Without it an Android archive shows the small copies WhatsApp keeps inside the
+// database and nothing else, which on a real device is 12,510 pictures against
+// 92,941 attachments: about one in eight, and the rest a line of text saying a
+// photograph was sent. The files themselves are on the phone, in
+// Android/media/com.whatsapp/WhatsApp, and this is what reads them when somebody
+// brings that folder.
+func WithMedia(folder media.Folder) Option {
+	return func(r *Reader) { r.media = folder }
+}
+
 // Open reads the database at path. The file is opened read-only, so the caller's
 // original is safe even if it is the only copy in existence.
 //
 // The caller closes the reader.
-func Open(ctx context.Context, path string) (*Reader, error) {
+func Open(ctx context.Context, path string, options ...Option) (*Reader, error) {
 	// query_only is belt and braces alongside the read-only mode: neither this code
 	// nor the driver's own bookkeeping may write to a file we were handed.
 	dsn := "file:" + url.PathEscape(path) +
@@ -150,6 +172,9 @@ func Open(ctx context.Context, path string) (*Reader, error) {
 	}
 
 	r := &Reader{db: db, schema: s, directory: model.NewDirectory()}
+	for _, option := range options {
+		option(r)
+	}
 	if err := r.loadDirectory(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -456,3 +481,21 @@ func epochMillis(v sql.NullInt64) time.Time {
 	}
 	return time.UnixMilli(v.Int64).UTC()
 }
+
+// OpenMedia returns the file an attachment referred to, and what kind of thing it
+// is.
+//
+// The reference is what the reader put on the attachment, which is the path the
+// phone recorded, and it is resolved against the folder this reader was given — by
+// that folder, which is the one place that decides where such a path may lead. A
+// reader with no folder answers that there is nowhere to look, which is the ordinary
+// state of a database copied off a phone on its own.
+//
+// The caller closes what comes back.
+func (r *Reader) OpenMedia(ref string) (io.ReadCloser, string, error) {
+	return r.media.Open(ref)
+}
+
+// Media is the folder this reader was given, for a caller that has to say where the
+// files came from or how many of them arrived.
+func (r *Reader) Media() media.Folder { return r.media }

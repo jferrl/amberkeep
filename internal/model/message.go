@@ -151,6 +151,16 @@ type Attachment struct {
 	// database. When the original file is gone, and for an old archive it usually
 	// is, this is the only surviving image of what was sent.
 	Preview Thumbnail
+
+	// File is where the file itself is, when it is somewhere this program can reach
+	// it: a path relative to whatever the archive was told its files live in.
+	//
+	// Almost always empty, and that is the ordinary case rather than a failure. A
+	// message database records where a photograph was on the phone — 92,941 of
+	// 99,041 attachments on a real device do — but the photographs are not in the
+	// database and are not in a backup of it. Somebody has to bring them, and until
+	// they do there is a thumbnail or there is nothing.
+	File string
 }
 
 // HasPreview reports whether a recognisable image of the attachment survives even

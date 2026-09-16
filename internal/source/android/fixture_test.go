@@ -324,8 +324,9 @@ func buildFixture(t *testing.T) string {
 	msg(12, chatStatus, false, jidAlice, 12, typeText, "a status update", 0)
 
 	// Details attached to those messages.
-	exec(`INSERT INTO message_media (message_row_id, mime_type, media_name, media_caption, media_duration, file_size, width, height)
-		VALUES (3, 'image/jpeg', 'IMG-0001.jpg', 'at the beach', 0, 12345, 1200, 900)`)
+	exec(`INSERT INTO message_media (message_row_id, mime_type, media_name, media_caption, media_duration, file_size, width, height, file_path)
+		VALUES (3, 'image/jpeg', 'IMG-0001.jpg', 'at the beach', 0, 12345, 1200, 900,
+			'Media/WhatsApp Images/IMG-0001.jpg')`)
 	exec(`INSERT INTO message_media (message_row_id, mime_type, media_duration, file_size)
 		VALUES (4, 'audio/ogg; codecs=opus', 7, 2048)`)
 	exec(`INSERT INTO message_media (message_row_id, mime_type, media_duration, file_size)

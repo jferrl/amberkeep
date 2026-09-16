@@ -259,6 +259,11 @@ func (r *Reader) attachMedia(ctx context.Context, ids []int64, index map[int64]i
 		),
 		r.schema.columnOrNull("message_media", "width"),
 		r.schema.columnOrNull("message_media", "height"),
+		// Where the file was on the phone. 92,941 of 99,041 rows on a real device
+		// record one, which is the difference between an archive that can show
+		// somebody's photographs and one that can only say that photographs were
+		// sent — when the folder those paths point into has been brought along.
+		r.schema.columnOrNull("message_media", "file_path"),
 	}
 	query := fmt.Sprintf(
 		`SELECT message_media.message_row_id, %s FROM message_media WHERE message_media.message_row_id IN (%s)`,
@@ -280,8 +285,10 @@ func (r *Reader) attachMedia(ctx context.Context, ids []int64, index map[int64]i
 			size      sql.NullInt64
 			width     sql.NullInt64
 			height    sql.NullInt64
+			file      sql.NullString
 		)
-		if err := rows.Scan(&messageID, &mediaType, &name, &caption, &duration, &size, &width, &height); err != nil {
+		if err := rows.Scan(&messageID, &mediaType, &name, &caption, &duration, &size,
+			&width, &height, &file); err != nil {
 			return ErrUnreadable.withCause(fmt.Errorf("reading an attachment: %w", err))
 		}
 		i, ok := index[messageID]
@@ -296,6 +303,14 @@ func (r *Reader) attachMedia(ctx context.Context, ids []int64, index map[int64]i
 			Width:     int(width.Int64),
 			Height:    int(height.Int64),
 			Caption:   caption.String,
+		}
+		// Only when the file is actually there. A folder copied off a phone is
+		// routinely partial — somebody copies WhatsApp Images and not WhatsApp Video
+		// — and an archive that offers a picture it cannot produce is worse than one
+		// that offers nothing. Twenty of these per page of messages, which is twenty
+		// calls to the filesystem and nothing anybody notices.
+		if file.Valid && r.media.Holds(file.String) {
+			page[i].Attachment.File = file.String
 		}
 		// A caption is the message's words; the database keeps it beside the file
 		// rather than in the message row.
