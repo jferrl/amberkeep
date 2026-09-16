@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jferrl/amberkeep/internal/media"
 	"github.com/jferrl/amberkeep/internal/model"
 )
 
@@ -311,6 +312,13 @@ func (r *Reader) attachMedia(ctx context.Context, ids []int64, index map[int64]i
 		// calls to the filesystem and nothing anybody notices.
 		if file.Valid && r.media.Holds(file.String) {
 			page[i].Attachment.File = file.String
+			// 16,445 of the 92,941 attachments on a real device record a path and no
+			// media type at all, which is a fifth of them shown as a file of unknown
+			// kind when the name says plainly that it is a photograph. The name is
+			// only consulted when the database said nothing.
+			if page[i].Attachment.MediaType == "" {
+				page[i].Attachment.MediaType = media.KindOf(file.String)
+			}
 		}
 		// A caption is the message's words; the database keeps it beside the file
 		// rather than in the message row.

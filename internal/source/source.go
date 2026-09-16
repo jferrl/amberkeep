@@ -19,6 +19,7 @@ import (
 
 	_ "modernc.org/sqlite" // registers the pure-Go SQLite driver
 
+	"github.com/jferrl/amberkeep/internal/media"
 	"github.com/jferrl/amberkeep/internal/model"
 	"github.com/jferrl/amberkeep/internal/source/android"
 	"github.com/jferrl/amberkeep/internal/source/ios"
@@ -108,8 +109,8 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		// A store copied out on its own simply has none, and the archive says so by
 		// showing no photographs rather than by failing.
 		var options []ios.Option
-		if media, found := ios.MediaIn(filepath.Dir(path)); found {
-			options = append(options, ios.WithMedia(media))
+		if pictures, found := ios.MediaIn(filepath.Dir(path)); found {
+			options = append(options, ios.WithMedia(pictures))
 		}
 
 		reader, err := ios.Open(ctx, path, options...)
@@ -119,7 +120,18 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		return iphone{reader}, nil
 
 	case tables["message"], tables["messages"]:
-		reader, err := android.Open(ctx, path)
+		// The photographs an Android database refers to are a folder on the phone,
+		// and a database records where they were without containing any of them. If
+		// somebody has copied that folder next to the database — or decrypted the
+		// database inside it, which is what happens when the whole WhatsApp folder
+		// comes across — this finds it and the archive shows the files themselves
+		// rather than the stamp-sized copies inside the database.
+		var options []android.Option
+		if folder, found := mediaBeside(path); found {
+			options = append(options, android.WithMedia(folder))
+		}
+
+		reader, err := android.Open(ctx, path, options...)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +141,31 @@ func Open(ctx context.Context, path string) (Archive, error) {
 		return nil, ErrUnrecognised.withCause(
 			fmt.Errorf("it has neither WhatsApp's Android tables nor its iPhone ones"))
 	}
+}
+
+// mediaBeside looks for the phone's WhatsApp folder around a database.
+//
+// Three places, all of them shapes people actually produce. The folder holding the
+// database, for somebody who copied the pictures next to it. A WhatsApp folder
+// beside it, for somebody who copied that whole folder across. And the folder above,
+// because the phone keeps the database in `WhatsApp/Databases` and the pictures in
+// `WhatsApp/Media`, so a database opened where it was found has its files one level
+// up.
+//
+// Nothing here is configured and nothing is required: an archive with no folder
+// anywhere near it is the ordinary case and shows what it always showed.
+func mediaBeside(database string) (media.Folder, bool) {
+	beside := filepath.Dir(database)
+	for _, at := range []string{
+		beside,
+		filepath.Join(beside, "WhatsApp"),
+		filepath.Dir(beside),
+	} {
+		if folder, found := media.In(at); found {
+			return folder, true
+		}
+	}
+	return media.Folder{}, false
 }
 
 // tablesIn reads the names of the tables a database has, which is all recognition

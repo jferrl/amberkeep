@@ -122,6 +122,16 @@ export interface Attachment {
   height?: number;
   caption?: string;
   preview_base64?: Base64;
+  /**
+   * Where the file itself is, when the archive was given the folder holding it.
+   *
+   * What the phone recorded, and the reference /api/media takes. Absent for the
+   * great majority of attachments, because the great majority of archives are a
+   * database somebody copied without the photographs beside it — and absent as well
+   * for a file the folder turned out not to hold, so a reference that is here is one
+   * the program has already found.
+   */
+  file?: string;
 }
 
 /** The message this one was a reply to, as much of it as was kept. */

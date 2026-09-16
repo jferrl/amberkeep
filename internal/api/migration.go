@@ -123,19 +123,25 @@ func (m *migration) busy() bool {
 	return m.stage == MigrationChecking || m.stage == MigrationPlanning || m.stage == MigrationWorking
 }
 
-// begin marks the start of a piece of work.
-func (m *migration) begin(stage MigrationStage, step Step, said Note, ask MigrationRequest) bool {
+// begin marks the start of a piece of work, and hands back the state it just set.
+//
+// The state comes back from here rather than being read afterwards because the work
+// runs in a goroutine and a quick one is finished before the request that asked for
+// it has answered. Read afterwards, the reply would say "checked" — a stage the page
+// is not waiting for, at the moment it starts waiting — and the page would sit there
+// while the answer it wanted had already gone past.
+func (m *migration) begin(stage MigrationStage, step Step, said Note, ask MigrationRequest) (map[string]any, bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if m.stage == MigrationChecking || m.stage == MigrationPlanning || m.stage == MigrationWorking {
-		return false
+		return nil, false
 	}
 	m.stage, m.step, m.said, m.guidance = stage, step, said, ""
 	if ask.Backup != "" {
 		m.ask = ask
 	}
-	return true
+	return m.report(), true
 }
 
 // progress says what is happening now.
@@ -223,7 +229,11 @@ func (m *migration) agreed() (migrate.Plan, bool) {
 func (m *migration) state() map[string]any {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
+	return m.report()
+}
 
+// report is state with the lock already held.
+func (m *migration) report() map[string]any {
 	out := map[string]any{"stage": string(m.stage)}
 	if m.step != "" {
 		out["step"] = string(m.step)

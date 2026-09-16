@@ -492,7 +492,7 @@ func epochMillis(v sql.NullInt64) time.Time {
 // state of a database copied off a phone on its own.
 //
 // The caller closes what comes back.
-func (r *Reader) OpenMedia(ref string) (io.ReadCloser, string, error) {
+func (r *Reader) OpenMedia(ref string) (io.ReadSeekCloser, string, error) {
 	return r.media.Open(ref)
 }
 

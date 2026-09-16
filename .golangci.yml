@@ -38,6 +38,9 @@ linters:
         - (*database/sql.DB).Close
         - (*database/sql.Stmt).Close
         - (*os.File).Close
+        # The same read-only file behind the interface an archive hands it back
+        # through. It is an os.File underneath; only the static type differs.
+        - (io.ReadSeekCloser).Close
         # The same read-only handle, one layer up: Reader.Close only wraps the
         # sql.DB.Close above, so checking it would report the same nothing twice.
         - (*github.com/jferrl/amberkeep/internal/source/android.Reader).Close

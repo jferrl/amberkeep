@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import type { Message as ArchivedMessage } from "@/api/types";
+import type { Message as ArchivedMessage, MessageKind } from "@/api/types";
 import { Message } from "@/components/Message";
 import { render } from "@/test/render";
 
@@ -212,5 +212,95 @@ describe("what a message shows", () => {
     expect(screen.getByText("Luis added Marta")).toBeInTheDocument();
     // A notice carries no attribution, because nobody wrote it.
     expect(container.querySelector("time")).toBeNull();
+  });
+});
+
+/**
+ * What bringing a phone's WhatsApp folder buys.
+ *
+ * A database on its own can show about one picture in eight, at the size of a stamp;
+ * with the folder it shows the photographs themselves, and plays the voice notes,
+ * which have no preview at all and were a line of text saying a recording was sent.
+ */
+describe("a message whose file the archive has", () => {
+  const withFile = (mediaType: string, kind: MessageKind) =>
+    render(
+      <Message
+        message={said({
+          kind,
+          attachment: {
+            file: "Media/WhatsApp Images/IMG-0001.jpg",
+            media_type: mediaType,
+          },
+        })}
+        language="en"
+      />,
+    );
+
+  it("shows a picture, and does not call it a recovered preview", () => {
+    withFile("image/jpeg", "image");
+
+    const picture = screen.getByRole("img", { name: /Photograph sent/i });
+    expect(picture).toHaveAttribute("src", expect.stringContaining("/api/media"));
+    expect(picture).toHaveAttribute(
+      "src",
+      expect.stringContaining("ref=Media%2FWhatsApp+Images%2FIMG-0001.jpg"),
+    );
+    expect(screen.queryByText(/recovered preview/i)).toBeNull();
+  });
+
+  it("plays a voice note, which had nothing to show before", () => {
+    const { container } = withFile("audio/ogg; codecs=opus", "voice");
+
+    const player = container.querySelector("audio");
+    expect(player).not.toBeNull();
+    expect(player).toHaveAttribute("controls");
+    // Not the whole recording before anybody presses play: a conversation holds
+    // hundreds of these.
+    expect(player).toHaveAttribute("preload", "metadata");
+  });
+
+  it("plays a video the same way", () => {
+    const { container } = withFile("video/mp4", "video");
+
+    const player = container.querySelector("video");
+    expect(player).not.toBeNull();
+    expect(player).toHaveAttribute("preload", "metadata");
+  });
+
+  /**
+   * A document is named rather than opened. Handing a file from somebody's phone to
+   * whatever the system thinks should read it is not this program's business.
+   */
+  it("says where a document is rather than offering to open it", () => {
+    render(
+      <Message
+        message={said({
+          kind: "document",
+          attachment: {
+            file: "Media/WhatsApp Documents/a recipe.pdf",
+            media_type: "application/pdf",
+          },
+        })}
+        language="en"
+      />,
+    );
+
+    expect(screen.getByText(/in the folder that came with the archive/i)).toBeVisible();
+  });
+
+  /** And without the folder, what there always was. */
+  it("falls back to the copy inside the database", () => {
+    render(
+      <Message
+        message={said({
+          kind: "image",
+          attachment: { preview_base64: "AAAA", media_type: "image/jpeg" },
+        })}
+        language="en"
+      />,
+    );
+
+    expect(screen.getByText(/recovered preview/i)).toBeInTheDocument();
   });
 });

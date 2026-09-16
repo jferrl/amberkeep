@@ -25,6 +25,7 @@ search and export. The iPhone side and the desktop application are being built.
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
+| The phone's own photographs | working on Android: put WhatsApp's folder beside the database and the archive shows the files themselves, not the thumbnails |
 | iPhone message reader | working, including replies and pictures no other tool recovers |
 | Export: web pages, text, JSON | working, in the browser and on the command line |
 | Full-text search | working, accent-insensitive |
@@ -159,6 +160,24 @@ so it works with the network switched off and will keep working.
 `--contacts` takes a vCard export from the phone's address book. Without it,
 conversations are labelled by phone number, which is the single most noticeable way an
 archive can disappoint.
+
+### The photographs
+
+WhatsApp keeps at most a thumbnail of a picture inside the database and the file
+itself on the phone. On a real device that is 92,941 attachments with a path recorded
+and 12,510 with a thumbnail, so an archive read on its own shows about one picture in
+eight, and every voice note is a line of text saying a recording was sent.
+
+Copy the phone's WhatsApp folder — `Android/media/com.whatsapp/WhatsApp` — next to
+the database and there is nothing to configure: the archive finds it, shows the
+photographs and the videos, and plays the voice notes. It is looked for in the folder
+holding the database, in a `WhatsApp` folder beside it, and in the folder above, which
+is where the phone itself keeps the two.
+
+The files are read where they lie and never written to, and a file the folder turns
+out not to have is a picture the archive simply says nothing about, exactly as before.
+This is reading only for now: `export` still writes the thumbnails into its pages and
+not the files, which is the next piece of this work.
 
 Every failure this tool understands comes with what to do about it, in the output,
 rather than an error to search the internet for.

@@ -31,6 +31,7 @@
   "readOnly": "Nothing leaves this computer.",
   "searchUnavailable": "This archive was opened without a search index, so only conversation names can be searched.",
   "pictureAlt": "Picture recovered from this message",
+  "photographAlt": "Photograph sent in this message",
   "openTitle": "Open your WhatsApp history",
   "step": "Step {step}",
   "stepOf": "Step {step} of {total}",
@@ -283,5 +284,6 @@
   "picturesCount": "{count} pictures",
   "thanksAsk": "If this helped, you can buy me a coffee. It is voluntary, and nothing here depends on it.",
   "thanksButton": "Buy me a coffee",
-  "startOver": "Back to the start"
+  "startOver": "Back to the start",
+  "fileHere": "This file is in the folder that came with the archive"
 }

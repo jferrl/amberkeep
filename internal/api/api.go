@@ -244,6 +244,9 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 
 	// The wizard, which is reachable before there is anything to read.
 	mux.HandleFunc("GET /api/state", s.handleState)
+	// One file an attachment referred to. Only ever read, and only from inside the
+	// folder the archive was told about.
+	mux.HandleFunc("GET /api/media", s.handleMedia)
 	mux.HandleFunc("GET /api/backups", s.handleBackups)
 	mux.HandleFunc("POST /api/open", s.handleOpen)
 	mux.HandleFunc("POST /api/extract", s.handleExtract)

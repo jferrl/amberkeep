@@ -104,7 +104,11 @@ func (f Folder) Holds(recorded string) bool {
 }
 
 // Open returns the file and what kind of thing it is.
-func (f Folder) Open(recorded string) (io.ReadCloser, string, error) {
+//
+// Seekable, because what asks for these is an HTTP handler and a video somebody
+// drags the middle of is a range request. A reader that could only go forwards would
+// mean sending forty megabytes to play the last ten seconds.
+func (f Folder) Open(recorded string) (io.ReadSeekCloser, string, error) {
 	if f.Empty() {
 		return nil, "", ErrNowhere
 	}

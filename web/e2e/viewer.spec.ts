@@ -107,9 +107,35 @@ test.describe("reading a conversation", () => {
     await expect(page.getByText(/recovered preview/i)).toBeVisible();
   });
 
+  /**
+   * What bringing the phone's folder is worth, proved where it can be proved.
+   *
+   * jsdom will happily report an <img> whose source fetches a 404: it never fetches
+   * one. So this waits for the request the browser really makes and reads what came
+   * back, which is the whole chain at once — the database recorded a path, the
+   * program found the file beside it and served it as a picture, and the page asked
+   * for it. And it is not called a recovered preview, because it is not one.
+   */
+  test("shows the photograph itself when the phone's folder came too", async ({ page }) => {
+    const served = page.waitForResponse((response) => response.url().includes("/api/media"));
+    await page.getByRole("button", { name: /Vermut del sabado/ }).click();
+
+    const photograph = page.getByRole("img", { name: /Photograph sent/ });
+    await expect(photograph).toBeVisible();
+    await expect(photograph).toHaveAttribute("src", /\/api\/media\?/);
+
+    const reply = await served;
+    expect(reply.status()).toBe(200);
+    expect(reply.headers()["content-type"]).toBe("image/jpeg");
+    // The browser is not to guess at any of that.
+    expect(reply.headers()["x-content-type-options"]).toBe("nosniff");
+  });
+
   test("enlarges a picture and closes it again with the keyboard", async ({ page }) => {
     await page.getByRole("button", { name: /Vermut del sabado/ }).click();
-    await page.getByRole("button", { name: /Show this picture larger/ }).click();
+    // Two pictures hang in this conversation now, the recovered one and the
+    // photograph; either would do, and naming one keeps the locator unambiguous.
+    await page.getByRole("button", { name: /Show this picture larger/ }).first().click();
 
     // Named exactly: there is now a "Close this archive" button in the header too,
     // and a loose match would find both and say neither.

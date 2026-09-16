@@ -64,7 +64,7 @@ func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	started := s.migration.begin(MigrationChecking, StepOpening, Saying("lookingAtBackup", "Looking at the backup."), ask)
+	begun, started := s.migration.begin(MigrationChecking, StepOpening, Saying("lookingAtBackup", "Looking at the backup."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
 		// closes the tab halfway through should come back to a finished migration.
@@ -79,7 +79,7 @@ func (s *server) handleCheck(w http.ResponseWriter, r *http.Request) {
 			s.migration.checked(ready)
 		}()
 	}
-	s.beganMigrating(w, r, started)
+	s.beganMigrating(w, r, begun, started)
 }
 
 // handlePlanMigration works out what would move. It writes nothing, and it stops.
@@ -98,7 +98,7 @@ func (s *server) handlePlanMigration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	started := s.migration.begin(MigrationPlanning, StepOpening, Saying("workingOutWhatMoves", "Working out what would move."), ask)
+	begun, started := s.migration.begin(MigrationPlanning, StepOpening, Saying("workingOutWhatMoves", "Working out what would move."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
 		// closes the tab halfway through should come back to a finished migration.
@@ -113,7 +113,7 @@ func (s *server) handlePlanMigration(w http.ResponseWriter, r *http.Request) {
 			s.migration.planned(plan)
 		}()
 	}
-	s.beganMigrating(w, r, started)
+	s.beganMigrating(w, r, begun, started)
 }
 
 // agreement is what somebody has to send to have anything written.
@@ -156,7 +156,7 @@ func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
 		ask.Into = said.Into
 	}
 
-	started := s.migration.begin(MigrationWorking, StepPreparing,
+	begun, started := s.migration.begin(MigrationWorking, StepPreparing,
 		Saying("movingMessages", "Moving the messages. Nothing is being uploaded."), ask)
 	if started {
 		// The work deliberately outlives the request that asked for it: somebody who
@@ -172,7 +172,7 @@ func (s *server) handleCarryOut(w http.ResponseWriter, r *http.Request) {
 			s.migration.done(result)
 		}()
 	}
-	s.beganMigrating(w, r, started)
+	s.beganMigrating(w, r, begun, started)
 }
 
 // handleForgetMigration goes back to the beginning.
@@ -192,12 +192,13 @@ func (s *server) handleForgetMigration(w http.ResponseWriter, r *http.Request) {
 // the migration would be told the migration was "empty", a stage no migration is
 // ever in, and would then stop polling — leaving somebody on the form they had just
 // submitted while the server quietly finished the work behind them.
-func (s *server) beganMigrating(w http.ResponseWriter, r *http.Request, started bool) {
+func (s *server) beganMigrating(w http.ResponseWriter, r *http.Request, begun map[string]any, started bool) {
 	if !started {
 		http.Error(w, "a migration is already running", http.StatusConflict)
 		return
 	}
-	writeStatus(w, r, http.StatusAccepted, s.migration.state())
+	// What was started, not what has happened since: see migration.begin.
+	writeStatus(w, r, http.StatusAccepted, begun)
 }
 
 // acceptMigration reads a request and checks it, answering the caller when it cannot.

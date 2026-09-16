@@ -193,6 +193,18 @@ async function explanation(response: Response): Promise<string> {
   return `the archive answered ${String(response.status)} and said nothing`;
 }
 
+/**
+ * fileAt is where to ask for one of the files an archive refers to.
+ *
+ * An address rather than a fetch: what asks for these is an img, a video or an
+ * audio element, and handing bytes to one of those through JavaScript would mean
+ * holding a whole recording in memory to play it. The browser asks for what it
+ * needs, including the middle of a video somebody dragged to.
+ */
+export function fileAt(ref: string): string {
+  return addressOf(`${api}/media`, new URLSearchParams({ ref }));
+}
+
 /** getArchive reports what the archive holds. */
 export function getArchive(options: Cancellable = {}): Promise<Archive> {
   return ask<Archive>(`${api}/archive`, narrow({}), options);

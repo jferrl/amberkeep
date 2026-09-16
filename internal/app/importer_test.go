@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +16,7 @@ import (
 	"github.com/jferrl/amberkeep/internal/fixture"
 
 	"github.com/jferrl/amberkeep/internal/api"
+	"github.com/jferrl/amberkeep/internal/media"
 )
 
 // The wizard, end to end: a person with a backup and no idea what is in it, and
@@ -422,4 +425,76 @@ func mustJSON(t *testing.T, v any) string {
 		t.Fatalf("re-reading the answer: %v", err)
 	}
 	return string(raw)
+}
+
+// TestAnArchiveKeepsItsFilesOnTheWayThrough is the bug this test exists for: the
+// archive the server is handed is wrapped, the wrapper holds the archive by an
+// interface, and an interface passes on only what it declares. Every photograph came
+// back as "not in this archive" until the wrapper said this itself, and nothing
+// smaller than a real archive opened through a real Importer would have caught it.
+func TestAnArchiveKeepsItsFilesOnTheWayThrough(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	db := filepath.Join(dir, "msgstore.db")
+	fixture.TinyArchive(t, db)
+
+	// The phone's folder, beside the database, with one file in it. The reference
+	// is written the way a database writes one, with forward slashes, whatever this
+	// machine's separator is.
+	const recorded = "Media/WhatsApp Images/IMG-1.jpg"
+	if err := os.MkdirAll(filepath.Join(dir, "Media", "WhatsApp Images"), 0o750); err != nil {
+		t.Fatalf("laying out the folder: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(recorded)), []byte("a photograph"), 0o600); err != nil {
+		t.Fatalf("writing the file: %v", err)
+	}
+
+	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, api.Note) {})
+	if err != nil {
+		t.Fatalf("opening the archive: %v", err)
+	}
+	defer func() { _ = opened.Close() }()
+
+	files, can := opened.(api.Filed)
+	if !can {
+		t.Fatal("the archive arrived unable to be asked for its files at all")
+	}
+
+	file, kind, err := files.OpenMedia(recorded)
+	if err != nil {
+		t.Fatalf("OpenMedia() failed on a folder that is right there: %v", err)
+	}
+	defer func() { _ = file.Close() }()
+
+	if kind != "image/jpeg" {
+		t.Errorf("the file arrived as %q, want image/jpeg", kind)
+	}
+	if body, err := io.ReadAll(file); err != nil || string(body) != "a photograph" {
+		t.Errorf("the file read as %q, %v", body, err)
+	}
+}
+
+// TestAnArchiveWithNoFilesSaysSoRatherThanFailing: most archives are a database
+// somebody copied on its own, and being asked for a photograph is not an error worth
+// a different answer than having none.
+func TestAnArchiveWithNoFilesSaysSoRatherThanFailing(t *testing.T) {
+	t.Parallel()
+
+	db := filepath.Join(t.TempDir(), "msgstore.db")
+	fixture.TinyArchive(t, db)
+
+	opened, err := Importer{Me: "You"}.Open(context.Background(), db, "", func(api.Step, api.Note) {})
+	if err != nil {
+		t.Fatalf("opening the archive: %v", err)
+	}
+	defer func() { _ = opened.Close() }()
+
+	files, can := opened.(api.Filed)
+	if !can {
+		t.Fatal("the archive arrived unable to be asked for its files at all")
+	}
+	if _, _, err := files.OpenMedia("Media/WhatsApp Images/IMG-1.jpg"); !errors.Is(err, media.ErrNowhere) {
+		t.Errorf("OpenMedia() error = %v, want it to say there are no files here", err)
+	}
 }

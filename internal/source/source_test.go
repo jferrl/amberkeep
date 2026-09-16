@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -131,8 +132,14 @@ func TestFailuresFromEitherReaderSurviveTheJourney(t *testing.T) {
 // build writes a database with the given schema and returns its path.
 func build(t *testing.T, schema string) string {
 	t.Helper()
+	return buildAt(t, filepath.Join(t.TempDir(), "archive.db"), schema)
+}
 
-	path := filepath.Join(t.TempDir(), "archive.db")
+// buildAt writes a database with the given schema where the caller wants it, for
+// the tests that care what is around it.
+func buildAt(t *testing.T, path, schema string) string {
+	t.Helper()
+
 	db, err := sql.Open("sqlite", "file:"+path)
 	if err != nil {
 		t.Fatalf("creating the database: %v", err)
@@ -170,5 +177,93 @@ func TestErrorCarriesItsGuidance(t *testing.T) {
 	}
 	if errors.Is(errors.New("something else"), ErrUnrecognised) {
 		t.Error("an unrelated error matched the sentinel")
+	}
+}
+
+// TestAnArchiveFindsTheFilesBesideIt: a database on its own can show a thumbnail;
+// a database with the phone's folder beside it can show the photograph. Nobody
+// configures that, so the places it is looked for are the places people produce.
+func TestAnArchiveFindsTheFilesBesideIt(t *testing.T) {
+	t.Parallel()
+
+	const androidSchema = `
+CREATE TABLE jid (_id INTEGER PRIMARY KEY, user TEXT, server TEXT, raw_string TEXT);
+CREATE TABLE chat (_id INTEGER PRIMARY KEY, jid_row_id INTEGER, subject TEXT);
+CREATE TABLE message (_id INTEGER PRIMARY KEY, chat_row_id INTEGER, from_me INTEGER,
+	key_id TEXT, sender_jid_row_id INTEGER, timestamp INTEGER, message_type INTEGER, text_data TEXT);`
+
+	tests := []struct {
+		name  string
+		put   string // where to lay the phone's Media folder, from the database's own folder
+		finds bool
+	}{
+		{name: "the database decrypted inside the WhatsApp folder", put: "Media", finds: true},
+		{name: "the WhatsApp folder copied beside it", put: "WhatsApp/Media", finds: true},
+		{name: "the database left in the Databases folder the phone keeps it in", put: "../Media", finds: true},
+		{name: "a folder somewhere else entirely", put: "elsewhere/WhatsApp/Media", finds: false},
+		{name: "nothing beside it at all", finds: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			// The database goes one level down, so a fixture can also put the
+			// folder above it — which is where the phone itself keeps them.
+			at := filepath.Join(t.TempDir(), "Databases")
+			if err := os.MkdirAll(at, 0o750); err != nil {
+				t.Fatalf("laying out the workspace: %v", err)
+			}
+			path := buildAt(t, filepath.Join(at, "msgstore.db"), androidSchema)
+			beside := filepath.Dir(path)
+			if tt.put != "" {
+				// A Media folder is what makes a directory the phone's folder, and
+				// the file inside it is what the archive would be asked for.
+				under := filepath.Join(beside, filepath.FromSlash(tt.put), "WhatsApp Images")
+				if err := os.MkdirAll(under, 0o750); err != nil {
+					t.Fatalf("laying out the folder: %v", err)
+				}
+				if err := os.WriteFile(filepath.Join(under, "IMG-1.jpg"), []byte("a photograph"), 0o600); err != nil {
+					t.Fatalf("writing the file: %v", err)
+				}
+			}
+
+			archive, err := Open(context.Background(), path)
+			if err != nil {
+				t.Fatalf("Open() failed: %v", err)
+			}
+			defer func() { _ = archive.Close() }()
+
+			files, can := archive.(interface {
+				OpenMedia(string) (io.ReadSeekCloser, string, error)
+			})
+			if !can {
+				t.Fatal("an Android archive cannot be asked for its files at all")
+			}
+
+			file, kind, err := files.OpenMedia("Media/WhatsApp Images/IMG-1.jpg")
+			if !tt.finds {
+				if err == nil {
+					_ = file.Close()
+					t.Fatal("the archive produced a file from a folder it should not have found")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("OpenMedia() failed: %v", err)
+			}
+			defer func() { _ = file.Close() }()
+
+			if kind != "image/jpeg" {
+				t.Errorf("the file arrived as %q, want image/jpeg", kind)
+			}
+			body, err := io.ReadAll(file)
+			if err != nil {
+				t.Fatalf("reading the file: %v", err)
+			}
+			if string(body) != "a photograph" {
+				t.Errorf("the file read as %q", body)
+			}
+		})
 	}
 }

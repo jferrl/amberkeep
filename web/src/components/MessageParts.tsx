@@ -1,3 +1,4 @@
+import { fileAt } from "@/api/client";
 import type { Message as ArchivedMessage, Quote } from "@/api/types";
 import { Preview } from "@/components/Preview";
 import { useT } from "@/i18n";
@@ -61,14 +62,68 @@ export function Quoted({ quote }: { quote: Quote }) {
   );
 }
 
-/** The picture that survived its own file, when one did. */
+/**
+ * The file a message carried, when this archive has it, and otherwise the small copy
+ * that survived inside the database.
+ *
+ * The difference is the whole of what bringing a phone's WhatsApp folder buys: a
+ * database on its own can show about one picture in eight, at the size of a stamp,
+ * and with the folder it shows the photographs themselves — and plays the voice
+ * notes, which have no preview at all and until now were a line of text saying a
+ * recording was sent.
+ */
 export function RecoveredPicture({ message }: { message: ArchivedMessage }) {
-  const preview = message.attachment?.preview_base64;
+  const t = useT();
+  const attachment = message.attachment;
+  const file = attachment?.file;
+  const kind = attachment?.media_type ?? "";
+
+  if (file !== undefined) {
+    const at = fileAt(file);
+
+    if (kind.startsWith("image/")) {
+      return <Preview source={at} mediaType={kind} recovered={false} />;
+    }
+    if (kind.startsWith("video/")) {
+      return (
+        // preload="metadata" rather than the whole thing: a conversation can hold
+        // hundreds of these and a page that fetched them all would fetch gigabytes
+        // to show a list. The browser asks for the rest when somebody presses play.
+        /* eslint-disable-next-line jsx-a11y/media-has-caption -- there are none: this
+           is a recording somebody sent years ago, not a production, and an empty
+           track element would be a caption track that says nothing. WhatsApp writes
+           its own transcription of a voice note into the database and showing that
+           beside the player is the honest version of this, which is its own piece of
+           work rather than a line here. */
+        <video
+          controls
+          preload="metadata"
+          src={at}
+          className="my-1 block h-auto max-w-full rounded-lg"
+        />
+      );
+    }
+    if (kind.startsWith("audio/")) {
+      return (
+        // eslint-disable-next-line jsx-a11y/media-has-caption -- see the note above.
+        <audio controls preload="metadata" src={at} className="my-1 block max-w-full" />
+      );
+    }
+    // Everything else — a document, a contact card, something nobody has a name for
+    // — is named rather than opened. What it is and how large it is are already
+    // shown beside this; a program that offered to open it would be offering to hand
+    // a file from somebody's phone to whatever the system thinks should read it.
+    return (
+      <div className="my-1 text-[0.78rem] text-[var(--color-muted)]">
+        {t("fileHere")}
+      </div>
+    );
+  }
+
+  const preview = attachment?.preview_base64;
   if (preview === undefined) return null;
 
-  return (
-    <Preview base64={preview} mediaType={message.attachment?.media_type} />
-  );
+  return <Preview base64={preview} mediaType={kind} />;
 }
 
 /** A poll's question and what people could choose. */

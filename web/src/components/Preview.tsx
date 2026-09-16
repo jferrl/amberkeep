@@ -3,24 +3,36 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useT } from "@/i18n";
 
 /**
- * A picture that survived its own file.
+ * A picture in a conversation, and a way to see it larger.
  *
- * WhatsApp keeps a small copy of a photograph inside the message database, and for
- * an old archive that is usually the only image of it left anywhere. Showing it is
- * the single most valuable thing this viewer does, which is why it gets its own
- * component and a way to see it larger rather than being a thumbnail nobody can
- * read.
+ * It shows one of two things, and says which. WhatsApp keeps a small copy of a
+ * photograph inside the message database, and for an old archive that is usually the
+ * only image of it left anywhere — that one arrives as base64 in the message itself,
+ * so there is no second request and nothing to fetch, which is also what lets an
+ * exported page work with the network switched off. When somebody brings the phone's
+ * folder as well, the photograph itself is here, and this fetches it from the
+ * program rather than carrying it in the message.
  *
- * The bytes arrive as base64 in the message itself, so there is no second request
- * and nothing to fetch. That is also what lets an exported page work with the
- * network switched off.
+ * Showing either is the single most valuable thing this viewer does, which is why it
+ * gets its own component rather than being a thumbnail nobody can read.
  */
 export function Preview({
   base64,
+  source: given,
   mediaType,
+  recovered = true,
 }: {
-  base64: string;
+  base64?: string | undefined;
+  /** Where the picture is, for one this program can fetch whole. */
+  source?: string | undefined;
   mediaType?: string | undefined;
+  /**
+   * Whether this is the small copy that survived inside the database rather than
+   * the file itself. It is said out loud under the picture, because the difference
+   * matters to somebody looking at their own history: one is what was sent, the
+   * other is all that is left of it.
+   */
+  recovered?: boolean;
 }) {
   const t = useT();
   const [enlarged, setEnlarged] = useState(false);
@@ -29,7 +41,9 @@ export function Preview({
   // The type is told to us when it is known. Guessing wrong shows a broken picture
   // where a recovered one should be, and JPEG is what WhatsApp writes almost
   // without exception.
-  const source = `data:${mediaType ?? "image/jpeg"};base64,${base64}`;
+  const source =
+    given ?? `data:${mediaType ?? "image/jpeg"};base64,${base64 ?? ""}`;
+  const alt = recovered ? t("pictureAlt") : t("photographAlt");
 
   const close = useCallback(() => {
     setEnlarged(false);
@@ -56,18 +70,22 @@ export function Preview({
           The alt says what the picture is rather than being empty, because this is
           content and not decoration: for most of these the original file is long
           gone and this is the only image of it left. What it depicts is unknowable
-          from here, so it says where it came from instead.
+          from here, so it says where it came from instead — and it says which of the
+          two this is, because "recovered from this message" would be a lie about a
+          photograph whose own file is sitting on the disk.
         */}
         <img
           src={source}
-          alt={t("pictureAlt")}
+          alt={alt}
           loading="lazy"
           className="block h-auto max-w-full rounded-lg"
         />
       </button>
-      <div className="text-[0.72rem] text-[var(--color-muted)]">
-        {t("recoveredPreview")}
-      </div>
+      {recovered && (
+        <div className="text-[0.72rem] text-[var(--color-muted)]">
+          {t("recoveredPreview")}
+        </div>
+      )}
 
       {/*
         Escape closes this without any help, because a modal dialog does that
@@ -91,7 +109,7 @@ export function Preview({
           >
             <img
               src={source}
-              alt={t("pictureAlt")}
+              alt={alt}
               className="max-h-[96vh] max-w-[96vw] rounded"
             />
           </button>

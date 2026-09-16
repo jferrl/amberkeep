@@ -11,8 +11,16 @@ Everything here is ordered by what blocks what, not by what is interesting.
 | | What | State |
 |---|---|---|
 | 1 | Give the unrecognised message types their meanings, from evidence rather than guesswork | next |
-| 2 | Media: an Android archive shows the small copies WhatsApp keeps inside the database — 12,510 of about 99,000 attachments on a real device — and nothing else. The files are on the phone, and `amberkeep` already knows how to read from one | decided against for iPhone backups, open for Android, and a product decision rather than a task |
+| 2 | Media: an Android archive reads the phone's own folder when it is beside the database, and shows the photographs, videos and voice notes themselves rather than the stamp-sized copies. What is left is the export writing the files out beside the pages, and the wizard asking for the folder instead of finding it by luck | done for reading; export and wizard next |
 | 3 | The compatibility matrix fills up as shapes arrive | continuous |
+
+The second is worth saying plainly, because it is the largest visible difference a
+person will notice. A database records where a photograph was and keeps at most a
+thumbnail of it: on a real device 92,941 of 99,041 attachments record a path and
+12,510 have a thumbnail, so an archive read on its own shows about one picture in
+eight, and every voice note is a line of text saying a recording was sent. With the
+phone's folder beside it the archive shows the photographs and plays the recordings.
+Nothing is copied and nothing is written: the files are read where they lie.
 
 The first one is bounded and evidence-led. About 1,265 of 161,032 messages on a real
 iPhone store carry a type code that means nothing on its own; the media type recorded

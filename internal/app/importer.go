@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/backupfs"
+	"github.com/jferrl/amberkeep/internal/media"
 	"github.com/jferrl/amberkeep/internal/search"
 	"github.com/jferrl/amberkeep/internal/source"
 )
@@ -258,6 +260,21 @@ type readable struct {
 
 // Index is the full-text index over this archive, if it has one.
 func (r readable) Index() *search.Index { return r.index }
+
+// OpenMedia hands back one of the files the archive's messages refer to.
+//
+// The wrapper has to say this itself. It holds an archive by the interface every
+// archive implements, and an interface passes on only what it declares — so an
+// archive that found the phone's folder would arrive at the server having quietly
+// lost it, and every photograph would come back as "not in this archive". The
+// archive that cannot do this answers the way an archive with no folder answers.
+func (r readable) OpenMedia(ref string) (io.ReadSeekCloser, string, error) {
+	files, can := r.Archive.(api.Filed)
+	if !can {
+		return nil, "", media.ErrNowhere
+	}
+	return files.OpenMedia(ref)
+}
 
 // Close lets go of both, and reports whichever failure came first.
 func (r readable) Close() error {

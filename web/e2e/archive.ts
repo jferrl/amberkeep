@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 /**
  * A small archive for the browser to read, built the way a real one is.
@@ -72,6 +72,25 @@ function longConversation(): string {
 const onePixelGIF =
   "X'47494638396101000100800000000000FFFFFF21F90401000000002C00000000010001000002024401003B'";
 
+/**
+ * A photograph that did not outlive its file, because the file came too.
+ *
+ * The same one pixel, as a JPEG this time, written to the folder the phone keeps
+ * pictures in. The database records where it was and holds none of it, which is what
+ * a WhatsApp database actually does; the bytes are on disk beside it, which is what
+ * bringing the phone's folder means. Only a browser can prove the picture arrives:
+ * jsdom will happily report an <img> whose source fetches a 404.
+ */
+const onePixelJPEG = Buffer.from(
+  "/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0a" +
+    "HBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAA" +
+    "AAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==",
+  "base64",
+);
+
+/** Where the phone recorded that picture, and where it is written. */
+const pictureAt = "Media/WhatsApp Images/IMG-20190615-WA0001.jpg";
+
 const contents = `
 INSERT INTO jid (_id, user, server, raw_string) VALUES (1, '${ana}', 's.whatsapp.net', '${ana}@s.whatsapp.net');
 INSERT INTO jid (_id, user, server, raw_string) VALUES (2, '${luis}', 's.whatsapp.net', '${luis}@s.whatsapp.net');
@@ -93,6 +112,11 @@ INSERT INTO message_thumbnail (message_row_id, thumbnail) VALUES (201, ${onePixe
 
 INSERT INTO message (_id, chat_row_id, from_me, key_id, sender_jid_row_id, timestamp, message_type, text_data)
   VALUES (202, 2, 0, 'BBBB000000000002', 2, ${String(whenMillis("2019-06-15T12:00:00Z"))}, 0, 'quien se apunta');
+
+INSERT INTO message (_id, chat_row_id, from_me, key_id, sender_jid_row_id, timestamp, message_type, text_data)
+  VALUES (203, 2, 0, 'BBBB000000000003', 1, ${String(whenMillis("2019-06-15T13:00:00Z"))}, 1, 'y esta');
+INSERT INTO message_media (message_row_id, mime_type, media_name, file_size, file_path)
+  VALUES (203, 'image/jpeg', 'playa.jpg', 160, '${pictureAt}');
 `;
 
 /**
@@ -137,6 +161,12 @@ export function build(): Archive {
 
   execFileSync("sqlite3", [path], { input: schema + contents });
   writeFileSync(contacts, addressBook);
+
+  // The phone's folder, beside the database, where the program looks for it without
+  // being told.
+  const picture = join(directory, ...pictureAt.split("/"));
+  mkdirSync(dirname(picture), { recursive: true });
+  writeFileSync(picture, onePixelJPEG);
 
   return {
     path,

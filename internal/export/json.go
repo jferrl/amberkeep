@@ -176,6 +176,10 @@ type attachmentJSON struct {
 	// database, encoded so it can travel inside a text file. For an old archive it
 	// is often the only image of what was sent.
 	Preview string `json:"preview_base64,omitempty"`
+	// File is where the file itself is, when the archive was given the folder
+	// holding it: the path the phone recorded. Absent for the great majority of
+	// attachments, which is what an archive read without its files looks like.
+	File string `json:"file,omitempty"`
 }
 
 type quoteJSON struct {
@@ -422,6 +426,7 @@ func jsonAttachment(a *model.Attachment) *attachmentJSON {
 	if a.HasPreview() {
 		out.Preview = base64.StdEncoding.EncodeToString(a.Preview.Data)
 	}
+	out.File = a.File
 	return out
 }
 
