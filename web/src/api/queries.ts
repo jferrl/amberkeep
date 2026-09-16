@@ -35,6 +35,7 @@ import {
   getMessages,
   getMigration,
   getPhoneBackups,
+  getPhoneFiles,
   getPhones,
   getState,
   isArchiveError,
@@ -610,4 +611,20 @@ export function phoneBackupsQuery(serial: string) {
 /** usePhoneBackups lists what is on one phone. */
 export function usePhoneBackups(serial: string) {
   return useQuery(phoneBackupsQuery(serial));
+}
+
+/**
+ * The phone's folder of photographs, asked for once a backup has been chosen.
+ *
+ * Only then: it is one more thing to ask a phone, and nobody who has not got as far
+ * as choosing a backup is about to be offered several gigabytes of photographs.
+ */
+export function usePhoneFiles(serial: string) {
+  return useQuery({
+    queryKey: [...queryKeys.phones, serial, "media"] as const,
+    queryFn: ({ signal }) => getPhoneFiles(serial, { signal }),
+    enabled: serial !== "",
+    staleTime: 0,
+    gcTime: 0,
+  });
 }

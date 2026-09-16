@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -21,29 +24,62 @@ type plugged struct {
 	phones  []Phone
 	backups []PhoneBackup
 	file    string
+	media   PhoneMedia
 
-	failPhones, failBackups, failFetch error
+	failPhones, failBackups, failFetch, failFiles error
 
+	// What was asked of the phone, and the lock over it. Copying outlives the
+	// request that started it, so a test reads this while the work is still writing
+	// to it; without the lock the race detector is right and the reader is wrong.
+	mu    sync.Mutex
 	asked []string
 }
 
+// record notes one thing that was asked of the phone.
+func (p *plugged) record(what string) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.asked = append(p.asked, what)
+}
+
+// requests is what has been asked so far.
+func (p *plugged) requests() []string {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return append([]string(nil), p.asked...)
+}
+
 func (p *plugged) Phones(context.Context) ([]Phone, error) {
-	p.asked = append(p.asked, "phones")
+	p.record("phones")
 	return p.phones, p.failPhones
 }
 
 func (p *plugged) Backups(_ context.Context, serial string) ([]PhoneBackup, error) {
-	p.asked = append(p.asked, "backups:"+serial)
+	p.record("backups:" + serial)
 	return p.backups, p.failBackups
 }
 
 func (p *plugged) Fetch(_ context.Context, serial, remote string, say Progress) (string, error) {
-	p.asked = append(p.asked, "fetch:"+serial+":"+remote)
+	p.record("fetch:" + serial + ":" + remote)
 	if p.failFetch != nil {
 		return "", p.failFetch
 	}
 	say(StepFetching, Quoting("1 file pulled."))
 	return p.file, nil
+}
+
+func (p *plugged) Files(_ context.Context, serial string) (PhoneMedia, error) {
+	p.record("files:" + serial)
+	return p.media, p.failFiles
+}
+
+func (p *plugged) FetchFiles(_ context.Context, serial, into string, say Progress) (string, error) {
+	p.record("fetch-files:" + serial)
+	if p.failFiles != nil {
+		return "", p.failFiles
+	}
+	say(StepFetching, Saying("copyingPhotographs", "Copying the photographs off the phone."))
+	return into, nil
 }
 
 // reading returns a server that can see phones.
@@ -170,4 +206,129 @@ func TestAServerThatCannotSeePhones(t *testing.T) {
 	if recorder.Code != http.StatusNotImplemented {
 		t.Errorf("status = %d, want %d", recorder.Code, http.StatusNotImplemented)
 	}
+}
+
+// TestWhatThePhoneSaysAboutItsPhotographs: several gigabytes is not a thing to start
+// without saying so, and a phone with no such folder is an ordinary phone rather
+// than a failure.
+func TestWhatThePhoneSaysAboutItsPhotographs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the size and the kinds, before anything is copied", func(t *testing.T) {
+		t.Parallel()
+
+		p := &plugged{media: PhoneMedia{
+			Path:  "/sdcard/Android/media/com.whatsapp/WhatsApp/Media",
+			Bytes: 5_700_000_000,
+			Kinds: []string{"WhatsApp Images", "WhatsApp Voice Notes"},
+		}}
+		body := ask(t, reading(t, p), "/api/phones/R5CT30/media")
+
+		if body["bytes"] != float64(5_700_000_000) {
+			t.Errorf("it said the folder is %v", body["bytes"])
+		}
+		kinds, _ := body["kinds"].([]any)
+		if len(kinds) != 2 {
+			t.Errorf("it named %d kinds of file: %v", len(kinds), body["kinds"])
+		}
+		// Nothing was copied to answer the question.
+		for _, one := range p.requests() {
+			if strings.HasPrefix(one, "fetch") {
+				t.Errorf("asking what is there copied something: %q", one)
+			}
+		}
+	})
+
+	t.Run("a phone with no such folder, which is not a failure", func(t *testing.T) {
+		t.Parallel()
+
+		body := ask(t, reading(t, &plugged{failFiles: errors.New("no WhatsApp media folder")}),
+			"/api/phones/R5CT30/media")
+
+		kinds, _ := body["kinds"].([]any)
+		if len(kinds) != 0 {
+			t.Errorf("it named kinds of file on a phone that has none: %v", body["kinds"])
+		}
+		// The sentence travels with the emptiness: "no photographs" and "this build
+		// does not know where your phone keeps them" read very differently.
+		if said, _ := body["path"].(string); said == "" {
+			t.Error("it said nothing at all about why there is nothing")
+		}
+	})
+}
+
+// TestFetchingThePhotographsAlongWithTheMessages is the whole point of asking: the
+// files land beside the database that was just decrypted, so the archive that opens
+// next shows the photographs without anybody moving anything.
+func TestFetchingThePhotographsAlongWithTheMessages(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		media bool
+		wants bool
+	}{
+		{name: "asked for", media: true, wants: true},
+		{name: "not asked for", media: false, wants: false},
+	}
+
+	for _, tt := range tests {
+		t.Run("the photographs are "+tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			p := &plugged{file: filepath.Join(t.TempDir(), "msgstore.db.crypt15")}
+			handler := reading(t, p)
+
+			status, _ := post(t, handler, "/api/phones/fetch", map[string]any{
+				"serial": "R5CT30",
+				"path":   "/sdcard/Android/media/com.whatsapp/WhatsApp/Databases/msgstore.db.crypt15",
+				"key":    strings.Repeat("a", 64),
+				"media":  tt.media,
+			})
+			if status != http.StatusAccepted {
+				t.Fatalf("status = %d, want %d", status, http.StatusAccepted)
+			}
+			waitFor(t, handler, func() bool {
+				for _, one := range p.requests() {
+					if one == "fetch-files:R5CT30" {
+						return true
+					}
+				}
+				return !tt.wants && done(t, handler)
+			})
+
+			var copied bool
+			asked := p.requests()
+			for _, one := range asked {
+				if one == "fetch-files:R5CT30" {
+					copied = true
+				}
+			}
+			if copied != tt.wants {
+				t.Errorf("the photographs were copied = %v, want %v (it did: %v)", copied, tt.wants, asked)
+			}
+		})
+	}
+}
+
+// waitFor spins until something has happened or the test gives up, which is how a
+// request that starts work in the background has to be checked.
+func waitFor(t *testing.T, _ http.Handler, until func() bool) {
+	t.Helper()
+
+	deadline := time.Now().Add(10 * time.Second)
+	for !until() {
+		if time.Now().After(deadline) {
+			t.Fatal("it never got there")
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+}
+
+// done reports whether the wizard has stopped working, either way.
+func done(t *testing.T, handler http.Handler) bool {
+	t.Helper()
+
+	stage, _ := ask(t, handler, "/api/state")["stage"].(string)
+	return stage != "working"
 }

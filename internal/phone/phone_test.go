@@ -2,6 +2,7 @@ package phone
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -290,5 +291,175 @@ func TestTheGuessesAreAbsolute(t *testing.T) {
 		if filepath.Base(guess) != "adb" && filepath.Base(guess) != "adb.exe" {
 			t.Errorf("%q does not end in adb", guess)
 		}
+	}
+}
+
+// answering writes a stand-in adb that replies differently depending on what it was
+// asked, which is what talking to a phone about more than one thing needs. The keys
+// are matched against the whole argument list in order, first match wins.
+func answering(t *testing.T, replies []struct{ when, then string }) (adb ADB, asked func() []string) {
+	t.Helper()
+
+	if runtime.GOOS == "windows" {
+		t.Skip("the stand-in is a shell script; the argument checks are platform-independent")
+	}
+
+	dir := t.TempDir()
+	log := filepath.Join(dir, "asked")
+
+	var body strings.Builder
+	body.WriteString("#!/bin/sh\nprintf '%s\\n' \"$*\" >> " + log + "\ncase \"$*\" in\n")
+	for _, reply := range replies {
+		body.WriteString("*'" + reply.when + "'*)\n  cat <<'ANSWER'\n" + reply.then + "\nANSWER\n  ;;\n")
+	}
+	// Anything not named: what a phone says about a path that is not there.
+	body.WriteString("*)\n  echo 'ls: No such file or directory'\n  ;;\nesac\n")
+
+	script := filepath.Join(dir, "adb")
+	if err := os.WriteFile(script, []byte(body.String()), 0o700); err != nil { //nolint:gosec // a test's own stand-in
+		t.Fatalf("writing the stand-in: %v", err)
+	}
+
+	return ADB{Binary: script}, func() []string {
+		asked, err := os.ReadFile(log) //nolint:gosec // written by this test
+		if err != nil {
+			return nil
+		}
+		return strings.Split(strings.TrimSpace(string(asked)), "\n")
+	}
+}
+
+// TestFindingTheFilesOnThePhone: a person about to wait twenty minutes for several
+// gigabytes has to be told that first, and one whose phone keeps its files somewhere
+// this does not know about has to be told that instead of watching an empty bar.
+func TestFindingTheFilesOnThePhone(t *testing.T) {
+	t.Parallel()
+
+	t.Run("the folder Android has kept them in since Android 11", func(t *testing.T) {
+		adb, asked := answering(t, []struct{ when, then string }{
+			{when: "ls -1 /sdcard/Android/media/com.whatsapp/WhatsApp/Media",
+				then: "WhatsApp Images\nWhatsApp Video\nWhatsApp Voice Notes"},
+			{when: "du -s -k", then: "5566440\t/sdcard/Android/media/com.whatsapp/WhatsApp/Media"},
+		})
+
+		t.Parallel()
+		found, err := adb.Files(context.Background(), "R5CT10ABCDE")
+		if err != nil {
+			t.Fatalf("Files() failed: %v", err)
+		}
+		if found.Path != "/sdcard/Android/media/com.whatsapp/WhatsApp/Media" {
+			t.Errorf("it found %q", found.Path)
+		}
+		if len(found.Kinds) != 3 {
+			t.Errorf("it found %d kinds of file, want 3: %v", len(found.Kinds), found.Kinds)
+		}
+		// The names hold spaces without exception, which is why the listing is one
+		// name per line rather than whatever ls does by default.
+		if found.Kinds[2] != "WhatsApp Voice Notes" {
+			t.Errorf("the third kind is %q", found.Kinds[2])
+		}
+		if found.Bytes != 5566440*1024 {
+			t.Errorf("it says the folder is %d bytes", found.Bytes)
+		}
+		// Every command was a read. This is the promise the package exists for.
+		for _, one := range asked() {
+			if strings.Contains(one, "push") || strings.Contains(one, "rm ") || strings.Contains(one, "root") {
+				t.Errorf("it ran something that is not a read: %q", one)
+			}
+		}
+	})
+
+	t.Run("the older folder, for a phone that never moved", func(t *testing.T) {
+		adb, _ := answering(t, []struct{ when, then string }{
+			{when: "ls -1 /sdcard/WhatsApp/Media", then: "WhatsApp Images"},
+		})
+
+		t.Parallel()
+		found, err := adb.Files(context.Background(), "R5CT10ABCDE")
+		if err != nil {
+			t.Fatalf("Files() failed: %v", err)
+		}
+		if found.Path != "/sdcard/WhatsApp/Media" {
+			t.Errorf("it found %q", found.Path)
+		}
+		// The phone would not say how large it is, which is survivable: the wait
+		// becomes unpredictable rather than impossible.
+		if found.Bytes != 0 {
+			t.Errorf("it invented a size of %d", found.Bytes)
+		}
+	})
+
+	t.Run("a phone with no such folder at all", func(t *testing.T) {
+		adb, _ := answering(t, nil)
+
+		t.Parallel()
+		if _, err := adb.Files(context.Background(), "R5CT10ABCDE"); !errors.Is(err, ErrNoMediaOnPhone) {
+			t.Errorf("Files() error = %v, want it to say there is no folder", err)
+		}
+	})
+
+	t.Run("something that is not a device identifier", func(t *testing.T) {
+		adb, asked := answering(t, nil)
+
+		t.Parallel()
+		if _, err := adb.Files(context.Background(), "; rm -rf /"); err == nil {
+			t.Error("Files() accepted something that is not a serial")
+		}
+		if len(asked()) != 0 {
+			t.Errorf("it ran adb anyway: %v", asked())
+		}
+	})
+}
+
+// TestCopyingTheFilesOffThePhone: one kind at a time, so that a copy interrupted
+// halfway through several gigabytes does not start those gigabytes again.
+func TestCopyingTheFilesOffThePhone(t *testing.T) {
+	// The stand-in is written before this goes parallel; see TestListingPhones.
+	adb, asked := answering(t, []struct{ when, then string }{
+		{when: "ls -1 /sdcard/Android/media/com.whatsapp/WhatsApp/Media",
+			then: "WhatsApp Images\nWhatsApp Video\nWhatsApp Voice Notes"},
+		{when: "du -s -k", then: "1024\t/sdcard"},
+		{when: "pull", then: "1 file pulled"},
+	})
+	into := t.TempDir()
+	// One kind already here, as it would be after a copy that was stopped.
+	if err := os.MkdirAll(filepath.Join(into, "Media", "WhatsApp Images"), 0o700); err != nil {
+		t.Fatalf("laying out what an earlier run left: %v", err)
+	}
+
+	t.Parallel()
+
+	var said []string
+	where, err := adb.FetchFiles(context.Background(), "R5CT10ABCDE", into, func(kind string, _, _ int) {
+		said = append(said, kind)
+	})
+	if err != nil {
+		t.Fatalf("FetchFiles() failed: %v", err)
+	}
+	if where != into {
+		t.Errorf("the files landed at %q, want %q", where, into)
+	}
+
+	// Every kind is named while it runs, because a person watching gigabytes copy
+	// should be told which part is copying.
+	if len(said) != 3 {
+		t.Errorf("it named %d kinds on the way, want 3: %v", len(said), said)
+	}
+
+	var pulls int
+	for _, one := range asked() {
+		if strings.Contains(one, " pull ") {
+			pulls++
+		}
+		if strings.Contains(one, "push") || strings.Contains(one, "root") {
+			t.Errorf("it ran something that is not a read: %q", one)
+		}
+	}
+	// Two, not three: the kind that was already here was left where it was.
+	if pulls != 2 {
+		t.Errorf("it pulled %d kinds, want 2 — the third was already here", pulls)
+	}
+	if _, err := os.Stat(filepath.Join(into, "Media")); err != nil {
+		t.Errorf("the Media folder the paths expect is not there: %v", err)
 	}
 }

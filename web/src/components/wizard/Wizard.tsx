@@ -270,9 +270,9 @@ function Screen({
           }}
           // Off the phone and unlocked in one go: a file somebody cannot open is
           // not what they came for.
-          onFetch={(serial, path, key) => {
+          onFetch={(serial, path, key, media) => {
             onStart(() =>
-              fetchFromPhone(serial, path, key, extras(true).into ?? ""),
+              fetchFromPhone(serial, path, key, extras(true).into ?? "", media),
             );
           }}
         />

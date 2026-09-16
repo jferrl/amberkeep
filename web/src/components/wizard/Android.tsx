@@ -5,6 +5,7 @@ import type { Setup } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/wizard/Field";
 import { Trouble } from "@/components/wizard/Failure";
+import { Photographs } from "@/components/phone/Photographs";
 import { Plugged } from "@/components/phone/Plugged";
 import { Aside, Expect, Say, Shell } from "@/components/wizard/Shell";
 import { Where } from "@/components/wizard/Where";
@@ -109,7 +110,7 @@ export function Android({
   onTyped: (change: Partial<Typed>) => void;
   onDecrypt: (file: string, key: string) => void;
   /** Take it off the phone instead, when one is plugged in and will answer. */
-  onFetch: (serial: string, path: string, key: string) => void;
+  onFetch: (serial: string, path: string, key: string, media: boolean) => void;
   language: Language;
   onBack: () => void;
   busy: boolean;
@@ -124,6 +125,9 @@ export function Android({
     { serial: string; path: string } | undefined
   >(undefined);
   const [wrong, setWrong] = useState<Wrong>({});
+  // Off unless somebody asks. It is the longest wait in the whole program — several
+  // gigabytes over a cable — and it happens before any messages appear on screen.
+  const [photographs, setPhotographs] = useState(false);
 
   const back = () => {
     setWrong({});
@@ -254,6 +258,12 @@ export function Android({
               setKey(next);
             }}
           />
+          <Photographs
+            serial={fromPhone.serial}
+            language={language}
+            on={photographs}
+            onChange={setPhotographs}
+          />
           <div>
             <Button
               variant="primary"
@@ -266,7 +276,7 @@ export function Android({
                   });
                   return;
                 }
-                onFetch(fromPhone.serial, fromPhone.path, digits);
+                onFetch(fromPhone.serial, fromPhone.path, digits, photographs);
                 setKey("");
               }}
             >

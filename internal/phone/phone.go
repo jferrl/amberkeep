@@ -23,8 +23,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -130,6 +132,13 @@ func (a ADB) Phones(ctx context.Context) ([]Phone, error) {
 var databases = []string{
 	"/sdcard/Android/media/com.whatsapp/WhatsApp/Databases",
 	"/sdcard/WhatsApp/Databases",
+}
+
+// The two places the files themselves live, beside the two above. Constants for the
+// same reason: nothing a caller composes ever reaches adb.
+var folders = []string{
+	"/sdcard/Android/media/com.whatsapp/WhatsApp/Media",
+	"/sdcard/WhatsApp/Media",
 }
 
 // Backup is an encrypted message store on the phone.
@@ -266,4 +275,132 @@ func (a ADB) read(ctx context.Context, args ...string) (string, error) {
 		return "", fmt.Errorf("%w: %s", ErrUnusable, a.Binary)
 	}
 	return string(out), nil
+}
+
+// Media is the phone's folder of photographs, videos and recordings.
+//
+// A database records where every one of them was and holds at most a thumbnail, so
+// this folder is the difference between an archive that shows one picture in eight
+// and one that shows all of them. It is also, on a real device, 5.7 GB — which is
+// why its size is asked for before anything is copied rather than after.
+type Media struct {
+	// Path is where it is on the phone.
+	Path string `json:"path"`
+	// Bytes is how much is in it, as the phone counts it. Zero when the phone would
+	// not say, which is not a reason to refuse: it makes the wait unpredictable
+	// rather than impossible.
+	Bytes int64 `json:"bytes"`
+	// Kinds are the folders inside it — WhatsApp Images, WhatsApp Voice Notes — in
+	// the phone's own order. These are what get copied, one at a time.
+	Kinds []string `json:"kinds"`
+}
+
+// Files finds the phone's WhatsApp folder and says how large it is.
+//
+// Nothing is copied here. A person about to wait twenty minutes for several
+// gigabytes should be told that first, and a person whose phone keeps its files
+// somewhere this does not know about should be told that instead of watching an
+// empty progress bar.
+func (a ADB) Files(ctx context.Context, serial string) (Media, error) {
+	if !serials.MatchString(serial) {
+		return Media{}, fmt.Errorf("that is not a device identifier")
+	}
+
+	for _, dir := range folders {
+		// -1 so each name is a line of its own: these hold spaces, without exception.
+		out, err := a.read(ctx, "-s", serial, "shell", "ls", "-1", dir)
+		if err != nil || strings.Contains(out, "No such file") {
+			continue
+		}
+		kinds := lines(out)
+		if len(kinds) == 0 {
+			continue
+		}
+		return Media{Path: dir, Bytes: a.sizeOf(ctx, serial, dir), Kinds: kinds}, nil
+	}
+	return Media{}, ErrNoMediaOnPhone
+}
+
+// ErrNoMediaOnPhone reports a phone with no WhatsApp folder where this looks.
+//
+// Not a failure of the phone or of this program: WhatsApp on a phone that has never
+// received a picture has no such folder, and a phone that keeps it somewhere else
+// is a shape worth hearing about rather than guessing at.
+var ErrNoMediaOnPhone = errors.New("this phone has no WhatsApp media folder where Amberkeep looks")
+
+// sizeOf asks the phone how much is in a folder. Zero when it will not say.
+//
+// `du` is not on every Android, and on the ones that have it a folder of five
+// thousand files takes a moment. Both are survivable: the number is used to set
+// expectations, and a missing one only makes the wait unpredictable.
+func (a ADB) sizeOf(ctx context.Context, serial, dir string) int64 {
+	ctx, stop := context.WithTimeout(ctx, 2*time.Minute)
+	defer stop()
+
+	out, err := exec.CommandContext(ctx, a.Binary, "-s", serial, "shell", "du", "-s", "-k", dir).Output() //nolint:gosec // a fixed argument list, from a validated serial and one of two constants
+	if err != nil {
+		return 0
+	}
+	blocks, _, _ := strings.Cut(strings.TrimSpace(string(out)), "\t")
+	kb, err := strconv.ParseInt(strings.TrimSpace(blocks), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return kb * 1024
+}
+
+// FetchFiles copies the phone's WhatsApp folder into a directory here.
+//
+// One kind at a time — WhatsApp Images, then WhatsApp Video, and so on — rather than
+// the whole folder in one call, for two reasons. A person watching gigabytes copy
+// should be told which part is copying, and a copy that fails or is stopped halfway
+// leaves the kinds that finished where they are: running it again skips them instead
+// of starting five gigabytes over.
+//
+// What lands is `<into>/Media/...`, the shape the paths inside the database already
+// use, so the folder is readable beside the archive with nothing else done to it.
+func (a ADB) FetchFiles(ctx context.Context, serial, into string, say func(string, int, int)) (string, error) {
+	found, err := a.Files(ctx, serial)
+	if err != nil {
+		return "", err
+	}
+
+	media := filepath.Join(into, "Media")
+	if err := os.MkdirAll(media, 0o700); err != nil {
+		return "", fmt.Errorf("making room for the files: %w", err)
+	}
+
+	for at, kind := range found.Kinds {
+		if err := ctx.Err(); err != nil {
+			return "", err
+		}
+		if say != nil {
+			say(kind, at, len(found.Kinds))
+		}
+		// Already here from an earlier run, which is the whole point of copying one
+		// kind at a time. adb pull would copy every byte again.
+		if there, err := os.Stat(filepath.Join(media, kind)); err == nil && there.IsDir() {
+			continue
+		}
+		// The name came off the phone's own listing, and it is joined to one of two
+		// constant directories. Nothing a caller composed reaches this.
+		remote := path.Join(found.Path, kind)
+		cmd := exec.CommandContext(ctx, a.Binary, "-s", serial, "pull", remote, media) //nolint:gosec // a fixed argument list; see above
+		if out, err := cmd.CombinedOutput(); err != nil {
+			return "", fmt.Errorf("copying %s off the phone: %w: %s", kind, err, strings.TrimSpace(string(out)))
+		}
+	}
+	return into, nil
+}
+
+// lines are the non-empty lines of some output, trimmed.
+func lines(out string) []string {
+	var found []string
+	scan := bufio.NewScanner(strings.NewReader(out))
+	for scan.Scan() {
+		if line := strings.TrimSpace(scan.Text()); line != "" {
+			found = append(found, line)
+		}
+	}
+	return found
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/jferrl/amberkeep/internal/api"
 	"github.com/jferrl/amberkeep/internal/phone"
@@ -117,5 +118,50 @@ func (p Phones) Fetch(ctx context.Context, serial, remote string, say api.Progre
 			// it to translate.
 			say(api.StepFetching, api.Quoting(line))
 		}
+	})
+}
+
+// Files says what the phone's WhatsApp folder holds, without copying any of it.
+//
+// A real device holds 5.7 GB here. Asking first is what lets a screen say "this will
+// take twenty minutes and use six gigabytes" instead of starting and hoping.
+func (p Phones) Files(ctx context.Context, serial string) (api.PhoneMedia, error) {
+	adb, err := phone.Find()
+	if err != nil {
+		return api.PhoneMedia{}, err
+	}
+
+	found, err := adb.Files(ctx, serial)
+	if err != nil {
+		return api.PhoneMedia{}, err
+	}
+	return api.PhoneMedia{Path: found.Path, Bytes: found.Bytes, Kinds: found.Kinds}, nil
+}
+
+// FetchFiles copies the phone's photographs, videos and recordings into a folder.
+//
+// `into` is where the decrypted database already is, so that what lands beside it is
+// the `Media` folder the paths inside that database already point at, and the archive
+// finds it with nothing else done.
+func (p Phones) FetchFiles(ctx context.Context, serial, into string, say api.Progress) (string, error) {
+	adb, err := phone.Find()
+	if err != nil {
+		return "", err
+	}
+	if into == "" {
+		return "", fmt.Errorf("there is nowhere to put the photographs")
+	}
+
+	say(api.StepFetching, api.Saying("copyingPhotographs",
+		"Copying the photographs off the phone. This is the long part."))
+
+	return adb.FetchFiles(ctx, serial, into, func(kind string, at, total int) {
+		// Which part is copying, and how far along: several gigabytes in silence is
+		// indistinguishable from a program that has stopped.
+		say(api.StepFetching, api.Noted("copyingKind",
+			"Copying {kind} — {done} of {kinds}.",
+			"kind", kind, "done", strconv.Itoa(at+1), "kinds", strconv.Itoa(total)).
+			Counting("done", at+1).
+			Counting("kinds", total))
 	})
 }

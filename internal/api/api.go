@@ -256,6 +256,9 @@ func New(ctx context.Context, archive Archive, opts Options) (*Server, error) {
 	// could write to a device, because the package underneath has no way to.
 	mux.HandleFunc("GET /api/phones", s.handlePhones)
 	mux.HandleFunc("GET /api/phones/{serial}/backups", s.handlePhoneBackups)
+	// What the phone's WhatsApp folder holds, for a screen that has to say how long
+	// copying it will take before anybody agrees to wait.
+	mux.HandleFunc("GET /api/phones/{serial}/media", s.handlePhoneFiles)
 	mux.HandleFunc("POST /api/phones/fetch", s.handleFetch)
 	mux.HandleFunc("POST /api/close", s.handleClose)
 

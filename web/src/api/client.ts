@@ -14,6 +14,7 @@
  */
 
 import type {
+  PhoneMedia,
   AdviceOnFailure,
   Archive,
   Export,
@@ -417,12 +418,19 @@ export function getMigration(options: Cancellable = {}): Promise<Migration> {
  * Fetched rather than written into this page. The sentences live in the program, and
  * a copy here would drift from that one the first time anybody corrected a word.
  */
-export function getGuide(language: string, options: Cancellable = {}): Promise<Guide> {
+export function getGuide(
+  language: string,
+  options: Cancellable = {},
+): Promise<Guide> {
   // Asked for rather than left to a header. This page knows what its reader reads,
   // because they are reading the rest of it; the server knows only what a browser
   // claims, and restore instructions in the wrong language are worse than ones in a
   // language somebody has already accepted.
-  return ask<Guide>(`${api}/migration/guide`, narrow({ lang: language }), options);
+  return ask<Guide>(
+    `${api}/migration/guide`,
+    narrow({ lang: language }),
+    options,
+  );
 }
 
 /**
@@ -436,7 +444,11 @@ export function getAdvice(
   language: string,
   options: Cancellable = {},
 ): Promise<AdviceOnFailure> {
-  return ask<AdviceOnFailure>(`${api}/advice`, narrow({ lang: language }), options);
+  return ask<AdviceOnFailure>(
+    `${api}/advice`,
+    narrow({ lang: language }),
+    options,
+  );
 }
 
 /** checkBackup looks at a backup, and stops. */
@@ -581,6 +593,23 @@ export function getPhoneBackups(
 }
 
 /**
+ * getPhoneFiles says what the phone's WhatsApp folder holds, and copies none of it.
+ *
+ * Asked before anything is offered: on a real device the answer is several
+ * gigabytes, and that is not a wait to start without saying so first.
+ */
+export function getPhoneFiles(
+  serial: string,
+  options: Cancellable = {},
+): Promise<PhoneMedia> {
+  return ask<PhoneMedia>(
+    `${api}/phones/${encodeURIComponent(serial)}/media`,
+    narrow({}),
+    options,
+  );
+}
+
+/**
  * fetchFromPhone copies a backup off the phone and unlocks it.
  *
  * The key goes with it, because a backup on its own is a file nobody can open, and
@@ -592,9 +621,10 @@ export async function fetchFromPhone(
   path: string,
   key: string,
   into: string,
+  media = false,
   options: Cancellable = {},
 ): Promise<Setup> {
-  const body: Record<string, unknown> = { serial, path, key };
+  const body: Record<string, unknown> = { serial, path, key, media };
   if (into !== "") body.into = into;
 
   return answer<Setup>(

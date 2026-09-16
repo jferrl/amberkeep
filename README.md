@@ -25,7 +25,7 @@ search and export. The iPhone side and the desktop application are being built.
 |---|---|
 | `crypt15` decryption | working, golden-tested against `wa-crypt-tools` |
 | Android message reader | working, including hidden identities and every content table |
-| The phone's own photographs | working on Android: put WhatsApp's folder beside the database and the archive shows the files themselves, not the thumbnails, and exports carry them out with it |
+| The phone's own photographs | working on Android: copied off the phone over the cable or found beside the database, shown as themselves rather than as thumbnails, and carried out with every export |
 | iPhone message reader | working, including replies and pictures no other tool recovers |
 | Export: web pages, text, JSON | working, in the browser and on the command line |
 | Full-text search | working, accent-insensitive |
@@ -181,6 +181,11 @@ If it is somewhere else, say so: the field on the page that opens a file, or
 WhatsApp files stops and says which folder to name instead, because being told
 nothing would read as "there are no photographs" — a different and much worse thing
 to believe about your own history.
+
+And if the phone is plugged into the same computer, nothing needs copying by hand:
+the page that takes a backup off the phone offers to bring the photographs with it,
+and says how many gigabytes that is before you agree to wait. It is off unless you
+ask, because it is the longest part and it happens before any messages appear.
 
 The files are read where they lie and never written to, and a file the folder turns
 out not to have is a picture the archive simply says nothing about, exactly as before.

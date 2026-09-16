@@ -1,13 +1,13 @@
 import type { SyntheticEvent } from "react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { forgetExport, writeArchive } from "@/api/client";
 import { useArchive, useExport, useExportStep } from "@/api/queries";
 import type { Export as State, Format } from "@/api/types";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Thanks } from "@/components/Thanks";
 import { Field } from "@/components/wizard/Field";
+import { Pick } from "@/components/wizard/Pick";
 import { Trouble } from "@/components/wizard/Failure";
 import { Aside, Say, Shell } from "@/components/wizard/Shell";
 import { Working } from "@/components/wizard/Working";
@@ -249,50 +249,6 @@ function Choices({
         </div>
       </form>
     </Shell>
-  );
-}
-
-/** One thing that is off unless somebody turns it on, with the reason beside it. */
-function Pick({
-  label,
-  hint,
-  on,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  on: boolean;
-  onChange: (on: boolean) => void;
-}) {
-  const box = useId();
-  const note = useId();
-
-  return (
-    <div className="flex items-start gap-3 py-1">
-      <Checkbox
-        id={box}
-        checked={on}
-        aria-describedby={note}
-        className="mt-0.5"
-        onCheckedChange={(state) => {
-          onChange(state === true);
-        }}
-      />
-      <div>
-        <label
-          htmlFor={box}
-          className="block cursor-pointer text-sm font-medium"
-        >
-          {label}
-        </label>
-        <p
-          id={note}
-          className="m-0 mt-0.5 text-[0.8125rem] text-[var(--color-muted)]"
-        >
-          {hint}
-        </p>
-      </div>
-    </div>
   );
 }
 

@@ -765,6 +765,23 @@ export interface Phone {
   trouble?: string;
 }
 
+/**
+ * The phone's own folder of photographs, videos and recordings.
+ *
+ * A message database records where every one of them was and holds at most a
+ * thumbnail, so this folder is the difference between an archive that shows about
+ * one picture in eight and one that shows all of them. On a real device it is several
+ * gigabytes, which is why its size is asked for before anybody agrees to wait for it.
+ */
+export interface PhoneMedia {
+  /** Where it is on the phone — or, when there is none, why there is none. */
+  path: string;
+  /** How much is in it. Zero when the phone would not say. */
+  bytes: number;
+  /** The folders inside it: WhatsApp Images, WhatsApp Voice Notes, and so on. */
+  kinds: readonly string[];
+}
+
 /** An encrypted message store on a phone. */
 export interface PhoneBackup {
   path: string;

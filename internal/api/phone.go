@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"path/filepath"
 	"runtime"
 
 	"github.com/jferrl/amberkeep/internal/phone"
@@ -80,6 +81,68 @@ type Reader interface {
 
 	// Fetch copies one off the phone into the workspace and reports where it landed.
 	Fetch(ctx context.Context, serial, remote string, say Progress) (string, error)
+
+	// Files says what the phone's WhatsApp folder holds, without copying any of it.
+	// Asked before anything is offered, because the answer on a real device is
+	// several gigabytes and that is not a thing to start without saying so.
+	Files(ctx context.Context, serial string) (PhoneMedia, error)
+
+	// FetchFiles copies that folder into a directory here and reports where it
+	// landed. It is the long one: minutes to an hour, depending on the phone.
+	FetchFiles(ctx context.Context, serial, into string, say Progress) (string, error)
+}
+
+// PhoneMedia is the phone's folder of photographs, videos and recordings.
+//
+// A message database records where every one of them was and holds at most a
+// thumbnail, so this folder is the difference between an archive that shows about
+// one picture in eight and one that shows all of them.
+type PhoneMedia struct {
+	// Path is where it is on the phone, for a screen that wants to name it.
+	Path string `json:"path"`
+	// Bytes is how much is in it, as the phone counts it. Zero when the phone would
+	// not say, which makes the wait unpredictable rather than impossible.
+	Bytes int64 `json:"bytes"`
+	// Kinds are the folders inside it: WhatsApp Images, WhatsApp Voice Notes, and so
+	// on. How many there are is how the copying reports its progress.
+	Kinds []string `json:"kinds"`
+}
+
+// alsoTheFiles copies the phone's photographs in beside the database that was just
+// decrypted, so the archive that opens next finds them without being told.
+//
+// A failure here is said and not raised. The messages are already out by this point,
+// and somebody whose photographs would not copy should be reading their conversations
+// while they work out why rather than being handed nothing at all.
+func (s *server) alsoTheFiles(ctx context.Context, serial, db string, say Progress) {
+	if _, err := s.phones.FetchFiles(ctx, serial, filepath.Dir(db), say); err != nil {
+		say(StepFetching, Noted("photographsDidNotCopy",
+			"The messages are out, but the photographs would not copy: {why}",
+			"why", sentence(err)))
+	}
+}
+
+// handlePhoneFiles says what the phone's WhatsApp folder holds, before anybody
+// commits to waiting for it.
+func (s *server) handlePhoneFiles(w http.ResponseWriter, r *http.Request) {
+	if s.phones == nil {
+		http.Error(w, "this server was started without the means to read a phone", http.StatusNotImplemented)
+		return
+	}
+
+	found, err := s.phones.Files(r.Context(), r.PathValue("serial"))
+	if err != nil {
+		// Not an error to the page: a phone with no such folder is an ordinary
+		// phone, and the screen says so rather than offering something that cannot
+		// work. The sentence goes with it, because "no photographs" and "this build
+		// does not know where your phone keeps them" read very differently.
+		write(w, r, PhoneMedia{Kinds: []string{}, Path: sentence(err)})
+		return
+	}
+	if found.Kinds == nil {
+		found.Kinds = []string{}
+	}
+	write(w, r, found)
 }
 
 // handlePhones says what is plugged in.
@@ -141,6 +204,10 @@ func (s *server) handleFetch(w http.ResponseWriter, r *http.Request) {
 		Path   string `json:"path"`
 		Key    string `json:"key"`
 		Into   string `json:"into"`
+		// Media copies the phone's photographs across as well. Several gigabytes and
+		// the difference between an archive of text and an archive of somebody's
+		// life, so it is asked for rather than assumed either way.
+		Media bool `json:"media"`
 	}
 	if !readRequest(w, r, &ask) {
 		return
@@ -169,7 +236,14 @@ func (s *server) handleFetch(w http.ResponseWriter, r *http.Request) {
 			}
 			// The key never reaches this package's memory for longer than the
 			// request that carried it, and never reaches a log or a file.
-			return s.importer.Decrypt(ctx, file, ask.Key, ask.Into, say)
+			db, err := s.importer.Decrypt(ctx, file, ask.Key, ask.Into, say)
+			if err != nil {
+				return "", err
+			}
+			if ask.Media {
+				s.alsoTheFiles(ctx, ask.Serial, db, say)
+			}
+			return db, nil
 		}, Opening{})
 
 	s.begun(w, r, started)

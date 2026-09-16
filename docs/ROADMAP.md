@@ -11,7 +11,7 @@ Everything here is ordered by what blocks what, not by what is interesting.
 | | What | State |
 |---|---|---|
 | 1 | Give the unrecognised message types their meanings, from evidence rather than guesswork | next |
-| 2 | Media: an Android archive reads the phone's own folder — found beside the database or named on the page or the command line — shows the photographs, videos and voice notes themselves rather than the stamp-sized copies, and carries them out when the archive is exported. What is left is pulling the folder off the phone over adb, so that nobody has to copy several gigabytes by hand first | done, except getting the folder off the phone |
+| 2 | Media: an Android archive reads the phone's own folder — pulled off the phone over the cable, found beside the database, or named on the page or the command line — shows the photographs, videos and voice notes themselves rather than the stamp-sized copies, and carries them out when the archive is exported | done for Android; the iPhone side still takes only thumbnails out of a backup |
 | 3 | The compatibility matrix fills up as shapes arrive | continuous |
 
 The second is worth saying plainly, because it is the largest visible difference a
@@ -21,8 +21,11 @@ thumbnail of it: on a real device 92,941 of 99,041 attachments record a path and
 eight, and every voice note is a line of text saying a recording was sent. With the
 phone's folder beside it the archive shows the photographs and plays the recordings.
 Nothing is copied and nothing is written while the archive is open: the files are read
-where they lie. An export is the one thing that copies them, because a copy of
-somebody's history with the pictures taken out is not a copy of it.
+where they lie. Two things copy them, and both are asked for rather than assumed. An
+export carries them out, because a copy of somebody's history with the pictures taken
+out is not a copy of it. And the phone route brings them across the cable, which is
+the only way somebody who has never opened a terminal is going to get 5.7 GB off their
+own phone.
 
 The first one is bounded and evidence-led. About 1,265 of 161,032 messages on a real
 iPhone store carry a type code that means nothing on its own; the media type recorded
